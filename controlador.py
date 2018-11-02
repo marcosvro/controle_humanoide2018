@@ -31,7 +31,7 @@ class Controlador():
 				robo_id=-1,
 				altura_inicial=17.,
 				tempoPasso = 0.7,
-				deslocamentoYpelves = 2.2,
+				deslocamentoYpelves = 2.4,
 				deslocamentoZpes = 2.,
 				deslocamentoXpes= 2.,
 				deslocamentoZpelves = 30.,
