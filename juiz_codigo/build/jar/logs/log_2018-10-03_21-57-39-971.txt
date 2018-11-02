@@ -1,0 +1,46 @@
+2018.10.03-21.57.39: League = HL Kid
+2018.10.03-21.57.39: Game type = round robin
+2018.10.03-21.57.39: Auto color change = false
+2018.10.03-21.57.39: Using broadcast address /192.168.0.255
+2018.10.03-21.57.39: Listening on address 0.0.0.0
+2018.10.03-21.57.39: ITAndroids (red) vs Invisibles (blue)
+2018.10.03-21.58.42: Request for Service red 1
+2018.10.03-21.59.46: Unpenalised red 1
+2018.10.03-22.00.35: Leaving Player red 2
+2018.10.03-22.00.38: Entering Player red 5
+2018.10.03-22.00.58: Leaving Player red 5
+2018.10.03-22.01.01: Entering Player red 2
+2018.10.03-22.01.56: Ready
+2018.10.03-22.02.26: Set
+2018.10.03-22.02.49: Playing
+2018.10.03-22.04.01: Out by blue
+2018.10.03-22.04.20: Out by blue
+2018.10.03-22.04.22: Out by red
+2018.10.03-22.05.01: Out by red
+2018.10.03-22.05.04: Out by red
+2018.10.03-22.05.07: Out by red
+2018.10.03-22.05.09: Out by red
+2018.10.03-22.05.10: Out by red
+2018.10.03-22.05.11: Out by red
+2018.10.03-22.05.12: Out by red
+2018.10.03-22.05.12: Out by red
+2018.10.03-22.05.12: Out by red
+2018.10.03-22.05.13: Out by red
+2018.10.03-22.05.13: Out by red
+2018.10.03-22.05.15: Out by red
+2018.10.03-22.05.37: Ball Manipulation blue 1
+2018.10.03-22.06.11: Unpenalised blue 1
+2018.10.03-22.06.34: Request for PickUp / Incapable Player blue 1
+2018.10.03-22.06.48: Goal for blue
+2018.10.03-22.06.48: Ready
+2018.10.03-22.06.54: Unpenalised blue 1
+2018.10.03-22.07.18: Set
+2018.10.03-22.07.31: Playing
+2018.10.03-22.10.35: Request for Service blue 1
+2018.10.03-22.10.56: Finished
+2018.10.03-22.11.10: Unpenalised blue 1
+2018.10.03-22.11.11: 2nd Half
+2018.10.03-22.11.15: Ready
+2018.10.03-22.11.16: Set
+2018.10.03-22.11.17: Playing
+2018.10.03-22.11.19: Finished

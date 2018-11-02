@@ -1,0 +1,31 @@
+2018.10.05-11.27.12: League = HL Kid
+2018.10.05-11.27.12: Game type = round robin
+2018.10.05-11.27.12: Auto color change = false
+2018.10.05-11.27.12: Using broadcast address /172.16.255.255
+2018.10.05-11.27.12: Listening on address 0.0.0.0
+2018.10.05-11.27.12: ITAndroids (red) vs Invisibles (blue)
+2018.10.05-11.28.14: Kickoff blue
+2018.10.05-11.28.17: Kickoff red
+2018.10.05-11.28.19: Kickoff blue
+2018.10.05-11.28.21: Ready
+2018.10.05-11.28.24: Set
+2018.10.05-11.28.25: Playing
+2018.10.05-11.28.29: Dropped Ball
+2018.10.05-11.28.29: Ready
+2018.10.05-11.28.33: Set
+2018.10.05-11.28.35: Playing
+2018.10.05-11.28.40: Request for Service red 1
+2018.10.05-11.28.46: Request for Service blue 1
+2018.10.05-11.28.53: PenaltyKick red
+2018.10.05-11.28.54: Time manual paused
+2018.10.05-11.29.27: End PenaltyKick red
+2018.10.05-11.29.27: Time manual running
+2018.10.05-11.29.40: DirectFreeKick red
+2018.10.05-11.29.40: Time manual paused
+2018.10.05-11.29.46: End DirectFreeKick red
+2018.10.05-11.29.46: Time manual running
+2018.10.05-11.30.25: Unpenalised red 1
+2018.10.05-11.30.28: Unpenalised blue 1
+2018.10.05-12.14.15: Finished
+2018.10.05-12.48.39: 2nd Half
+2018.10.05-12.49.05: Shutdown GameController

@@ -1,0 +1,15 @@
+2018.10.03-20.54.42: League = HL Kid
+2018.10.03-20.54.42: Game type = round robin
+2018.10.03-20.54.42: Auto color change = false
+2018.10.03-20.54.42: Using broadcast address /192.168.0.255
+2018.10.03-20.54.42: Listening on address 0.0.0.0
+2018.10.03-20.54.42: ITAndroids (red) vs Invisibles (blue)
+2018.10.03-20.59.39: Kickoff blue
+2018.10.03-20.59.40: Kickoff red
+2018.10.03-20.59.43: Kickoff blue
+2018.10.03-20.59.45: Kickoff red
+2018.10.03-21.20.52: Request for PickUp / Incapable Player red 3
+2018.10.03-21.20.57: Request for PickUp / Incapable Player red 4
+2018.10.03-21.21.31: Unpenalised red 4
+2018.10.03-21.21.37: Unpenalised red 3
+2018.10.03-21.22.00: Shutdown GameController

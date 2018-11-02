@@ -1,0 +1,7 @@
+2018.10.05-11.04.35: League = HL Drop In (2)
+2018.10.05-11.04.35: Game type = drop-in
+2018.10.05-11.04.35: Auto color change = false
+2018.10.05-11.04.35: Using broadcast address /172.16.255.255
+2018.10.05-11.04.35: Listening on address 0.0.0.0
+2018.10.05-11.04.35: Team A (red) vs Team B (blue)
+2018.10.05-11.04.50: Shutdown GameController
