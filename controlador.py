@@ -400,6 +400,7 @@ class Controlador():
 			else:
 				return -1
 		elif self.state is 'PENALIZED':
+			pass
 		else:
 			print("ERRO: Estado invalido!!")
 
