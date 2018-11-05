@@ -7,6 +7,7 @@ import numpy as np
 from functools import reduce
 import struct
 from std_msgs.msg import Float32MultiArray
+import receiver
 try:
 	import rospy
 except Exception as e:
@@ -25,10 +26,10 @@ def sigmoid_deslocada(x, periodo):
 
 class Controlador():
 
-	def __init__(self, 
+	def __init__(self,
 				simulador=False,
 				time_id=13,
-				robo_id=-1,
+				robo_id=0,
 				altura_inicial=17.,
 				tempoPasso = 0.7,
 				deslocamentoYpelves = 2.4,
@@ -71,6 +72,7 @@ class Controlador():
 		self.msg_from_micro = []
 		self.msg_to_micro = [0]*20
 		self.micro_msg_head = -3599
+		self.micro_msg_footer = -3342
 		self.fps_count = 0
 		self.last_time = 0
 		self.count_frames = 0
@@ -135,6 +137,8 @@ class Controlador():
 		self.acelerando = False
 		self.freando = False
 
+		self.activate = True
+
 		if self.simulador:
 			self.inicia_modulo_simulador()
 
@@ -143,11 +147,21 @@ class Controlador():
 		if not self.simulador:
 			self.inicia_modulo_micro()
 
-		time.sleep(3)
-		self.visao_msg = [0, 0, 0, 0, 0, 1, 0]
+		#time.sleep(3)
+		#self.visao_msg = [0, 0, 0, 0, 0, 1, 0]
 
 		#self.inicia_modulo_inercial()
+		self.inicia_modulo_juiz()
 		self.inicia_modulo_visao()
+		
+
+
+	def inicia_modulo_juiz (self):
+		"Iniciando moodulo juiz.."
+		self.rec = receiver.GameStateReceiver(team=self.time_id, player=self.robo_id, control=self)
+		t = threading.Thread(target=self.escuta_juiz)
+		t.daemon = True
+		t.start()
 
 
 	def inicia_modulo_inercial(self):
@@ -208,7 +222,7 @@ class Controlador():
 				t.start()
 				break
 			except Exception as e:
-				print("ERRO: Nao foi possivel se conectar a rasp da visao (ip/port):   %s:%i" %(self.ip_rasp_visao, self.porta_rasp_visao))
+				#print("ERRO: Nao foi possivel se conectar a rasp da visao (ip/port):   %s:%i" %(self.ip_rasp_visao, self.porta_rasp_visao))
 				time.sleep(1)
 
 
@@ -224,6 +238,12 @@ class Controlador():
 		self.timer_fps += self.deltaTime
 		return None
 
+	def escuta_juiz(self):
+		print("Juiz OK!")
+		try:
+			self.rec.receive_forever()
+		except Exception as e:
+			raise e
 
 	def escuta_inercial(self):
 		print("Inercial OK!")
@@ -301,30 +321,24 @@ class Controlador():
 		while True:
 			try:
 				while True:
-					head, cmd, qt, checksum = struct.unpack('>h3B', self.micro_serial.read(5))
+					head, checksum = struct.unpack('>hB', self.micro_serial.read(3))
 					#print(self.micro_serial.read(1))
 					
-					if head == self.micro_msg_head and (cmd == 1 or cmd == 4):
-						if self.micro_ativado:
-							cs = reduce(lambda x, y: x^y, struct.unpack('>42B', struct.pack('>2B20h', *([3, 45]+[int(i*10) for i in self.msg_to_micro]))))
-							self.micro_serial.write(struct.pack('>h3B20h', *([self.micro_msg_head, 3, 45, cs]+[int(i*10) for i in self.msg_to_micro])))
+					if head == self.micro_msg_head:
+						Gpitch, Gyall, servo_p, servo_y, bat, footer = struct.unpack('>4hBh', self.micro_serial.read(5))
+						cs = reduce(lambda x,y: x^y, struct.unpack('>5B', struct.pack('>2hB', *([Gpitch, Gyall, servo_p, servo_y, bat]))))
 						self.micro_serial.flush()
-					elif head != self.micro_msg_head or qt != 46 or cmd != 2:
-						cs = reduce(lambda x, y: x^y, [1, 5])
-						self.micro_serial.write(struct.pack('>h3B', *([self.micro_msg_head, 1, 5, cs])))
-						self.micro_serial.flush()
-					else:
-						data = struct.unpack('>20hB', self.micro_serial.read(41))
-						cs = reduce(lambda x,y: x^y, struct.unpack('>43B', struct.pack('>2B20hB', *([cmd, qt]+[i for i in data]))))
-						self.micro_serial.flush()
-						if cs == checksum:
+						if cs == checksum and footer == self.micro_msg_footer:
 							break
+					else:
+						self.micro_serial.flush()
 
 
-				self.msg_from_micro = [i/10. for i in data]
-				#print(self.msg_from_micro[0], self.msg_from_micro[1]," -> ", self.msg_from_micro[2],self.msg_from_micro[3], "( ", self.msg_from_micro[18], self.msg_from_micro[19], self.msg_from_micro[18]-self.msg_from_micro[0],self.msg_from_micro[19]-self.msg_from_micro[1]," )")
+				self.gimbal_pitch = Gpitch
+				self.gimbal_yall = Gyall
+				self.VBat = bat
 				if self.visao_ativada:
-					self.visao_socket.send(("['"+self.state+"',"+str(self.msg_from_micro[18])+','+str(self.msg_from_micro[19])+']').encode())
+					self.visao_socket.send(("['"+self.state+"',"+str(Gpitch/10)+','+str(Gyall/10)+','+str(servo_p/10)+','+str(servo_y/10)+']').encode())
 			except Exception as e:
 				print("ERRO: Conexao com o micro-controlador encerrada!")
 				print(str(e))
@@ -384,6 +398,7 @@ class Controlador():
 				return 5
 			else:
 				return -1
+		elif self.state is 'PENALIZED':
 		else:
 			print("ERRO: Estado invalido!!")
 
@@ -399,12 +414,13 @@ class Controlador():
 			self.msg_to_micro[19] = self.gimbal_yall_lock
 			self.visao_msg = []
 
-
+			'''
 			#excluir
 			self.gimbal_yall = self.gimbal_yall_lock
 			if self.gimbal_yall < 0:
 				self.gimbal_yall += 360
 			self.gimbal_pitch = self.gimbal_pitch_lock
+			'''
 
 
 			
@@ -446,8 +462,8 @@ class Controlador():
 			self.timer_micro += self.deltaTime
 			if self.timer_micro >= 1./self.frequencia_envio_micro:
 				self.timer_micro = 0
-				cs = reduce(lambda x, y: x^y, struct.unpack('>42B', struct.pack('>2B20h', *([3, 45]+[int(i*10) for i in self.msg_to_micro]))))
-				self.micro_serial.write(struct.pack('>h3B20h', *([self.micro_msg_head,3, 45, cs]+[int(i*10) for i in self.msg_to_micro])))
+				cs = reduce(lambda x, y: x^y, struct.unpack('>40B', struct.pack('>20h', *([int(i*10) for i in self.msg_to_micro]))))
+				self.micro_serial.write(struct.pack('>hB21h', *([self.micro_msg_head, cs]+[int(i*10) for i in self.msg_to_micro]+[self.micro_msg_footer])))
 
 
 	def run(self):
@@ -760,5 +776,5 @@ class Controlador():
 
 
 if __name__ == '__main__':
-	control = Controlador(robo_id = 0,ip_rasp_visao='localhost', simulador=True)
+	control = Controlador(time_id = 7,robo_id = 0,ip_rasp_visao='localhost', simulador=True)
 	control.run()
