@@ -337,6 +337,7 @@ class Controlador():
 				self.gimbal_pitch = Gpitch
 				self.gimbal_yall = Gyall
 				self.VBat = bat
+				print("Recebi")
 				if self.visao_ativada:
 					self.visao_socket.send(("['"+self.state+"',"+str(Gpitch/10)+','+str(Gyall/10)+','+str(servo_p/10)+','+str(servo_y/10)+']').encode())
 			except Exception as e:
@@ -776,5 +777,5 @@ class Controlador():
 
 
 if __name__ == '__main__':
-	control = Controlador(time_id = 7,robo_id = 0,ip_rasp_visao='localhost', simulador=True)
+	control = Controlador(time_id = 7,robo_id = 0,ip_rasp_visao='localhost', simulador=False)
 	control.run()
