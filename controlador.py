@@ -6,7 +6,10 @@ import serial
 import numpy as np
 from functools import reduce
 import struct
-from std_msgs.msg import Float32MultiArray
+try:
+	from std_msgs.msg import Float32MultiArray
+except Exception as e:
+	pass
 import receiver
 try:
 	import rospy
