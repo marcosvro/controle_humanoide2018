@@ -1,7 +1,0 @@
-2018.10.03-22.24.45: League = HL Kid
-2018.10.03-22.24.45: Game type = round robin
-2018.10.03-22.24.45: Auto color change = false
-2018.10.03-22.24.45: Using broadcast address /192.168.0.255
-2018.10.03-22.24.45: Listening on address 0.0.0.0
-2018.10.03-22.24.45: ITAndroids (red) vs Invisibles (blue)
-2018.10.03-22.30.18: Shutdown GameController
