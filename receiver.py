@@ -133,14 +133,22 @@ class GameStateReceiver(object):
             Needs to be implemented or set
             :param state: Game State
         """
-        #print(state)
-        for equipe in state['teams']:
-            if (equipe['team_number'] == self.team):
-                my_robotinfo = equipe['players'][self.player]
-                if my_robotinfo['penalty'] != 0:
-                    control.activate = False
-                else:
-                    control.activate = True
+
+        try:
+            if state['game_state'] == 3:
+                self.control.activate = True
+            else:
+                self.control.activate = False
+
+            for equipe in state['teams']:
+                if (equipe['team_number'] == self.team):
+                    my_robotinfo = equipe['players'][self.player]
+                    if my_robotinfo['penalty'] != 0:
+                        self.control.state = 'PENALIZED'
+                    else:
+                        self.control.state = 'IDDLE'
+        except Exception as e:
+            pass        
 
                     
     def get_last_state(self):
@@ -156,7 +164,3 @@ class GameStateReceiver(object):
         self.man_penalize = flag
 
 
-
-if __name__ == '__main__':
-    rec = GameStateReceiver(team=7, player=0, control= None)
-    rec.receive_forever()

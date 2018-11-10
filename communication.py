@@ -6,7 +6,7 @@ import os
 
 class Communication(Thread):
 
-	def __init__(self, gimbal, flags, ip='0.0.0.0', port=24700, sendDelay=0.1):
+	def __init__(self, gimbal, flags, ip='0.0.0.0', port=24702, sendDelay=0.1):
 		Thread.__init__(self)
 		self.clientsocket = None
 		self.controlador_state = -1
@@ -26,12 +26,15 @@ class Communication(Thread):
 
 	def open_socket(self):
 		self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		try:
-			self.serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-			self.serversocket.bind((self.ip, self.port))
-		except Exception:
-			time.sleep(0.1)
-			self.open_socket()
+		shift_port = 0
+		while True:
+			try:
+				self.serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+				self.serversocket.bind((self.ip, self.port+shift_port))
+				break
+			except Exception:
+				time.sleep(0.1)
+				shift_port = (shift_port+1)%1
 		self.serversocket.listen(5)
 		print("Servidor da Visao aberto!")
 
@@ -61,9 +64,9 @@ class Communication(Thread):
 					self.controlador_state = data[0]
 					self.gimbal_tilt = data[1]
 					self.gimbal_pan = data[2]
-					self.gimbal.servoPan.real_angle = self.gimbal_pan
-					self.gimbal.servoTilt.real_angle = self.gimbal_tilt
-					print("Recebendo:", data)
+					self.gimbal.servoPan.real_angle = data[4]
+					self.gimbal.servoTilt.real_angle = data[3]
+					#print("Recebendo:", data)
 				except Exception as e:
 					#print(e)
 					pass
@@ -82,7 +85,7 @@ class Communication(Thread):
 		return None
 
 	def run(self):
-		print("Visao pronta para detecção!!")
+		print("Visao pronta para deteccao!!")
 		while(True):
 			try:
 				#time.sleep(3)
@@ -101,9 +104,14 @@ class Communication(Thread):
 				info = [0]*7
 				angulo = input("Informe o angulo para o robo virar (-180, 180)!")
 				info[1] = angulo
-				angulo = input("Informe o angulo para o robo andar (-180, 180)!")
-				info[0] = angulo
-				info[5] = 1
+				flag_msg = input("Esta com a bola?")
+				info[5] = flag_msg
+				flag_msg = input("Esta procurando a bola?")
+				info[4] = flag_msg
+				flag_msg = input("Devo virar 90 graus?")
+				info[6] = flag_msg
+				info[2] = self.gimbal_tilt
+				info[3] = self.gimbal_pan
 				if(self.clientsocket is not None):
 					#publica direcao e distância
 					try:
@@ -118,7 +126,9 @@ class Communication(Thread):
 							self.clientsocket = None
 			except KeyboardInterrupt as e:
 				print("Finalizado pelo usuario!!")
-				self.clientsocket.close()
+				if self.clientsocket != None:
+					self.clientsocket.close()
+				self.serversocket.shutdown(socket.SHUT_RDWR)
 				self.serversocket.close()
 				break
 
