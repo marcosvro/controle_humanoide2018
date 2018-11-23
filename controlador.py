@@ -44,8 +44,8 @@ class Controlador():
 				time_id=17,
 				robo_id=0,
 				altura_inicial=17.,
-				tempoPasso = 0.5,
-				deslocamentoYpelves = 2.3,
+				tempoPasso = 3.125,
+				deslocamentoYpelves = 4.,
 				deslocamentoZpes = 2.,
 				deslocamentoXpes= 2.,
 				deslocamentoZpelves = 30.,
@@ -63,8 +63,8 @@ class Controlador():
 		self.time_id = time_id
 		self.robo_id = robo_id
 		self.altura = altura_inicial
-		self.pos_inicial_pelves = [0., -0.5, altura_inicial]
-		self.pos_inicial_foot = [0., 0.5, -altura_inicial]
+		self.pos_inicial_pelves = [0., 0.6, altura_inicial]
+		self.pos_inicial_foot = [0., -0.6, -altura_inicial]
 		self.deslocamentoXpes = 0.
 		self.deslocamentoYpelves = 0
 		self.deslocamentoZpes = 0
@@ -107,7 +107,7 @@ class Controlador():
 		self.tempo_virando = 3.
 
 		self.visao_search = False
-		self.visao_bola = True
+		self.visao_bola = False
 		self.turn90 = False
 		self.max_yall = 20
 		self.min_yall = 5
@@ -118,7 +118,7 @@ class Controlador():
 		self.robo_pitch = 0
 
 		self.gimbal_yall = 0
-		self.gimbal_pitch = 0
+		self.gimbal_pitch = -45
 
 		self.dist_bola = 0
 		self.altura_atual = 53.5-(self.a + self.c - altura_inicial)
@@ -422,14 +422,16 @@ class Controlador():
 					continue
 
 				self.visao_msg = eval(data)
-				print(self.visao_msg)
+				#print(self.visao_msg)
 				if self.robo_yall + self.visao_msg[1] < 0:
 					self.gimbal_yall = self.robo_yall + self.visao_msg[1] + 360
 				elif self.robo_yall + self.visao_msg[1] > 360:
 					self.gimbal_yall = (self.robo_yall + self.visao_msg[1])% 360
 				else:
 					self.gimbal_yall = self.robo_yall + self.visao_msg[1]
-				print(self.gimbal_pitch)
+				self.gimbal_pitch = self.visao_msg[0]
+				self.visao_bola = self.visao_msg[5] != 0
+				#print(self.gimbal_pitch)
 
 			except Exception as e:
 				raise e
@@ -455,16 +457,16 @@ class Controlador():
 			else:
 				return -1
 		elif self.state is 'MARCH':
-			if self.visao_search:
+			if not self.visao_bola:
 				return 3
 			elif self.visao_bola and abs(self.robo_yall_lock - self.robo_yall) > self.max_yall and self.visao_ativada:
 				return 6
-			elif self.visao_bola and (self.robo_yall >= 270 or self.robo_yall <= 90):
+			elif self.visao_bola and (self.robo_yall >= 270 or self.robo_yall <= 90) and self.robo_pitch_lock > -45:
 				return 8
 			else:
 				return -1
 		elif self.state is 'WALK':
-			if not self.visao_bola or abs(self.robo_yall_lock - self.robo_yall) > self.max_yall:
+			if not self.visao_bola or abs(self.robo_yall_lock - self.robo_yall) > self.max_yall or self.robo_pitch_lock <= -45:
 				return 7
 			else:
 				return -1
@@ -513,6 +515,8 @@ class Controlador():
 			self.robo_yall_lock = dir_angle
 		else:
 			self.robo_yall_lock = -esq_angle
+
+		self.robo_pitch_lock = self.gimbal_pitch
 
 		'''
 		if self.gimbal_pitch < 0: 
@@ -572,7 +576,7 @@ class Controlador():
 		while (True):
 			try:
 				#print(self.activate, self.robo_yall)
-				#print (self.state, self.gimbal_yall, flush=True)
+				print (self.state, self.gimbal_yall, flush=True)
 				if self.visao_ativada:
 						self.visao_socket.send(("['"+self.state+"',"+str(50)+','+str(100)+']').encode())
 				if RASPBERRY:
@@ -988,6 +992,7 @@ class Controlador():
 			else:
 				data_foot[5] = 0
 
+			#data_pelv[4] *= -1
 			data = data_pelv + data_foot + [0]*6
 		else:
 			data_pelv = self.footToHip(ponto1)
@@ -1014,6 +1019,7 @@ class Controlador():
 			else:
 				data_foot[5] = 0
 
+			#data_pelv[4] *= -1
 			data = data_foot + data_pelv + [0]*6
 
 		self.msg_to_micro[:18] = data
@@ -1022,5 +1028,5 @@ class Controlador():
 
 
 if __name__ == '__main__':
-	control = Controlador(time_id = 17,robo_id = 0,ip_rasp_visao='10.1.1.128', simulador=False)
+	control = Controlador(time_id = 17,robo_id = 0,ip_rasp_visao='localhost', simulador=True)
 	control.run()
