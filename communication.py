@@ -102,10 +102,10 @@ class Communication(Thread):
 					print(self.fps_count)
 	'			'''
 				info = [0]*7
-				angulo = input("Informe o angulo para o robo virar (-180, 180)!")
-				info[1] = angulo
-				angulo = input("Informe o angulo para andar (-180, 180)!")
+				angulo = input("Informe o angulo vertical (-180, 180)!")
 				info[0] = angulo
+				angulo = input("Informe o angulo horizontal (-180, 180)!")
+				info[1] = angulo
 				flag_msg = input("Esta com a bola?")
 				info[5] = flag_msg
 				flag_msg = input("Esta procurando a bola?")

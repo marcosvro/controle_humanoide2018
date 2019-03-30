@@ -40,13 +40,13 @@ TeamInfo = "team" / Struct(
     "single_shots" / Short,  # bits represent penalty shot success
     "coach_sequence" / Byte,
     "coach_message" / Bytes(253),
-    Renamed("coach", RobotInfo),
+    Renamed(RobotInfo, "coach"),
     "players" / Array(11, RobotInfo)
 )
 
 GameState = "gamedata" / Struct(
-    "header" / Const(Bytes(4), b'RGme'),
-    "version" / Const(Short, 12),
+    "header" / Const(b'RGme', Bytes(4)),
+    "version" / Const(12 ,Short),
     "packet_number" / Byte,
     "players_per_team" / Byte,
     "game_type" / Byte,
@@ -79,14 +79,14 @@ GameState = "gamedata" / Struct(
     "drop_in_time" / Short,
     "seconds_remaining" / Short,
     "secondary_seconds_remaining" / Short,
-    Array(2, Renamed("teams", TeamInfo))
+    Array(2, Renamed(TeamInfo, "teams"))
 )
 
 GAME_CONTROLLER_RESPONSE_VERSION = 2
 
 ReturnData = "returndata" / Struct(
-    "header" / Const(Bytes(4), b"RGrt"),
-    "version" / Const(Byte, 2),
+    "header" / Const(b"RGrt"),
+    "version" / Const(2, Byte),
     "team" / Byte,
     "player" / Byte,
     "message" / Byte

@@ -1,0 +1,5 @@
++3.415e+1 Hip pitch
+-6.949e+1 Knee
++3.532e+1 Ankle pitch
+-2.017e+0 Hip roll
+-2.022e+0 Ankle roll

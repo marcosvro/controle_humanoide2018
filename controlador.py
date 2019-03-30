@@ -248,7 +248,7 @@ class Controlador():
 
 	def inicia_modulo_visao(self):
 		print("Abrindo Conexao com a Visao..")
-		port_shift = 0
+		port_shift = -1
 		while True:
 			port_shift = (port_shift + 1) % 1
 			try:
@@ -260,7 +260,7 @@ class Controlador():
 				break
 			except Exception as e:
 				#print("ERRO: Nao foi possivel se conectar a rasp da visao (ip/port):   %s:%i" %(self.ip_rasp_visao, self.porta_rasp_visao))
-				time.sleep(0.4)
+				time.sleep(0.1)
 
 
 	def atualiza_fps(self):
@@ -410,8 +410,8 @@ class Controlador():
 				data = self.visao_socket.recv(1000)
 				if data == b'':
 					raise Exception("Eu quis fechar sa porra")
-				#print("Recebi um dado!")
-				#print(len(data))
+				
+				#Checa se o dado está correto
 				cont = 0
 				data_str = str(data)
 				for i in data_str:
@@ -421,8 +421,9 @@ class Controlador():
 				if cont > 1 or cont == 0:
 					continue
 
+				#Armazena dado em variavel do objeto para que o laço principal possa usa-la
+				#tupla recebida pela visão tem o formato [angulo_vertial, angulo_horizontal, estáComABola, procurandoBola, vira90Graus]
 				self.visao_msg = eval(data)
-				#print(self.visao_msg)
 				if self.robo_yall + self.visao_msg[1] < 0:
 					self.gimbal_yall = self.robo_yall + self.visao_msg[1] + 360
 				elif self.robo_yall + self.visao_msg[1] > 360:
@@ -431,7 +432,6 @@ class Controlador():
 					self.gimbal_yall = self.robo_yall + self.visao_msg[1]
 				self.gimbal_pitch = self.visao_msg[0]
 				self.visao_bola = self.visao_msg[5] != 0
-				#print(self.gimbal_pitch)
 
 			except Exception as e:
 				raise e
@@ -973,8 +973,6 @@ class Controlador():
 			if self.rota_dir == 1:
 				data_pelv[5] = self.angulo_vira/2. + self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50)))
 				data_pelv[5] = data_pelv[5] * math.pi/180.
-				#data_pelv[4] += data_pelv[5]
-				#data_pelv[0] += data_pelv[5]
 			elif self.rota_dir == -1:
 				data_pelv[5] = -self.angulo_vira/2. - self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50)))
 				data_pelv[5] = data_pelv[5] * math.pi/180.
@@ -984,15 +982,12 @@ class Controlador():
 			if self.rota_esq == 2:
 				data_foot[5] = self.angulo_vira - (self.angulo_vira/2. + self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50))))
 				data_foot[5] = data_foot[5] * math.pi/180.
-				#data_foot[4] += data_pelv[5]
-				#data_foot[0] += data_pelv[5]
 			elif self.rota_esq == -2:
 				data_foot[5] = -self.angulo_vira - (-self.angulo_vira/2. - self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50))))
 				data_foot[5] = data_foot[5] * math.pi/180.
 			else:
 				data_foot[5] = 0
 
-			#data_pelv[4] *= -1
 			data = data_pelv + data_foot + [0]*6
 		else:
 			data_pelv = self.footToHip(ponto1)
@@ -1000,8 +995,6 @@ class Controlador():
 			if self.rota_esq == 1:
 				data_pelv[5] =  self.angulo_vira/2. + self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50)))
 				data_pelv[5] = data_pelv[5] * math.pi/180.
-				#data_pelv[4] += data_pelv[5]
-				#data_pelv[0] += data_pelv[5]
 			elif self.rota_esq == -1:
 				data_pelv[5] =  -self.angulo_vira/2. - self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50)))
 				data_pelv[5] = data_pelv[5] * math.pi/180.
@@ -1011,15 +1004,12 @@ class Controlador():
 			if self.rota_dir == 2:
 				data_foot[5] =  self.angulo_vira - (self.angulo_vira/2. + self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50))))
 				data_foot[5] = data_foot[5] * math.pi/180.
-				#data_foot[4] += data_pelv[5]
-				#data_foot[0] += data_pelv[5]
 			elif self.rota_dir == -2:
 				data_foot[5] =  -self.angulo_vira - (-self.angulo_vira/2. - self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50))))		
 				data_foot[5] = data_foot[5] * math.pi/180.
 			else:
 				data_foot[5] = 0
 
-			#data_pelv[4] *= -1
 			data = data_foot + data_pelv + [0]*6
 
 		self.msg_to_micro[:18] = data
