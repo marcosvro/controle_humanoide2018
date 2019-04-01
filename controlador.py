@@ -366,8 +366,8 @@ class Controlador():
 			data [3:6] = orientação [x,y,z] do pé direito
 	'''
 	def simulador_foot_inertial_callback(self, msg):
-		self.Lfoot_orientation = np.array(msg.data[:3])*180/math.pi + 90
-		self.Rfoot_orientation = np.array(msg.data[3:])*180/math.pi + 90
+		self.Lfoot_orientation = np.array(msg.data[:3])
+		self.Rfoot_orientation = np.array(msg.data[3:])
 
 
 	'''
@@ -546,14 +546,6 @@ class Controlador():
 					elif self.deslocamentoXpes != 0:
 						self.freia_frente()
 					else:
-						#print(self.pos_inicial_pelves)
-						'''if self.perna:
-							self.anda_de_lado()
-						else:
-							self.desanda_de_lado()
-						self.robo_yall_lock = 90
-						self.vira()
-						'''
 						novo_estado = self.classifica_estado()
 						if novo_estado != -1:
 							self.state = self.tabela_transicoes[novo_estado]
