@@ -236,10 +236,13 @@ class Controlador():
 		t.start()
 
 		#INICIA SUBSCRIBER PARA RECEBER DADOS DOS SENSORES INERCIAIS DOS PÉS
-		rospy.Subscriber("/vrep_ros_interface/Bioloid/foot_inertial_sensor", Float32MultiArray, self.simulador_foot_inertial_callback)
+		rospy.Subscriber("/vrep_ros_interface/Bioloid/foot_inertial_sensor", Float32MultiArray, self.foot_inertial_callback)
 
 		#INICIA SUBSCRIBER PARA RECEBER DADOS DOS SENSORES DE PRESSÃO DOS PÉS
-		rospy.Subscriber("/vrep_ros_interface/Bioloid/foot_pressure_sensor", Float32MultiArray, self.simulador_foot_pressure_callback)
+		rospy.Subscriber("/vrep_ros_interface/Bioloid/foot_pressure_sensor", Float32MultiArray, self.foot_pressure_callback)
+
+		#INICIA SUBSCRIBER PARA RECEBER DADOS DO SENSOR IMU DO ROBÔ
+		rospy.Subscriber("/vrep_ros_interface/Bioloid/robot_inertial_sensor", Float32MultiArray, self.robot_inertial_callback)
 
 
 	def inicia_modulo_micro(self):
@@ -365,7 +368,7 @@ class Controlador():
 			data [1:3] = orientação [x,y,z] do pé esquerdo
 			data [3:6] = orientação [x,y,z] do pé direito
 	'''
-	def simulador_foot_inertial_callback(self, msg):
+	def foot_inertial_callback(self, msg):
 		self.Lfoot_orientation = np.array(msg.data[:3])
 		self.Rfoot_orientation = np.array(msg.data[3:])
 
@@ -376,9 +379,35 @@ class Controlador():
 			data [1:4] = valores [p1,p2,p3,p4] que indicam o nivel de força detectados nos pontos na extremidade do pé esquerdo
 			data [4:8] = valores [p1,p2,p3,p4] que indicam o nivel de força detectados nos pontos na extremidade do pé direito
 	'''
-	def simulador_foot_pressure_callback(self, msg):
+	def foot_pressure_callback(self, msg):
 		self.Lfoot_press = msg.data[:4]
 		self.Rfoot_press = msg.data[4:]
+
+
+	def robot_inertial_callback(self, msg):
+		self.robo_yall = msg.data[2]
+		self.robo_pitch = msg.data[1]
+		self.robo_roll = msg.data[0]
+
+		if (abs(self.robo_pitch) > 45 or abs(self.robo_roll) > 45) and not self.interpolando:
+			self.state = 'FALLEN'
+
+		'''
+		if self.robo_yall > self.gimbal_yall:
+			esq_angle = self.robo_yall - self.gimbal_yall
+			dir_angle = 360 - esq_angle
+		else: 
+			dir_angle = self.gimbal_yall - self.robo_yall
+			esq_angle = 360 - dir_angle
+		if esq_angle > dir_angle:
+			self.robo_yall_lock = dir_angle
+		else:
+			self.robo_yall_lock = -esq_angle
+		'''
+
+		if self.visao_ativada:
+			#manda mensagem para a rasp da visão dizendo o estado atual, a inclinação vertical e rotação horizontal
+			self.visao_socket.send(("['"+self.state+"',"+str(self.robo_pitch)+','+str(self.robo_yall)+']').encode())
 
 
 	def escuta_micro(self):
@@ -437,6 +466,7 @@ class Controlador():
 					self.gimbal_yall = self.robo_yall + self.visao_msg[1]
 				self.gimbal_pitch = self.visao_msg[0]
 				self.visao_bola = self.visao_msg[5] != 0
+				self.turn90 = self.visao_msg[6] != 0
 
 			except Exception as e:
 				raise e
@@ -451,33 +481,33 @@ class Controlador():
 	def classifica_estado(self):
 		if self.state is 'IDDLE':
 			if self.turn90:
-				return 1
+				return 'TURN90'
 			elif self.visao_bola:
-				return 4
+				return 'MARCH'
 			else:
 				return -1
 		elif self.state is 'TURN90':
-			if abs(self.robo_yall - self.robo_yall_lock) <= self.min_yall:
-				return 2
+			if abs(self.robo_yall_lock) <= self.min_yall:
+				return 'IDDLE'
 			else:
 				return -1
 		elif self.state is 'MARCH':
 			if not self.visao_bola:
-				return 3
-			elif self.visao_bola and abs(self.robo_yall_lock - self.robo_yall) > self.max_yall and self.visao_ativada:
-				return 6
-			elif self.visao_bola and (self.robo_yall >= 270 or self.robo_yall <= 90) and self.robo_pitch_lock > -45:
-				return 8
+				return 'IDDLE'
+			elif self.visao_bola and abs(self.robo_yall_lock) > self.max_yall and self.visao_ativada:
+				return 'TURN'
+			elif self.visao_bola and self.robo_pitch_lock > -45:
+				return 'WALK'
 			else:
 				return -1
 		elif self.state is 'WALK':
-			if not self.visao_bola or abs(self.robo_yall_lock - self.robo_yall) > self.max_yall or self.robo_pitch_lock <= -45:
-				return 7
+			if not self.visao_bola or abs(self.robo_yall_lock) > self.max_yall or self.robo_pitch_lock <= -45:
+				return 'MARCH'
 			else:
 				return -1
 		elif self.state is 'TURN':
-			if not self.visao_bola or abs(self.robo_yall_lock - self.robo_yall) < self.min_yall:
-				return 5
+			if not self.visao_bola or abs(self.robo_yall_lock) < self.min_yall:
+				return 'MARCH'
 			else:
 				return -1
 		else:
@@ -522,8 +552,8 @@ class Controlador():
 		self.rot_desvio = 0
 		while (True):
 			try:
-				#print (self.state, self.gimbal_yall, flush=True)
-				print (np.array(self.Rfoot_orientation).astype(np.int), np.array(self.Lfoot_orientation).astype(np.int))
+				print ("%s GIMBAL_ YALL:%.f  ROBO_YALL:%.2f  ANGULO PARA VIRAR:%.2f"%(self.state, self.gimbal_yall, self.robo_yall, self.robo_yall_lock), flush=True)
+				#print (np.array(self.Rfoot_orientation).astype(np.int), np.array(self.Lfoot_orientation).astype(np.int))
 				if self.visao_ativada:
 						self.visao_socket.send(("['"+self.state+"',"+str(50)+','+str(100)+']').encode())
 				if RASPBERRY:
@@ -548,7 +578,7 @@ class Controlador():
 					else:
 						novo_estado = self.classifica_estado()
 						if novo_estado != -1:
-							self.state = self.tabela_transicoes[novo_estado]
+							self.state = novo_estado
 				elif self.state is 'IDDLE':
 					if self.rota_dir != 0 or self.rota_esq != 0:
 						self.para_de_virar()
@@ -560,36 +590,35 @@ class Controlador():
 						if self.activate:
 							novo_estado = self.classifica_estado()
 							if novo_estado != -1:
-								self.state = self.tabela_transicoes[novo_estado]
+								self.state = novo_estado
 				elif self.state is 'WALK':
 					if self.deslocamentoXpes < self.deslocamentoXpesMAX:
 						self.acelera_frente()
 					else:
 						novo_estado = self.classifica_estado()
 						if novo_estado != -1:
-							self.state = self.tabela_transicoes[novo_estado]
+							self.state = novo_estado
 				elif self.state is 'TURN':
-					if abs(self.robo_yall-self.robo_yall_lock) > self.min_yall:
+					if abs(self.robo_yall_lock) > self.min_yall:
 						self.vira()
 					elif self.rota_dir != 0 or self.rota_esq != 0:
 						self.para_de_virar()
 					else:
 						novo_estado = self.classifica_estado()
 						if novo_estado != -1:
-							self.state = self.tabela_transicoes[novo_estado]
+							self.state = novo_estado
 				elif self.state is 'TURN90':
 					if self.deslocamentoYpelves < self.deslocamentoYpelvesMAX:
 						self.marchar()
-					elif abs(self.robo_yall-self.robo_yall_lock) > self.min_yall:
+					elif abs(self.robo_yall_lock) > self.min_yall:
 						self.vira()
-						#print("Por favor vire o robo  %.2f no eixo yall" %(self.robo_yall-self.robo_yall_lock))
-						#self.robo_yall = self.robo_yall_lock
 					elif self.rota_dir != 0 or self.rota_esq != 0:
 						self.para_de_virar()
 					else:
 						novo_estado = self.classifica_estado()
 						if novo_estado != -1:
-							self.state = self.tabela_transicoes[novo_estado]
+							self.turn90 = False
+							self.state = novo_estado
 				elif self.state is 'UP':
 					if self.rota_dir != 0 or self.rota_esq != 0:
 						self.para_de_virar()
