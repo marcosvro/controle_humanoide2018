@@ -481,18 +481,20 @@ class Controlador():
 	def classifica_estado(self):
 		if self.state is 'IDDLE':
 			if self.turn90:
-				return 'TURN90'
+				return 'MARCH'
 			elif self.visao_bola:
 				return 'MARCH'
 			else:
 				return -1
 		elif self.state is 'TURN90':
 			if abs(self.robo_yall_lock) <= self.min_yall:
-				return 'IDDLE'
+				return 'MARCH'
 			else:
 				return -1
 		elif self.state is 'MARCH':
-			if not self.visao_bola:
+			if self.turn90:
+				return 'TURN90'
+			elif not self.visao_bola:
 				return 'IDDLE'
 			elif self.visao_bola and abs(self.robo_yall_lock) > self.max_yall and self.visao_ativada:
 				return 'TURN'
@@ -552,7 +554,7 @@ class Controlador():
 		self.rot_desvio = 0
 		while (True):
 			try:
-				print ("%s GIMBAL_ YALL:%.f  ROBO_YALL:%.2f  ANGULO PARA VIRAR:%.2f"%(self.state, self.gimbal_yall, self.robo_yall, self.robo_yall_lock), flush=True)
+				print ("%s GIMBAL_ YALL:%.f  ROBO_YALL:%.2f  ANGULO PARA VIRAR:%.2f BOLA:%r"%(self.state, self.gimbal_yall, self.robo_yall, self.robo_yall_lock, self.visao_bola), flush=True)
 				#print (np.array(self.Rfoot_orientation).astype(np.int), np.array(self.Lfoot_orientation).astype(np.int))
 				if self.visao_ativada:
 						self.visao_socket.send(("['"+self.state+"',"+str(50)+','+str(100)+']').encode())
