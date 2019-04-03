@@ -125,17 +125,6 @@ class Controlador():
 
 		self.limiar_erro_inercial = 20 # quantos graus de diferença é permitida entre entre duas leituras consecutivas
 
-		self.tabela_transicoes = {
-		1 : 'TURN90',
-		2 : 'IDDLE',
-		3 : 'IDDLE',
-		4 : 'MARCH',
-		5 : 'MARCH',
-		6 : 'TURN',
-		7 : 'MARCH',
-		8 : 'WALK'
-		}
-
 		self.gimbal_yall_lock = 0
 		self.gimbal_pitch_lock = 0
 		self.robo_yall_lock = 0
