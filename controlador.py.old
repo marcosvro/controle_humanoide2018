@@ -84,6 +84,8 @@ class Controlador():
 		self.visao_msg = b''
 		self.msg_from_micro = []
 		self.msg_to_micro = [0]*20
+		self.micro_msg_head = -3599
+		self.micro_msg_footer = -3342
 		self.fps_count = 0
 		self.last_time = 0
 		self.count_frames = 0
@@ -118,6 +120,9 @@ class Controlador():
 		self.gimbal_yall = 0
 		self.gimbal_pitch = -45
 
+		self.dist_bola = 0
+		self.altura_atual = 53.5-(self.a + self.c - altura_inicial)
+
 		self.limiar_erro_inercial = 20 # quantos graus de diferença é permitida entre entre duas leituras consecutivas
 
 		self.gimbal_yall_lock = 0
@@ -131,6 +136,8 @@ class Controlador():
 		self.Rfoot_press = [0,0,0,0]
 		self.total_press = 0
 
+		self.frequencia_envio_micro = 100 #Hz
+		self.timer_micro = 0
 		self.t_state = 0
 		self.rota_dir = 0
 		self.rota_esq = 0
@@ -143,6 +150,7 @@ class Controlador():
 		self.ladeando = False
 		self.desladeando = False
 		self.interpolando = False
+		self.auto_correcao_pe = False
 
 		self.activate = True
 		self.caiu = False
@@ -174,8 +182,9 @@ class Controlador():
 	def inicia_modulos(self):
 		self.inicia_modulo_visao()
 		if RASPBERRY:
+			self.inicia_modulo_inercial()
 			#self.inicia_modulo_juiz()
-			pass
+			self.inicia_modulo_micro()
 
 
 	def inicia_modulo_juiz (self):
@@ -184,6 +193,27 @@ class Controlador():
 		t = threading.Thread(target=self.escuta_juiz)
 		t.daemon = True
 		t.start()
+
+
+	def inicia_modulo_inercial(self):
+		print("Iniciando leitura do sensor inercial..")
+		while 1:
+			try:
+				self.bno = BNO055.BNO055(rst=self.rst_imu_pin, address=BNO055.BNO055_ADDRESS_B)
+				if not self.bno.begin(BNO055.OPERATION_MODE_IMUPLUS):
+					raise Exception("ERRO:Nao foi possivel inicializar BNO055!")
+				status, self_test, error = self.bno.get_system_status()
+				if status == 0x01:
+					raise Exception('System error')
+				t = threading.Thread(target=self.escuta_inercial)
+				t.daemon = True
+				t.start()
+				break
+			except Exception as e:
+				print(str(e))
+				#print("ERRO:Não foi possível inicializar BNO055!")
+				time.sleep(1)
+
 
 
 	def inicia_modulo_simulador(self):
@@ -205,6 +235,22 @@ class Controlador():
 		#INICIA SUBSCRIBER PARA RECEBER DADOS DO SENSOR IMU DO ROBÔ
 		rospy.Subscriber("/vrep_ros_interface/Bioloid/robot_inertial_sensor", Float32MultiArray, self.robot_inertial_callback)
 
+
+	def inicia_modulo_micro(self):
+		print("Abrindo Conexao com o Micro-Controlador..")
+		i = 0
+		while True:
+			try:
+				usb_path = '/dev/ttyACM'+str(i)
+				self.micro_serial = serial.Serial(usb_path, 256000)
+				t = threading.Thread(target=self.escuta_micro)
+				t.daemon = True
+				t.start()
+				break
+			except Exception as e:
+				print("ERRO: Nao foi possivel se conectar ao micro-controlador:   %s" %(usb_path))
+				i = (i+1)%5
+				time.sleep(0.4)
 
 	def inicia_modulo_visao(self):
 		print("Abrindo Conexao com a Visao..")
@@ -243,6 +289,50 @@ class Controlador():
 			print(str(e))
 			self.inicia_modulo_juiz()
 
+	def escuta_inercial(self):
+		print("Inercial OK!")
+		self.incercial_ativado = True
+		contagem_nulo = 0
+		while 1:
+			try:
+				yall, pitch, roll = self.bno.read_euler()
+				sys, gyro, accel, mag = self.bno.get_calibration_status()
+				if (sys != 2 and math.sqrt((self.robo_roll-roll)**2+(self.robo_pitch-pitch)**2+(self.robo_yall-yall)**2) > self.limiar_erro_inercial): #calibrando
+					continue
+				if self.robo_yall + yall + self.robo_roll + roll + self.robo_pitch + pitch == 0:
+					contagem_nulo += 1
+				else:
+					contagem_nulo = 0
+					self.robo_yall = yall
+					self.robo_pitch = pitch
+					self.robo_roll = roll
+
+					if (abs(self.robo_pitch) > 45 or abs(self.robo_roll) > 45) and not self.interpolando:
+						self.state = 'FALLEN'
+
+					'''
+					if self.robo_yall > self.gimbal_yall:
+						esq_angle = self.robo_yall - self.gimbal_yall
+						dir_angle = 360 - esq_angle
+					else: 
+						dir_angle = self.gimbal_yall - self.robo_yall
+						esq_angle = 360 - dir_angle
+					if esq_angle > dir_angle:
+						self.robo_yall_lock = dir_angle
+					else:
+						self.robo_yall_lock = -esq_angle
+					'''
+
+					if self.visao_ativada:
+						self.visao_socket.send(("['"+self.state+"',"+str(self.robo_pitch)+','+str(self.robo_yall)+']').encode())
+				if contagem_nulo > 20:
+					raise Exception("Bugou")
+
+			except Exception as e:
+				print("ERRO: Comunicao com o IMU foi perdida!!")
+				self.incercial_ativado = True
+				self.inicia_modulo_inercial()
+				break
 
 	def envia_para_simulador(self):
 		try:
@@ -311,6 +401,31 @@ class Controlador():
 			#manda mensagem para a rasp da visão dizendo o estado atual, a inclinação vertical e rotação horizontal
 			self.visao_socket.send(("['"+self.state+"',"+str(self.robo_pitch)+','+str(self.robo_yall)+']').encode())
 
+
+	def escuta_micro(self):
+		print("Micro OK!")
+		self.micro_serial.flush()
+		self.micro_ativado = True
+		while True:
+			try:
+				while True: 
+					head, checksum = struct.unpack('>hB', self.micro_serial.read(3))
+					if head == self.micro_msg_head:
+						Gpitch, Gyall, servo_p, servo_y, bat, footer = struct.unpack('>4h1Bh', self.micro_serial.read(11))
+						cs = reduce(lambda x,y: x^y, struct.unpack('>9B', struct.pack('>4hB', *([Gpitch, Gyall, servo_p, servo_y, bat]))))
+						data = [head, checksum, Gpitch, Gyall, servo_p, servo_y, bat, footer]
+						self.micro_serial.flush()
+						if cs == checksum and footer == self.micro_msg_footer:
+							break
+					else:
+						self.micro_serial.flush()
+			except Exception as e:
+				print("ERRO: Conexao com o micro-controlador encerrada!")
+				print(str(e))
+				#raise e
+				self.micro_ativado = False
+				self.inicia_modulo_micro()
+				break
 
 	def escuta_visao(self):
 		print("Visao OK!")
@@ -406,6 +521,22 @@ class Controlador():
 			self.robo_yall_lock = -esq_angle
 
 		self.robo_pitch_lock = self.gimbal_pitch
+
+	def send_micro(self):
+		try:
+			if self.micro_ativado:
+				self.timer_micro += self.deltaTime
+				if self.timer_micro >= 1./self.frequencia_envio_micro:
+					self.timer_micro = 0
+					dados = [int(i*10) for i in self.msg_to_micro]
+					dados[:18] = [(i/10*180./math.pi)*10 for i in dados[:18]]
+					dados = struct.pack('>20h', *(dados))
+					cs = reduce(lambda x, y: x^y, struct.unpack('>40B', dados))
+					to_send = struct.pack('>hB21h', *([self.micro_msg_head, cs]+[int(i*10) for i in self.msg_to_micro]+[self.micro_msg_footer]))
+					self.micro_serial.write(to_send)
+		except Exception as e:
+			self.micro_ativado = False
+			raise e
 		
 
 	def run(self):
@@ -506,8 +637,12 @@ class Controlador():
 				self.atualiza_cinematica()
 				#self.posiciona_gimbal()
 				self.posiciona_robo()
+				self.send_micro()
+				#print ("%s Xpes=%.2f, Zpes=%.2f, Ypelves=%.2f, bola=%s" % (self.state, self.deslocamentoXpes, self.deslocamentoYpelves, self.deslocamentoYpelves, str(self.visao_bola)))
+				#print(self.msg_to_micro)
 				timer_main_loop += self.deltaTime
 				time.sleep(self.simTransRate)
+
 
 			except Exception as e:
 				self.visao_socket.close()

@@ -6,7 +6,7 @@ import os
 
 class Communication(Thread):
 
-	def __init__(self, gimbal, flags, ip='0.0.0.0', port=24702, sendDelay=0.1):
+	def __init__(self, gimbal, flags, ip='0.0.0.0', port=24703, sendDelay=0.1):
 		Thread.__init__(self)
 		self.clientsocket = None
 		self.controlador_state = -1
