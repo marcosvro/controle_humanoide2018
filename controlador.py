@@ -190,7 +190,7 @@ class Controlador():
 		#INICIA PUBLISHER PARA ENVIAR POSIÇÕES DOS MOTORES
 		print("Iniciando ROS node para execcao do simulador..")
 		self.pub = rospy.Publisher('Bioloid/joint_pos', Float32MultiArray, queue_size=1)
-		self.pub = rospy.Publisher('Bioloid/joint_pos_int', Int16MultiArray, queue_size=1)
+		self.pub_int = rospy.Publisher('Bioloid/joint_pos_int', Int16MultiArray, queue_size=1)
 		rospy.init_node('controller', anonymous=True)
 		self.rate = rospy.Rate(self.tempoPasso/self.nEstados)
 		t = threading.Thread(target=self.envia_para_simulador)
@@ -268,7 +268,7 @@ class Controlador():
 				mat_int.data[10] = -mat_int.data[10]
 
 				self.pub.publish(mat)
-				self.pub.publish(mat_int)
+				self.pub_int.publish(mat_int)
 				rospy.sleep(self.simTransRate)
 		except Exception as e:
 			pass
