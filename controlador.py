@@ -8,7 +8,7 @@ from functools import reduce
 import struct
 import csv
 try:
-	from std_msgs.msg import Float32MultiArray
+	from std_msgs.msg import Float32MultiArray, Int16MultiArray
 except Exception as e:
 	pass
 import receiver
@@ -74,7 +74,7 @@ class Controlador():
 		self.deslocamentoYpelvesMAX = deslocamentoYpelves
 		self.deslocamentoZpelvesMAX = deslocamentoZpelves
 
-		self.nEstados = 125
+		self.nEstados = 100
 		self.tempoPasso = tempoPasso
 		self.a = 10.5
 		self.c = 10.2
@@ -98,7 +98,7 @@ class Controlador():
 		self.incercial_ativado = False
 		self.simulador_ativado = False
 
-		self.simTransRate = 1/self.nEstados*self.tempoPasso
+		self.simTransRate = self.tempoPasso/self.nEstados
 
 		self.tempo_acelerando = 4.
 		self.tempo_marchando = 4.
@@ -190,6 +190,7 @@ class Controlador():
 		#INICIA PUBLISHER PARA ENVIAR POSIÇÕES DOS MOTORES
 		print("Iniciando ROS node para execcao do simulador..")
 		self.pub = rospy.Publisher('Bioloid/joint_pos', Float32MultiArray, queue_size=1)
+		self.pub = rospy.Publisher('Bioloid/joint_pos_int', Int16MultiArray, queue_size=1)
 		rospy.init_node('controller', anonymous=True)
 		self.rate = rospy.Rate(self.tempoPasso/self.nEstados)
 		t = threading.Thread(target=self.envia_para_simulador)
@@ -248,6 +249,7 @@ class Controlador():
 		try:
 			print("Simulador OK!")
 			mat = Float32MultiArray()
+			mat_int = Int16MultiArray()
 			self.simulador_ativado = True
 			while not rospy.is_shutdown():
 				mat.data = self.msg_to_micro[:18]
@@ -258,7 +260,15 @@ class Controlador():
 				mat.data[4] = -mat.data[4]
 				mat.data[10] = -mat.data[10]
 
+				mat_int.data = (np.array(self.msg_to_micro[:18])*1800/math.pi).astype(np.int)
+				mat_int.data[10] = -mat_int.data[10] # quadril esquerdo ROLL
+				mat_int.data[0] = -mat_int.data[0] #calcanhar direito ROLL
+
+				mat_int.data[4] = -mat_int.data[4]
+				mat_int.data[10] = -mat_int.data[10]
+
 				self.pub.publish(mat)
+				self.pub.publish(mat_int)
 				rospy.sleep(self.simTransRate)
 		except Exception as e:
 			pass
