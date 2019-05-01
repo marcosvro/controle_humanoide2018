@@ -425,8 +425,8 @@ class Controlador():
 		self.rot_desvio = 0
 		while (True):
 			try:
-				#print ("%s GIMBAL_ YALL:%.f  ROBO_YALL:%.2f  ANGULO PARA VIRAR:%.2f BOLA:%r"%(self.state, self.gimbal_yall, self.robo_yall, self.robo_yall_lock, self.visao_bola), flush=True)
-				print (np.array(self.Rfoot_orientation).astype(np.int), np.array(self.Lfoot_orientation).astype(np.int))
+				print ("%s GIMBAL_ YALL:%.f  ROBO_YALL:%.2f  ANGULO PARA VIRAR:%.2f BOLA:%r"%(self.state, self.gimbal_yall, self.robo_yall, self.robo_yall_lock, self.visao_bola), flush=True)
+				#print (np.array(self.Rfoot_orientation).astype(np.int), np.array(self.Lfoot_orientation).astype(np.int))
 				if self.visao_ativada:
 						self.visao_socket.send(("['"+self.state+"',"+str(50)+','+str(100)+']').encode())
 				if RASPBERRY:
