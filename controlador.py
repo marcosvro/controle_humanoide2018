@@ -31,7 +31,9 @@ try:
 except Exception as e:
 	RASPBERRY = False
 
-
+RAD_TO_DEG = 180/np.pi
+DEG_TO_RAD = np.pi/180.
+_10x_RAD_TO_DEG = RAD_TO_DEG * 10
 
 def sigmoid_deslocada(x, periodo):
 	return 1./(1.+math.exp(-(12./periodo)*(x-(periodo/2.))))
@@ -76,6 +78,7 @@ class Controlador():
 
 		self.nEstados = 100
 		self.tempoPasso = tempoPasso
+# a e c: dimensoes da perna
 		self.a = 10.5
 		self.c = 10.2
 		t = threading.Thread(target=self.inicia_modulos)
@@ -188,7 +191,7 @@ class Controlador():
 
 	def inicia_modulo_simulador(self):
 		#INICIA PUBLISHER PARA ENVIAR POSIÇÕES DOS MOTORES
-		print("Iniciando ROS node para execcao do simulador..")
+		print("Iniciando ROS node para execucao do simulador..")
 		self.pub = rospy.Publisher('Bioloid/joint_pos', Float32MultiArray, queue_size=1)
 		self.pub_int = rospy.Publisher('Bioloid/joint_pos_int', Int16MultiArray, queue_size=1)
 		rospy.init_node('controller', anonymous=True)
@@ -248,6 +251,7 @@ class Controlador():
 	def envia_para_simulador(self):
 		try:
 			print("Simulador OK!")
+			#array contendo os angulos dos motores
 			mat = Float32MultiArray()
 			mat_int = Int16MultiArray()
 			self.simulador_ativado = True
@@ -260,7 +264,7 @@ class Controlador():
 				mat.data[4] = -mat.data[4]
 				mat.data[10] = -mat.data[10]
 
-				mat_int.data = (np.array(self.msg_to_micro[:18])*1800/math.pi).astype(np.int)
+				mat_int.data = (np.array(self.msg_to_micro[:18])*_10x_RAD_TO_DEG).astype(np.int)
 				mat_int.data[10] = -mat_int.data[10] # quadril esquerdo ROLL
 				mat_int.data[0] = -mat_int.data[0] #calcanhar direito ROLL
 
@@ -273,29 +277,31 @@ class Controlador():
 		except Exception as e:
 			pass
 
-	'''	
-		- descrição: função que recebe dados do sensor inercial dos pés e atualiza as variaveis globais correspondentes.
-		- entrada: vetor "data" de 6 posições:
-			data [1:3] = orientação [x,y,z] do pé esquerdo
-			data [3:6] = orientação [x,y,z] do pé direito
-	'''
+# 	'''
+# 		- descrição: função que recebe dados do sensor inercial dos pés e atualiza as variaveis globais correspondentes.
+# 		- entrada: vetor "data" de 6 posições:
+# 			data [1:3] = orientação [x,y,z] do pé esquerdo
+# 			data [3:6] = orientação [x,y,z] do pé direito
+# 	'''
+#   Leitura IMU - pés
 	def foot_inertial_callback(self, msg):
 		self.Lfoot_orientation = np.array(msg.data[:3])
 		self.Rfoot_orientation = np.array(msg.data[3:])
 
 
-	'''
-		- descrição: função que recebe dados do sensor de pressão dos pés e atualiza as variaveis globais correspondentes.
-		- entrada: vetor "data" de 8 posições:
-			data [1:4] = valores [p1,p2,p3,p4] que indicam o nivel de força detectados nos pontos na extremidade do pé esquerdo
-			data [4:8] = valores [p1,p2,p3,p4] que indicam o nivel de força detectados nos pontos na extremidade do pé direito
-	'''
+# 	'''
+# 		- descrição: função que recebe dados do sensor de pressão dos pés e atualiza as variaveis globais correspondentes.
+# 		- entrada: vetor "data" de 8 posições:
+# 			data [1:4] = valores [p1,p2,p3,p4] que indicam o nivel de força detectados nos pontos na extremidade do pé esquerdo
+# 			data [4:8] = valores [p1,p2,p3,p4] que indicam o nivel de força detectados nos pontos na extremidade do pé direito
+# 	'''
+# 	Leitura sensores de pressão
 	def foot_pressure_callback(self, msg):
 		self.Lfoot_press = msg.data[:4]
 		self.Rfoot_press = msg.data[4:]
 		self.total_press = np.sum(self.Lfoot_press)+np.sum(self.Rfoot_press)
 
-
+# 	Leitura IMU - robo
 	def robot_inertial_callback(self, msg):
 		self.robo_yall = msg.data[2]
 		self.robo_pitch = msg.data[1]
@@ -304,35 +310,34 @@ class Controlador():
 		if (abs(self.robo_pitch) > 45 or abs(self.robo_roll) > 45) and not self.interpolando:
 			self.state = 'FALLEN'
 
-		'''
-		if self.robo_yall > self.gimbal_yall:
-			esq_angle = self.robo_yall - self.gimbal_yall
-			dir_angle = 360 - esq_angle
-		else: 
-			dir_angle = self.gimbal_yall - self.robo_yall
-			esq_angle = 360 - dir_angle
-		if esq_angle > dir_angle:
-			self.robo_yall_lock = dir_angle
-		else:
-			self.robo_yall_lock = -esq_angle
-		'''
+# 		'''
+# 		if self.robo_yall > self.gimbal_yall:
+# 			esq_angle = self.robo_yall - self.gimbal_yall
+# 			dir_angle = 360 - esq_angle
+# 		else:
+# 			dir_angle = self.gimbal_yall - self.robo_yall
+# 			esq_angle = 360 - dir_angle
+# 		if esq_angle > dir_angle:
+# 			self.robo_yall_lock = dir_angle
+# 		else:
+# 			self.robo_yall_lock = -esq_angle
+# 		'''
 
 		if self.visao_ativada:
-			#manda mensagem para a rasp da visão dizendo o estado atual, a inclinação vertical e rotação horizontal
+			# manda mensagem para a rasp da visão dizendo o estado atual, a inclinação vertical e rotação horizontal
 			self.visao_socket.send(("['"+self.state+"',"+str(self.robo_pitch)+','+str(self.robo_yall)+']').encode())
-
 
 	def escuta_visao(self):
 		print("Visao OK!")
 		self.visao_ativada = True
-		while (True):
+		while True:
 			try:
-				#print("Esperando receber dados..")
+				# print("Esperando receber dados..")
 				data = self.visao_socket.recv(1000)
 				if data == b'':
 					raise Exception("Eu quis fechar sa porra")
 				
-				#Checa se o dado está correto
+				# Checa se o dado está correto
 				cont = 0
 				data_str = str(data)
 				for i in data_str:
@@ -342,8 +347,8 @@ class Controlador():
 				if cont > 1 or cont == 0:
 					continue
 
-				#Armazena dado em variavel do objeto para que o laço principal possa usa-la
-				#tupla recebida pela visão tem o formato [angulo_vertial, angulo_horizontal, estáComABola, procurandoBola, vira90Graus]
+				# Armazena dado em variavel do objeto para que o laço principal possa usa-la
+				# tupla recebida pela visão tem o formato [angulo_vertial, angulo_horizontal, estáComABola, procurandoBola, vira90Graus]
 				self.visao_msg = eval(data)
 				if self.robo_yall + self.visao_msg[1] < 0:
 					self.gimbal_yall = self.robo_yall + self.visao_msg[1] + 360
@@ -356,7 +361,7 @@ class Controlador():
 				self.turn90 = self.visao_msg[6] != 0
 
 			except Exception as e:
-				raise e
+				# raise e
 				print("ERRO: Conexao com a visao encerrada!")
 				self.visao_ativada = False
 				if self.visao_socket is not None:
@@ -365,6 +370,7 @@ class Controlador():
 				self.inicia_modulo_visao()
 				break
 
+	# Maquina de estados
 	def classifica_estado(self):
 		if self.state is 'IDDLE':
 			if self.turn90:
@@ -402,7 +408,7 @@ class Controlador():
 		else:
 			print("ERRO: Estado invalido!!")
 
-
+	# Define angulos para fazer o gimbal_lock
 	def posiciona_robo(self):
 		if self.robo_yall > self.gimbal_yall:
 			esq_angle = self.robo_yall - self.gimbal_yall
@@ -421,16 +427,18 @@ class Controlador():
 	def run(self):
 		#update function
 		timer_main_loop = 0
+		# perna direita (1) ou esquerda(0) no chão
 		self.perna = 0
+		# desvio para esquerda = 1 , desvio para direita = 2
 		self.rot_desvio = 0
-		while (True):
+		while True:
 			try:
 				print ("%s GIMBAL_ YALL:%.f  ROBO_YALL:%.2f  ANGULO PARA VIRAR:%.2f BOLA:%r"%(self.state, self.gimbal_yall, self.robo_yall, self.robo_yall_lock, self.visao_bola), flush=True)
-				#print (np.array(self.Rfoot_orientation).astype(np.int), np.array(self.Lfoot_orientation).astype(np.int))
+				# print (np.array(self.Rfoot_orientation).astype(np.int), np.array(self.Lfoot_orientation).astype(np.int))
 				if self.visao_ativada:
 						self.visao_socket.send(("['"+self.state+"',"+str(50)+','+str(100)+']').encode())
 				if RASPBERRY:
-					#só executa oque se o dispositivo que estier rodando for a raspberry
+					# só executa se o dispositivo que estiver rodando for a raspberry
 					if GPIO.input(self.ON_PIN):
 						if not self.activate:
 							self.activate = True
@@ -440,7 +448,7 @@ class Controlador():
 					else:
 						self.activate = False
 						self.state = 'IDDLE'
-				if (self.state is 'FALLEN'):
+				if self.state is 'FALLEN':
 					if not self.interpolando:
 						self.levanta()
 				elif self.state is 'MARCH':
@@ -500,7 +508,7 @@ class Controlador():
 					elif self.deslocamentoYpelves != 0:
 						self.recuar()
 					else:
-						#robo pronto para levantar
+						# robo pronto para levantar
 						pass
 				elif self.state is 'PENALIZED':
 					if self.rota_dir != 0 or self.rota_esq != 0:
@@ -510,11 +518,10 @@ class Controlador():
 					elif self.deslocamentoYpelves != 0:
 						self.recuar()
 
-
 				self.atualiza_fps()
 				self.chage_state()
 				self.atualiza_cinematica()
-				#self.posiciona_gimbal()
+				# self.posiciona_gimbal()
 				self.posiciona_robo()
 				timer_main_loop += self.deltaTime
 				time.sleep(self.simTransRate)
@@ -525,6 +532,7 @@ class Controlador():
 				raise e
 				break
 
+	# Anda de lado para alinhar com o gol
 	def posiciona(self):
 		if not self.posicionando:
 			self.posicionando = True
@@ -532,13 +540,13 @@ class Controlador():
 		if self.posicionando:
 			self.timer_reposiciona += self.deltaTime
 			if self.robo_yall > 270:
-				#anda de lado para a esquerda
+				# anda de lado para a esquerda
 				if self.perna:
 					self.anda_de_lado_esquerda()
 				else:
 					self.desanda_de_lado_esquerda()
 			elif self.robo_yall < 90:
-				#anda de lado para a direita
+				# anda de lado para a direita
 				if not self.perna:
 					self.anda_de_lado_direita()
 				else:
@@ -613,27 +621,26 @@ class Controlador():
 		if self.pos_inicial_pelves[1] <= 0.01:
 			self.pos_inicial_pelves[1] = 0.
 			self.desladeando = False
-			
 
-	'''
-		- Começa a virar
-	'''
+# 	'''
+# 		- Começa a virar
+# 	'''
 	def vira(self):
 		if self.robo_yall_lock < 0:
 			self.rot_desvio = 1
 		else:
 			self.rot_desvio = -1
 
-	'''
-		- Vai parando de virar pelo tempo definido no construtor
-	'''
+# 	'''
+# 		- Vai parando de virar pelo tempo definido no construtor
+# 	'''
 	def para_de_virar(self):
 		self.rot_desvio = 0
 
 
-	'''
-		- Interpola distância de deslocamento dos pés, da atual até o max setado no contrutor
-	'''
+# 	'''
+# 		- Interpola distância de deslocamento dos pés, da atual até o max setado no contrutor
+# 	'''
 	def acelera_frente(self):
 		if not self.acelerando and self.deslocamentoXpes != self.deslocamentoXpesMAX:
 			self.acelerando = True
@@ -645,10 +652,9 @@ class Controlador():
 			self.deslocamentoXpes = self.deslocamentoXpesMAX
 			self.acelerando = False
 
-
-	'''
-		- Interpola distância de deslocamento dos pés, diminuindo este valor até que se torne 0
-	'''
+# 	'''
+# 		- Interpola distância de deslocamento dos pés, diminuindo este valor até que se torne 0
+# 	'''
 	def freia_frente(self):
 		if not self.freando and self.deslocamentoXpes != 0:
 			self.freando = True
@@ -660,9 +666,9 @@ class Controlador():
 			self.deslocamentoXpes = 0
 			self.freando = False
 
-	'''
-		- Interpola deslocamento lateral da pelves e o deslocamento para cima dos pés, da atual até o max
-	'''
+# 	'''
+# 		- Interpola deslocamento lateral da pelves e o deslocamento para cima dos pés, da atual até o max
+# 	'''
 	def marchar(self):
 		if (not self.marchando) and self.deslocamentoYpelves != self.deslocamentoYpelvesMAX:
 			self.marchando = True
@@ -676,9 +682,9 @@ class Controlador():
 			self.deslocamentoYpelves = self.deslocamentoYpelvesMAX
 			self.marchando = False
 
-	'''
-		- Interpola deslocamento lateral da pelves e o deslocamento para cima dos pés, diminuindo estes valores até chegar em 0
-	'''
+# 	'''
+# 		- Interpola deslocamento lateral da pelves e o deslocamento para cima dos pés, diminuindo estes valores até chegar em 0
+# 	'''
 	def recuar(self):
 		if not self.recuando and self.deslocamentoYpelves != 0:
 			self.recuando = True
@@ -698,7 +704,8 @@ class Controlador():
 		self.t_state += self.deltaTime
 		if self.t_state >= self.tempoPasso:
 			self.t_state = 0
-			self.perna = (self.perna+1)%2
+			# indica se é a perna direita (1) ou esquerda(0) no chão
+			self.perna = (self.perna+1) % 2
 			if self.rot_desvio != 0:
 				if self.rot_desvio > 0:
 					if self.perna:
@@ -724,18 +731,20 @@ class Controlador():
 				elif math.fabs(self.rota_dir) == 1:
 					self.rota_dir *= 2
 
-	'''
-		- Retorna os 6 angulos de da perna, calculando a cinematica inversa. Considerando o pé como base e o quadril como ponto variável
-	'''
+# 	'''
+# 		- Retorna os 6 angulos de da perna, calculando a cinematica inversa. Considerando o pé como base e o quadril como ponto variável
+# 	'''
+
+
 	def footToHip(self, pointHip):
 		angulos = []
 		x,y,z = pointHip
 
-		#ankle roll
+		# ankle roll
 		theta = math.atan(y/z)
 		angulos.append(theta)
 
-		#ankle pitch
+		# ankle pitch
 		b = math.sqrt(x**2+y**2+z**2)
 		anguloA = math.acos((self.a**2-(b**2+self.c**2))/(-2*b*self.c))
 		betha = math.atan(x/z)
@@ -761,93 +770,90 @@ class Controlador():
 		return angulos
 
 
-	'''
-		- Pega o proximo "estado" da função de tragetória, a função de tragetória muda de acordo com as variaveis que definem o deslocamento e rotação do robô
-		Entrada: tempo float/int t
-		Saída: 2 vetores de 3 posições (x,y,z). O primeiro indica a posição da pelves considerando o pé em contato com o chão como base, 
-			   o segundo vetor indica a posição do pé de balanço considerando a pelves do pé de balanço como base.
-	'''
+# 	'''
+# 		- Pega o proximo "estado" da função de trajetória, a função de trajetória muda de acordo com as variaveis que definem o deslocamento e rotação do robô
+# 		Entrada: tempo float/int t
+# 		Saída: 2 vetores de 3 posições (x,y,z). O primeiro indica a posição da pelves considerando o pé em contato com o chão como base,
+# 			   o segundo vetor indica a posição do pé de balanço considerando a pelves do pé de balanço como base.
+# 	'''
 	def getTragectoryPoint(self, x):
+		# posição da pelves considerando o pé de apoio como referencia
+		x_pelves_pe_apoio = self.deslocamentoXpes/2*((math.exp((2*(x-self.nEstados/2))/50) - math.exp((2*(x-self.nEstados/2))/-50))/(math.exp((2*(x-self.nEstados/2))/50)+math.exp((2*(x-self.nEstados/2))/-50)))
+		# posição do pé de balanço considerando a pelves do pé de balanço como referência
+		y_pe_pelves_balanco = self.deslocamentoYpelves*math.sin(x*math.pi/self.nEstados)
+
 		pos_pelves = self.pos_inicial_pelves[:]
-		p1 = (self.deslocamentoXpes/2)*((math.exp((2*(x-self.nEstados/2))/50) - math.exp((2*(x-self.nEstados/2))/-50))/(math.exp((2*(x-self.nEstados/2))/50)+math.exp((2*(x-self.nEstados/2))/-50)))
+		p1 = x_pelves_pe_apoio
 		pos_pelves[0] = p1
-		pos_pelves[1] += -self.deslocamentoYpelves*math.sin(x*math.pi/self.nEstados)
+		pos_pelves[1] -= y_pe_pelves_balanco
 
 		pos_foot = self.pos_inicial_pelves[:]
-		p2 = (-self.deslocamentoXpes/2)*((math.exp((2*(x-self.nEstados/2))/50) - math.exp((2*(x-self.nEstados/2))/-50))/(math.exp((2*(x-self.nEstados/2))/50)+math.exp((2*(x-self.nEstados/2))/-50)))
+		p2 = -x_pelves_pe_apoio
 		pos_foot[0] = p2
-		pos_foot[1] += self.deslocamentoYpelves*math.sin(x*math.pi/self.nEstados)
+		pos_foot[1] += y_pe_pelves_balanco
 		pos_foot[2] = self.altura - self.deslocamentoZpes*math.exp(-((x-self.nEstados/2)**2)/600)
 		return pos_pelves, pos_foot
 
-
+	# interpolação simples entre estados
 	def interpola_estados(self, estados, tempos):
 		if len(estados) > 0:
 			p_ant = estados[0]
 		else:
 			return
 		for i in range(1, len(estados)):
-			p_atual = s[i]
+			p_atual = estados[i]
 			t = tempos[i-1]
 			timer = 0
 			m = []
 			for j in range(len(p_atual)):
 				m.append((p_ant[j] - p_atual[j])/(0 - t))
 
-			while(timer < t):
+			while timer < t:
 				timer += self.deltaTime
 				for j in range(len(p_atual)):
 					self.msg_to_micro[j] = m[j]*timer + p_ant[j]
 		self.state = 'IDDLE'
 		self.interpolando = False		
 
-
 	def atualiza_cinematica(self):
 		x = (self.t_state*125)/self.tempoPasso
 		pelv_point, foot_point = self.getTragectoryPoint(x)
+		termo_exponencial= self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50)))
+		# CINEMÁTICA INVERSA
+		data_pelv = self.footToHip(pelv_point)
+		data_foot = self.footToHip(foot_point)
 		if self.perna:
-			#CINEMÁTICA INVERSA
-			data_pelv = self.footToHip(pelv_point)
-			data_foot = self.footToHip(foot_point)
+			# CONTROLE PÉ SUSPENSO
 
-			#CONTROLE PÉ SUSPENSO
-			
 			if (self.inertial_foot_enable):
 				if self.total_press == 0:
 					influencia = 0
 				else:
 					influencia = np.sum(self.Lfoot_press)/self.total_press
-				data_foot[:2] = np.array(data_foot[:2]) + np.array(self.Lfoot_orientation[:2])*(np.pi/180.)*(1-influencia)
-			
-	
-			#ROTINHA PARA VIRAR/PARAR DE VIRAR PARA A ESQUERDA
+				data_foot[:2] = np.array(data_foot[:2]) + np.array(self.Lfoot_orientation[:2])*(DEG_TO_RAD)*(1-influencia)
+
+			# ROTINA PARA VIRAR/PARAR DE VIRAR PARA A ESQUERDA
+
 			if self.rota_dir == 1:
-				data_pelv[5] = self.angulo_vira/2. + self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50)))
-				data_pelv[5] = data_pelv[5] * math.pi/180.
+				data_pelv[5] = (self.angulo_vira/2. + termo_exponencial) * DEG_TO_RAD
 			elif self.rota_dir == -1:
-				data_pelv[5] = -self.angulo_vira/2. - self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50)))
-				data_pelv[5] = data_pelv[5] * math.pi/180.
+				data_pelv[5] = (-self.angulo_vira/2. - termo_exponencial) * DEG_TO_RAD
 			else:
 				data_pelv[5] = 0
 
-			#ROTINHA PARA VIRAR/PARAR DE VIRAR PARA A DIREITA
+			# ROTINA PARA VIRAR/PARAR DE VIRAR PARA A DIREITA
 			if self.rota_esq == 2:
-				data_foot[5] = self.angulo_vira - (self.angulo_vira/2. + self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50))))
-				data_foot[5] = data_foot[5] * math.pi/180.
+				data_foot[5] = (self.angulo_vira/2 - termo_exponencial) * DEG_TO_RAD
 			elif self.rota_esq == -2:
-				data_foot[5] = -self.angulo_vira - (-self.angulo_vira/2. - self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50))))
-				data_foot[5] = data_foot[5] * math.pi/180.
+				data_foot[5] = (-self.angulo_vira/2 + termo_exponencial) * DEG_TO_RAD
 			else:
 				data_foot[5] = 0
 
-			#PÉ DIREITO ESTÁ EM CONTATO COM O CHÃO E PÉ ESQUERDO ESTÁ SE MOVENDO.
+			# PÉ DIREITO ESTÁ EM CONTATO COM O CHÃO E PÉ ESQUERDO ESTÁ SE MOVENDO.
 			data = data_pelv + data_foot + [0]*6
 		else:
-			#CINEMÁTICA INVERSA
-			data_pelv = self.footToHip(pelv_point)
-			data_foot = self.footToHip(foot_point)
+			# CONTROLE PÉ SUSPENSO
 
-			#CONTROLE PÉ SUSPENSO
 			if (self.inertial_foot_enable):
 				if self.total_press == 0:
 					influencia = 0
@@ -855,27 +861,23 @@ class Controlador():
 					influencia = np.sum(self.Rfoot_press)/self.total_press
 				data_foot[:2] = np.array(data_foot[:2]) + np.array(self.Rfoot_orientation[:2])*(np.pi/180.)*(1-influencia)
 
-			#ROTINHA PARA VIRAR/PARAR DE VIRAR PARA A ESQUERDA
+			# ROTINA PARA VIRAR/PARAR DE VIRAR PARA A ESQUERDA
 			if self.rota_esq == 1:
-				data_pelv[5] =  self.angulo_vira/2. + self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50)))
-				data_pelv[5] = data_pelv[5] * math.pi/180.
+				data_pelv[5] = (self.angulo_vira/2. + termo_exponencial) * DEG_TO_RAD
 			elif self.rota_esq == -1:
-				data_pelv[5] =  -self.angulo_vira/2. - self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50)))
-				data_pelv[5] = data_pelv[5] * math.pi/180.
+				data_pelv[5] = -(self.angulo_vira/2. + termo_exponencial) * DEG_TO_RAD
 			else:
 				data_pelv[5] = 0
 
-			#ROTINHA PARA VIRAR/PARAR DE VIRAR PARA A DIREITA
+			# ROTINA PARA VIRAR/PARAR DE VIRAR PARA A DIREITA
 			if self.rota_dir == 2:
-				data_foot[5] =  self.angulo_vira - (self.angulo_vira/2. + self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50))))
-				data_foot[5] = data_foot[5] * math.pi/180.
+				data_foot[5] = (self.angulo_vira/2 - termo_exponencial) * DEG_TO_RAD
 			elif self.rota_dir == -2:
-				data_foot[5] =  -self.angulo_vira - (-self.angulo_vira/2. - self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50))))		
-				data_foot[5] = data_foot[5] * math.pi/180.
+				data_foot[5] = (-self.angulo_vira/2 + termo_exponencial) * DEG_TO_RAD
 			else:
 				data_foot[5] = 0
 
-			#PÉ ESQUERDO ESTÁ EM CONTATO COM O CHÃO E PÉ DIREITO ESTÁ SE MOVENDO.
+			# PÉ ESQUERDO ESTÁ EM CONTATO COM O CHÃO E PÉ DIREITO ESTÁ SE MOVENDO.
 			data = data_foot + data_pelv + [0]*6
 
 		self.msg_to_micro[:18] = data
