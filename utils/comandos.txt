@@ -1,0 +1,3 @@
+#limpar processos da porta de uma porta:
+fuser -k 24703/tcp
+
