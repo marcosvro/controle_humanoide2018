@@ -78,9 +78,7 @@ class Controlador():
 		self.tempoPasso = tempoPasso
 		self.a = 10.5
 		self.c = 10.2
-		t = threading.Thread(target=self.inicia_modulos)
-		t.daemon = True
-		t.start()
+
 		self.visao_msg = b''
 		self.msg_from_micro = []
 		self.msg_to_micro = [0]*20
@@ -171,13 +169,6 @@ class Controlador():
 			self.inicia_modulo_simulador()
 
 
-	def inicia_modulos(self):
-		self.inicia_modulo_visao()
-		if RASPBERRY:
-			#self.inicia_modulo_juiz()
-			pass
-
-
 	def inicia_modulo_juiz (self):
 		"Iniciando moodulo juiz.."
 		self.rec = receiver.GameStateReceiver(team=self.time_id, player=self.robo_id, control=self)
@@ -205,22 +196,8 @@ class Controlador():
 		#INICIA SUBSCRIBER PARA RECEBER DADOS DO SENSOR IMU DO ROBÔ
 		rospy.Subscriber("/vrep_ros_interface/Bioloid/robot_inertial_sensor", Float32MultiArray, self.robot_inertial_callback)
 
-
-	def inicia_modulo_visao(self):
-		print("Abrindo Conexao com a Visao..")
-		port_shift = -1
-		while True:
-			port_shift = (port_shift + 1) % 1
-			try:
-				self.visao_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-				self.visao_socket.connect((self.ip_rasp_visao, self.porta_rasp_visao+port_shift))
-				t = threading.Thread(target=self.escuta_visao)
-				t.daemon = True
-				t.start()
-				break
-			except Exception as e:
-				#print("ERRO: Nao foi possivel se conectar a rasp da visao (ip/port):   %s:%i" %(self.ip_rasp_visao, self.porta_rasp_visao))
-				time.sleep(0.1)
+		#INICIA SUBSCRIBER PARA RECEBER COMANDOS DA VISÃO
+		rospy.Subscriber("/Bioloid/visao_cmd", Float32MultiArray, self.visao_cmd_callback)
 
 
 	def atualiza_fps(self):
@@ -262,6 +239,26 @@ class Controlador():
 				rospy.sleep(self.simTransRate)
 		except Exception as e:
 			pass
+
+
+	'''
+		- descrição: função que recebe informações de onde está a bola, atualizando as variaveis globais referêntes ao gimbal
+		- entrada: vetor "data" de 3 posições (sugeito a modificações, dependendo da lógica da visão)
+			data[0] = posição angular da bola no eixo pitch (y)
+			data[1] = posição angular da bola no eixo yall (z)
+			data[2] = flag que indica se está com a bola, usada para setar o estado do controle para IDDLE ou permitir que o robô ande
+	'''
+	def visao_cmd_callback(self, msg):
+		visao_msg = msg.data
+		if self.robo_yall + visao_msg[1] < 0:
+			self.gimbal_yall = self.robo_yall + visao_msg[1] + 360
+		elif self.robo_yall + visao_msg[1] > 360:
+			self.gimbal_yall = (self.robo_yall + visao_msg[1])% 360
+		else:
+			self.gimbal_yall = self.robo_yall + visao_msg[1]
+		self.gimbal_pitch = visao_msg[0]
+		self.visao_bola = visao_msg[2] != 0
+
 
 	'''	
 		- descrição: função que recebe dados do sensor inercial dos pés e atualiza as variaveis globais correspondentes.
@@ -311,49 +308,6 @@ class Controlador():
 			#manda mensagem para a rasp da visão dizendo o estado atual, a inclinação vertical e rotação horizontal
 			self.visao_socket.send(("['"+self.state+"',"+str(self.robo_pitch)+','+str(self.robo_yall)+']').encode())
 
-
-	def escuta_visao(self):
-		print("Visao OK!")
-		self.visao_ativada = True
-		while (True):
-			try:
-				#print("Esperando receber dados..")
-				data = self.visao_socket.recv(1000)
-				if data == b'':
-					raise Exception("Eu quis fechar sa porra")
-				
-				#Checa se o dado está correto
-				cont = 0
-				data_str = str(data)
-				for i in data_str:
-					if i == '[':
-						cont += 1
-
-				if cont > 1 or cont == 0:
-					continue
-
-				#Armazena dado em variavel do objeto para que o laço principal possa usa-la
-				#tupla recebida pela visão tem o formato [angulo_vertial, angulo_horizontal, estáComABola, procurandoBola, vira90Graus]
-				self.visao_msg = eval(data)
-				if self.robo_yall + self.visao_msg[1] < 0:
-					self.gimbal_yall = self.robo_yall + self.visao_msg[1] + 360
-				elif self.robo_yall + self.visao_msg[1] > 360:
-					self.gimbal_yall = (self.robo_yall + self.visao_msg[1])% 360
-				else:
-					self.gimbal_yall = self.robo_yall + self.visao_msg[1]
-				self.gimbal_pitch = self.visao_msg[0]
-				self.visao_bola = self.visao_msg[5] != 0
-				self.turn90 = self.visao_msg[6] != 0
-
-			except Exception as e:
-				raise e
-				print("ERRO: Conexao com a visao encerrada!")
-				self.visao_ativada = False
-				if self.visao_socket is not None:
-					self.visao_socket.close()
-					self.visao_socket = None
-				self.inicia_modulo_visao()
-				break
 
 	def classifica_estado(self):
 		if self.state is 'IDDLE':
@@ -415,10 +369,8 @@ class Controlador():
 		self.rot_desvio = 0
 		while (True):
 			try:
-				#print ("%s GIMBAL_ YALL:%.f  ROBO_YALL:%.2f  ANGULO PARA VIRAR:%.2f BOLA:%r"%(self.state, self.gimbal_yall, self.robo_yall, self.robo_yall_lock, self.visao_bola), flush=True)
-				print (np.array(self.Rfoot_orientation).astype(np.int), np.array(self.Lfoot_orientation).astype(np.int))
-				if self.visao_ativada:
-						self.visao_socket.send(("['"+self.state+"',"+str(50)+','+str(100)+']').encode())
+				print ("%s GIMBAL_ YALL:%.f  ROBO_YALL:%.2f  ANGULO PARA VIRAR:%.2f BOLA:%r"%(self.state, self.gimbal_yall, self.robo_yall, self.robo_yall_lock, self.visao_bola), flush=True)
+				#print (np.array(self.Rfoot_orientation).astype(np.int), np.array(self.Lfoot_orientation).astype(np.int))
 				if RASPBERRY:
 					#só executa oque se o dispositivo que estier rodando for a raspberry
 					if GPIO.input(self.ON_PIN):
@@ -509,11 +461,12 @@ class Controlador():
 				timer_main_loop += self.deltaTime
 				time.sleep(self.simTransRate)
 
-			except Exception as e:
-				self.visao_socket.close()
+
+			except KeyboardInterrupt as e:
 				print("Main loop finalizado!!")
-				raise e
 				break
+			except Exception as e:
+				raise e
 
 	def posiciona(self):
 		if not self.posicionando:
