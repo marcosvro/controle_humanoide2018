@@ -21,3 +21,6 @@ class Body():
 
 		self.CoM_parts = [[]
 						  []]
+
+
+

@@ -823,13 +823,13 @@ class Controlador():
 
 	'''
 		- descrição: Calcula posição do centro de massa em relação ao pé que está em contato com o chão
-	'''
+	
 	def centro_de_massa(self, ith_joint=0):
 		if (ith_joint != 0): #calcula centro de massa a partir da junta ith_joint
 			if self.perna: #pé direito no chão e será a perna de referência
-				
-			else:
 
+			else:
+	'''
 
 
 
