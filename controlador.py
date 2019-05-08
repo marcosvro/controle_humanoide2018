@@ -43,28 +43,26 @@ class Controlador():
 				time_id=17,
 				robo_id=0,
 				altura_inicial=17.,
-				tempoPasso = 0.5,
-				deslocamentoYpelves = 2.5,
-				deslocamentoZpes = 2.,
+				tempoPasso = 1.5,
+				deslocamentoYpelves = 3.4,
+				deslocamentoZpes = 2,
 				deslocamentoXpes= 2.,
 				deslocamentoZpelves = 30.,
 				inertial_foot_enable = False,
-				ip_rasp_visao='',
-				porta_rasp_visao=24703):
+				step_mode=False):
 		if (robo_id == -1):
 			print("ERRO: ID do robo inválido")
 			exit()
 
-		self.ip_rasp_visao = ip_rasp_visao
-		self.porta_rasp_visao = porta_rasp_visao
 
 		self.simulador = simulador_enable
+		self.step_mode = step_mode
 		self.state = 'IDDLE'
 		self.time_id = time_id
 		self.robo_id = robo_id
 		self.altura = altura_inicial
-		self.pos_inicial_pelves = [0., 0.6, altura_inicial]
-		self.pos_inicial_foot = [0., 0.6, altura_inicial]
+		self.pos_inicial_pelves = [0., 1.7, altura_inicial]
+		self.pos_inicial_foot = [0., 1.7, altura_inicial]
 		self.deslocamentoXpes = 0.
 		self.deslocamentoYpelves = 0
 		self.deslocamentoZpes = 0
@@ -82,6 +80,7 @@ class Controlador():
 		self.visao_msg = b''
 		self.msg_from_micro = []
 		self.msg_to_micro = [0]*20
+		self.CoM_parts = []
 		self.fps_count = 0
 		self.last_time = 0
 		self.count_frames = 0
@@ -257,7 +256,7 @@ class Controlador():
 		else:
 			self.gimbal_yall = self.robo_yall + visao_msg[1]
 		self.gimbal_pitch = visao_msg[0]
-		self.visao_bola = visao_msg[2] != 0
+		self.visao_bola = visao_msg[2] != 0.
 
 
 	'''	
@@ -360,7 +359,6 @@ class Controlador():
 			self.robo_yall_lock = -esq_angle
 
 		self.robo_pitch_lock = self.gimbal_pitch
-		
 
 	def run(self):
 		#update function
@@ -369,7 +367,7 @@ class Controlador():
 		self.rot_desvio = 0
 		while (True):
 			try:
-				print ("%s GIMBAL_ YALL:%.f  ROBO_YALL:%.2f  ANGULO PARA VIRAR:%.2f BOLA:%r"%(self.state, self.gimbal_yall, self.robo_yall, self.robo_yall_lock, self.visao_bola), flush=True)
+				print ("%s GIMBAL_YALL:%.f  ROBO_YALL:%.2f  ANGULO PARA VIRAR:%.2f BOLA:%r"%(self.state, self.gimbal_yall, self.robo_yall, self.robo_yall_lock, self.visao_bola), flush=True)
 				#print (np.array(self.Rfoot_orientation).astype(np.int), np.array(self.Lfoot_orientation).astype(np.int))
 				if RASPBERRY:
 					#só executa oque se o dispositivo que estier rodando for a raspberry
@@ -556,7 +554,7 @@ class Controlador():
 		if self.pos_inicial_pelves[1] <= 0.01:
 			self.pos_inicial_pelves[1] = 0.
 			self.desladeando = False
-			
+
 
 	'''
 		- Começa a virar
@@ -703,7 +701,6 @@ class Controlador():
 
 		return angulos
 
-
 	'''
 		- Pega o proximo "estado" da função de tragetória, a função de tragetória muda de acordo com as variaveis que definem o deslocamento e rotação do robô
 		Entrada: tempo float/int t
@@ -742,7 +739,7 @@ class Controlador():
 				for j in range(len(p_atual)):
 					self.msg_to_micro[j] = m[j]*timer + p_ant[j]
 		self.state = 'IDDLE'
-		self.interpolando = False		
+		self.interpolando = False
 
 
 	def atualiza_cinematica(self):
@@ -761,7 +758,6 @@ class Controlador():
 				else:
 					influencia = np.sum(self.Lfoot_press)/self.total_press
 				data_foot[:2] = np.array(data_foot[:2]) + np.array(self.Lfoot_orientation[:2])*(np.pi/180.)*(1-influencia)
-			
 	
 			#ROTINHA PARA VIRAR/PARAR DE VIRAR PARA A ESQUERDA
 			if self.rota_dir == 1:
@@ -825,7 +821,18 @@ class Controlador():
 
 
 
+	'''
+		- descrição: Calcula posição do centro de massa em relação ao pé que está em contato com o chão
+	'''
+	def centro_de_massa(self, ith_joint=0):
+		if (ith_joint != 0): #calcula centro de massa a partir da junta ith_joint
+			if self.perna: #pé direito no chão e será a perna de referência
+				
+			else:
+
+
+
 
 if __name__ == '__main__':
-	control = Controlador(time_id = 17,robo_id = 0,ip_rasp_visao='localhost', simulador_enable=True, inertial_foot_enable=True)
+	control = Controlador(time_id = 17,robo_id = 0, simulador_enable=True, inertial_foot_enable=True)
 	control.run()

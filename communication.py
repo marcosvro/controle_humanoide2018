@@ -19,7 +19,7 @@ class Visao():
 				angulo = input("Informe o angulo horizontal (-180, 180)!")
 				info[1] = angulo
 				flag_msg = input("Esta com a bola?")
-				info[2] = int(flag_msg != 0)
+				info[2] = flag_msg
 
 				msg = Float32MultiArray()
 				msg.data = np.array(info).astype(np.float)
