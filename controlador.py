@@ -331,7 +331,7 @@ class Controlador():
         self.roboYall = msg.data[1]
         self.roboRoll = msg.data[0]
 
-        if (abs(self.roboYall) > 45 or abs(self.roboRoll) > 45) and not self.interpolando:
+        if (abs(self.roboPitch) > 45 or abs(self.roboRoll) > 45) and not self.interpolando:
             self.state = 'FALLEN'
 
         # 		'''
@@ -674,7 +674,7 @@ class Controlador():
             self.marchando = False
 
     # 	'''
-    # 		- Interpola deslocamento lateral da pelves e o deslocamento para cima dos pés, 
+    # 		- Interpola deslocamento lateral da pelves e o deslocamento para cima dos pés,
     #           diminuindo estes valores até chegar em 0
     # 	'''
     def recuar(self):
@@ -726,7 +726,7 @@ class Controlador():
                     self.rotaDir *= 2
 
     # 	'''
-    # 		- Retorna os 6 angulos de da perna, calculando a cinematica inversa. 
+    # 		- Retorna os 6 angulos de da perna, calculando a cinematica inversa.
     #           Considerando o pé como base e o quadril como ponto variável
     # 	'''
 
@@ -764,11 +764,11 @@ class Controlador():
         return angulos
 
     # 	'''
-    # 		- Pega o proximo "estado" da função de trajetória, a função de trajetória muda 
+    # 		- Pega o proximo "estado" da função de trajetória, a função de trajetória muda
     #         de acordo com as variaveis que definem o deslocamento e rotação do robô
-    
+
     # 		Entrada: tempo float/int t
-    # 		Saída: 2 vetores de 3 posições (x,y,z). O primeiro indica a posição da pelves 
+    # 		Saída: 2 vetores de 3 posições (x,y,z). O primeiro indica a posição da pelves
     #              considerando o pé em contato com o chão como base,
     # 			   o segundo vetor indica a posição do pé de balanço considerando a pelves do pé de balanço como base.
     # 	'''
