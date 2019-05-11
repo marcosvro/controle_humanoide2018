@@ -28,15 +28,14 @@ class FKSolver(object):
 
         self._com_shifts = []
         if center_of_mass_shifts != None:
-            self._com_shifts = np.array(center_of_mass_shifts)
+            self._com_shifts = np.flip(np.array(center_of_mass_shifts))
             self._com_shifts = np.concatenate((center_of_mass_shifts, np.array([[1]*len(center_of_mass_shifts)]).transpose()), axis = 1)
         self._matrices = matrices
         self._types = [0]*len(components)
         for it in joint_indexes:
             self._types[it] = 1
 
-        self._types = reversed(self._types)
-        self._com_shifts = reversed(self._com_shifts)
+        self._types = np.flip(self._types)
 
     def solve(self, angles):
         """Calculate a position of the end-effector and return it."""
@@ -54,8 +53,8 @@ class FKSolver(object):
                 points = np.dot(mat, points)
                 if (self._types[i] == 0): # link
                     points = np.concatenate((points, np.array([self._com_shifts[it]]).transpose()), axis = 1)
-                    it++
-            return points.transpose()[1:,:3]
+                    it += 1
+            return np.flip(points.transpose()[1:,:3], axis = 0)
         else:
             raise Exception("Paramters not found: Insert center of mass of actuator links on Actuator constructor.")
 
