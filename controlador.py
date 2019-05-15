@@ -8,7 +8,7 @@ from functools import reduce
 import struct
 import csv
 try:
-	from std_msgs.msg import Float32MultiArray
+	from std_msgs.msg import Float32MultiArray, Int16MultiArray
 except Exception as e:
 	pass
 import receiver
@@ -149,6 +149,17 @@ class Controlador():
 
 		self.rst_imu_pin = 18
 
+		self.state_encoder = {
+			"IDDLE" : 1,
+			"MARCH" : 2,
+			"WALK"  : 3,
+			"TURN"  : 4,
+			"FALLEN": 5,
+			"UP"    : 6,
+			"PENALIZED": 7,
+			"TURN90": 8
+		}
+
 		try:
 			with open ('estados_levanta_frente.csv', newline='') as csvfile:
 				tabela = list(csv.reader(csvfile, delimiter=','))
@@ -167,8 +178,7 @@ class Controlador():
 			self.estados_levanta_frente = []
 			self.tempos_levanta_frente = []
 
-		if self.simulador:
-			self.inicia_modulo_simulador()
+		self.inicia_modulo_simulador()
 
 
 	def inicia_modulos(self):
@@ -189,10 +199,16 @@ class Controlador():
 	def inicia_modulo_simulador(self):
 		#INICIA PUBLISHER PARA ENVIAR POSIÇÕES DOS MOTORES
 		print("Iniciando ROS node para execcao do simulador..")
-		self.pub = rospy.Publisher('Bioloid/joint_pos', Float32MultiArray, queue_size=1)
+		if self.simulador:
+			self.pub = rospy.Publisher('Bioloid/joint_pos', Float32MultiArray, queue_size=1)
+		else:
+			self.pub = rospy.Publisher('Bioloid/joint_pos', Int16MultiArray, queue_size=1)
 		rospy.init_node('controller', anonymous=True)
 		self.rate = rospy.Rate(self.tempoPasso/self.nEstados)
-		t = threading.Thread(target=self.envia_para_simulador)
+		if self.simulador:
+			t = threading.Thread(target=self.envia_para_simulador)
+		else:
+			t = threading.Thread(target=self.envia_para_micro)
 		t.daemon = True
 		t.start()
 
@@ -243,6 +259,27 @@ class Controlador():
 			print(str(e))
 			self.inicia_modulo_juiz()
 
+
+	def envia_para_micro(self):
+		try:
+			print("Publicando no topico para o micro!!")
+			mat = Int16MultiArray()
+			self.simulador_ativado = True
+			while not rospy.is_shutdown():
+				data = (np.array(self.msg_to_micro[:19])*(1800/np.pi)).astype(np.int16)
+				data[18] = self.state_encoder[self.state]
+				mat.data = data
+
+				mat.data[10] = -mat.data[10] # quadril esquerdo ROLL
+				mat.data[0] = -mat.data[0] #calcanhar direito ROLL
+
+				mat.data[4] = -mat.data[4]
+				mat.data[10] = -mat.data[10]
+
+				self.pub.publish(mat)
+				rospy.sleep(self.simTransRate)
+		except Exception as e:
+			pass
 
 	def envia_para_simulador(self):
 		try:
@@ -416,7 +453,7 @@ class Controlador():
 		while (True):
 			try:
 				#print ("%s GIMBAL_ YALL:%.f  ROBO_YALL:%.2f  ANGULO PARA VIRAR:%.2f BOLA:%r"%(self.state, self.gimbal_yall, self.robo_yall, self.robo_yall_lock, self.visao_bola), flush=True)
-				print (np.array(self.Rfoot_orientation).astype(np.int), np.array(self.Lfoot_orientation).astype(np.int))
+				#print (np.array(self.Rfoot_orientation).astype(np.int), np.array(self.Lfoot_orientation).astype(np.int))
 				if self.visao_ativada:
 						self.visao_socket.send(("['"+self.state+"',"+str(50)+','+str(100)+']').encode())
 				if RASPBERRY:
@@ -874,5 +911,5 @@ class Controlador():
 
 
 if __name__ == '__main__':
-	control = Controlador(time_id = 17,robo_id = 0,ip_rasp_visao='localhost', simulador_enable=True, inertial_foot_enable=True)
+	control = Controlador(time_id = 17,robo_id = 0,ip_rasp_visao='localhost', simulador_enable=False, inertial_foot_enable=True)
 	control.run()
