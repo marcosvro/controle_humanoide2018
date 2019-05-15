@@ -911,5 +911,5 @@ class Controlador():
 
 
 if __name__ == '__main__':
-	control = Controlador(time_id = 17,robo_id = 0,ip_rasp_visao='localhost', simulador_enable=False, inertial_foot_enable=True)
+	control = Controlador(time_id = 17,robo_id = 0,ip_rasp_visao='localhost', simulador_enable=False, inertial_foot_enable=False)
 	control.run()
