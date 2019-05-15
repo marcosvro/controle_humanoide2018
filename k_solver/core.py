@@ -29,11 +29,14 @@ class Actuator(object):
                     'link length or joint axis: {}'.format(t)
                 )
 
-        if len(center_of_mass_shitfts) != len(mass_parts):
-            raise Exception("Invalid paramters: Each center of mass position must have a mass value")
-        else:
-            self.mass_parts = np.array(mass_parts)
-            self.total_mass = np.sum(mass_parts)
+        self.physics_enable = False
+        if mass_parts is not None:
+            if len(center_of_mass_shitfts) != len(mass_parts):
+                raise Exception("Invalid paramters: Each center of mass position must have a mass value")
+            else:
+                self.mass_parts = np.array(mass_parts)
+                self.total_mass = np.sum(mass_parts)
+            self.physics_enable = True
         self._fk = FKSolver(components, center_of_mass_shitfts) if center_of_mass_shitfts != None else FKSolver(components)
         self._ik = IKSolver(self._fk, optimizer)
         
@@ -57,6 +60,8 @@ class Actuator(object):
         return self._fk.solve(self.angles)
 
     def com(self, com_by_indices=None):
+        if not self.physics_enable:
+            return None;
         com_pos_parts = self._fk.center_of_mass_parts(self.angles)
         if com_by_indices == None:
             v_mult = np.multiply(com_pos_parts.transpose(), self.mass_parts).transpose()
