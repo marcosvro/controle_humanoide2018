@@ -51,11 +51,11 @@ class Controlador():
                  time_id=17,
                  robo_id=0,
                  altura_inicial=17.,
-                 tempoPasso=1.5,
-                 deslocamentoYpelves=3.4,
-                 deslocamentoZpes=2,
-                 deslocamentoXpes=2.,
-                 deslocamentoZpelves=30.,
+                 tempo_passo=1.5,
+                 deslocamento_ypelves=3.4,
+                 deslocamento_zpes=2,
+                 deslocamento_xpes=2.,
+                 deslocamento_zpelves=30.,
                  inertial_foot_enable=False,
                  # step_mode=False,
                  nEstados=125):
@@ -75,13 +75,13 @@ class Controlador():
         self.deslocamentoYpelves = 0
         self.deslocamentoZpes = 0
         self.deslocamentoZpelves = 0
-        self.DESLOCAMENTO_X_PES_MAX = deslocamentoXpes
-        self.DESLOCAMENTO_Z_PES_MAX = deslocamentoZpes
-        self.DESLOCAMENTO_Y_PELVES_MAX = deslocamentoYpelves
-        self.DESLOCAMENTO_Z_PELVES_MAX = deslocamentoZpelves
+        self.DESLOCAMENTO_X_PES_MAX = deslocamento_xpes
+        self.DESLOCAMENTO_Z_PES_MAX = deslocamento_zpes
+        self.DESLOCAMENTO_Y_PELVES_MAX = deslocamento_ypelves
+        self.DESLOCAMENTO_Z_PELVES_MAX = deslocamento_zpelves
 
         self.N_ESTADOS = nEstados
-        self.TEMPO_PASSO = tempoPasso
+        self.TEMPO_PASSO = tempo_passo
         # a e c: dimensoes da perna
         self.A = 10.5
         self.A = 10.2
@@ -417,7 +417,7 @@ class Controlador():
         while True:
             try:
                 print("%s GIMBAL_YALL:%.f  ROBO_YALL:%.2f  ANGULO PARA VIRAR:%.2f BOLA:%r" % (
-                self.state, self.roboYall, self.roboYall, self.roboYallLock, self.visaoBola), flush=True)
+                    self.state, self.roboYall, self.roboYall, self.roboYallLock, self.visaoBola), flush=True)
                 # print (np.array(self.RfootOrientation).astype(np.int), np.array(self.LfootOrientation).astype(np.int))
                 if RASPBERRY:
                     # só executa se o dispositivo que estiver rodando for a raspberry
@@ -566,7 +566,7 @@ class Controlador():
         if self.posInicialPelves[1] != self.DESLOCAMENTO_Y_PELVES_MAX / 8:
             self.timerMovimentacao += self.deltaTime
             self.posInicialPelves[1] = sigmoid_deslocada(self.timerMovimentacao,
-                                                           self.TEMPO_PASSO) * self.DESLOCAMENTO_Y_PELVES_MAX / 8
+                                                         self.TEMPO_PASSO) * self.DESLOCAMENTO_Y_PELVES_MAX / 8
         if abs(self.posInicialPelves[1] - self.DESLOCAMENTO_Y_PELVES_MAX / 8) <= 0.01:
             self.posInicialPelves[1] = self.DESLOCAMENTO_Y_PELVES_MAX / 8
             self.ladeando = False
@@ -579,7 +579,7 @@ class Controlador():
         if self.posInicialPelves[1] != 0.:
             self.timerMovimentacao += self.deltaTime
             self.posInicialPelves[1] = (1 - sigmoid_deslocada(self.timerMovimentacao,
-                                                                self.TEMPO_PASSO)) * self.DESLOCAMENTO_Y_PELVES_MAX / 8
+                                                              self.TEMPO_PASSO)) * self.DESLOCAMENTO_Y_PELVES_MAX / 8
         if self.posInicialPelves[1] <= 0.01:
             self.posInicialPelves[1] = 0.
             self.desladeando = False
@@ -592,7 +592,7 @@ class Controlador():
         if self.posInicialPelves[1] != self.DESLOCAMENTO_Y_PELVES_MAX / 8:
             self.timerMovimentacao += self.deltaTime
             self.posInicialPelves[1] = -sigmoid_deslocada(self.timerMovimentacao,
-                                                            self.TEMPO_PASSO) * self.DESLOCAMENTO_Y_PELVES_MAX / 8
+                                                          self.TEMPO_PASSO) * self.DESLOCAMENTO_Y_PELVES_MAX / 8
         if abs(self.posInicialPelves[1] - self.DESLOCAMENTO_Y_PELVES_MAX / 8) <= 0.01:
             self.posInicialPelves[1] = self.DESLOCAMENTO_Y_PELVES_MAX / 8
             self.ladeando = False
@@ -605,7 +605,7 @@ class Controlador():
         if self.posInicialPelves[1] != 0.:
             self.timerMovimentacao += self.deltaTime
             self.posInicialPelves[1] = (-1 + sigmoid_deslocada(self.timerMovimentacao,
-                                                                 self.TEMPO_PASSO)) * self.DESLOCAMENTO_Y_PELVES_MAX / 8
+                                                               self.TEMPO_PASSO)) * self.DESLOCAMENTO_Y_PELVES_MAX / 8
         if self.posInicialPelves[1] <= 0.01:
             self.posInicialPelves[1] = 0.
             self.desladeando = False
@@ -784,7 +784,7 @@ class Controlador():
 
         # deslocamentoXpes/2 * tgh(x)
         p1 = (self.deslocamentoXpes / 2) * ((math.exp(aux_estados_div_25) - math.exp(-aux_estados_div_25)) / (
-                    math.exp(aux_estados_div_25) + math.exp(-aux_estados_div_25)))
+            math.exp(aux_estados_div_25) + math.exp(-aux_estados_div_25)))
         pos_pelves[0] = p1
         pos_pelves[1] -= aux_pelves
 
@@ -827,7 +827,7 @@ class Controlador():
         # ANGULO_VIRA * tgh(2*(nEstados)/50)
         # ANGULO_VIRA * tgh(x-nEstados/2)/25
         angulo_vira_x_tgh_div_4 = self.ANGULO_VIRA / 2. * ((np.exp(aux_estados / 25) - np.exp(aux_estados / -25)) / (
-                    np.exp(aux_estados / 25) + np.exp(aux_estados / -25)))
+            np.exp(aux_estados / 25) + np.exp(aux_estados / -25)))
         # CINEMÁTICA INVERSA
         data_pelv = self.foot_to_hip(pelv_point)
         data_foot = self.foot_to_hip(foot_point)
@@ -840,7 +840,7 @@ class Controlador():
                 else:
                     influencia = np.sum(self.LfootPress) / self.totalPress
                 data_foot[:2] = np.array(data_foot[:2]) + np.array(self.LfootOrientation[:2]) * DEG_TO_RAD * (
-                            1 - influencia)
+                    1 - influencia)
 
             # ROTINHA PARA VIRAR/PARAR DE VIRAR PARA A ESQUERDA
             if self.rotaDir == 1:
@@ -877,7 +877,7 @@ class Controlador():
                 else:
                     influencia = np.sum(self.RfootPress) / self.totalPress
                 data_foot[:2] = np.array(data_foot[:2]) + np.array(self.RfootOrientation[:2]) * DEG_TO_RAD * (
-                            1 - influencia)
+                    1 - influencia)
 
             # ROTINHA PARA VIRAR/PARAR DE VIRAR PARA A ESQUERDA
             if self.rotaEsq == 1:
@@ -907,6 +907,7 @@ class Controlador():
             data = data_foot + data_pelv + [0] * 6
 
         self.msgToMicro[:18] = data
+
 
 # '''
 # 	- descrição: Calcula posição do centro de massa em relação ao pé que está em contato com o chão
