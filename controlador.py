@@ -1,3 +1,5 @@
+# -*- coding:utf-8 -*-
+
 import socket
 import threading
 import time
@@ -7,6 +9,7 @@ import numpy as np
 from functools import reduce
 import struct
 import csv
+from body_solver import Body
 
 try:
     from std_msgs.msg import Float32MultiArray
@@ -88,6 +91,7 @@ class Controlador():
 
         # self.visaoMsg = b''
         # self.msgFromMicro = []
+        self.gravityCompensation = [0] * 20
         self.msgToMicro = [0] * 20
         # self.comParts = []
         self.fpsCount = 0
@@ -163,6 +167,28 @@ class Controlador():
         self.activate = True
         self.caiu = False
 
+        # Calcula posição do centro de massa com base nos angulos das juntas
+        self.body = Body()
+
+        self.RIGHT_ANKLE_ROLL = 0
+        self.RIGHT_ANKLE_PITCH = 1
+        self.RIGHT_KNEE = 2
+        self.RIGHT_HIP_PITCH = 3
+        self.RIGHT_HIP_ROLL = 4
+        self.RIGHT_HIP_YALL = 5
+        self.LEFT_ANKLE_ROLL = 6
+        self.LEFT_ANKLE_PITCH = 7
+        self.LEFT_KNEE = 8
+        self.LEFT_HIP_PITCH = 9
+        self.LEFT_HIP_ROLL = 10
+        self.LEFT_HIP_YALL = 11
+        self.LEFT_ARM_PITCH = 12
+        self.LEFT_ARM_YALL = 13
+        self.LEFT_ARM_ROLL = 14
+        self.RIGHT_ARM_PITCH = 15
+        self.RIGHT_ARM_YALL = 16
+        self.RIGHT_ARM_ROLL = 17
+
         self.RST_IMU_PIN = 18
 
         try:
@@ -217,6 +243,9 @@ class Controlador():
 
         # INICIA SUBSCRIBER PARA RECEBER COMANDOS DA VISÃO
         rospy.Subscriber("/Bioloid/visao_cmd", Float32MultiArray, self.visao_cmd_callback)
+
+        # INICIA SUBSCRIBER PARA RECEBER ANGULOS PARA COMPENSAR FORCA GRAVITACIONAL
+        rospy.Subscriber("/Bioloid/body_solver/torso_angles", Float32MultiArray, self.atualiza_compensador_gravitacional)
 
     def atualiza_fps(self):
         if self.timerFps >= 1:
@@ -416,8 +445,8 @@ class Controlador():
         self.rotDesvio = 0
         while True:
             try:
-                print("%s GIMBAL_YALL:%.f  ROBO_YALL:%.2f  ANGULO PARA VIRAR:%.2f BOLA:%r" % (
-                    self.state, self.roboYall, self.roboYall, self.roboYallLock, self.visaoBola), flush=True)
+                # print("%s GIMBAL_YALL:%.f  ROBO_YALL:%.2f  ANGULO PARA VIRAR:%.2f BOLA:%r" % (
+                    # self.state, self.roboYall, self.roboYall, self.roboYallLock, self.visaoBola), flush=True)
                 # print (np.array(self.RfootOrientation).astype(np.int), np.array(self.LfootOrientation).astype(np.int))
                 if RASPBERRY:
                     # só executa se o dispositivo que estiver rodando for a raspberry
@@ -905,8 +934,25 @@ class Controlador():
 
             # PÉ ESQUERDO ESTÁ EM CONTATO COM O CHÃO E PÉ DIREITO ESTÁ SE MOVENDO.
             data = data_foot + data_pelv + [0] * 6
-
+            
         self.msgToMicro[:18] = data
+
+    def atualiza_compensador_gravitacional(self, msg):
+        
+        LEFT_ANKLE_ROLL
+        LEFT_ANKLE_PITCH
+        LEFT_KNEE
+        LEFT_HIP_PITCH
+        LEFT_HIP_ROLL
+        LEFT_HIP_YALL
+        RIGHT_ANKLE_ROLL
+        RIGHT_ANKLE_PITCH
+        RIGHT_KNEE
+        RIGHT_HIP_PITCH
+        RIGHT_HIP_ROLL
+        RIGHT_HIP_YALL
+
+
 
 
 # '''

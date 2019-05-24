@@ -1,3 +1,5 @@
+# -*- coding:utf-8 -*-
+
 import numpy as np
 from k_solver.core import Actuator
 
@@ -53,7 +55,7 @@ class Body():
 			"y",
 			"x"]
 		#esquerda para direita (duas perna)
-		joints_pos = np.array([ 
+		joints_pos = np.array([
 			[+1.8734e-2, -3.3164e-2, +4.3530e-2],
 			[+3.5700e-2, -3.5004e-2, +4.3526e-2],
 			[+3.5700e-2, -3.5004e-2, +1.4353e-1],
@@ -125,7 +127,7 @@ class Body():
 
 
 if __name__ == "__main__":
-	a = Body()		
+	a = Body()
 
 # '''
 # ##COM PARTS POSITION
