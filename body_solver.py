@@ -1,3 +1,7 @@
+# -*- coding:utf-8 -*-
+
+import rospy
+from std_msgs.msg import Float32MultiArray
 import numpy as np
 from k_solver.core import Actuator
 
@@ -7,9 +11,9 @@ class Body():
 
         # CALCULANDO CENTRO DE MASSA DA PARTE SUPERIOR QUE É CONSIDERADA STÁTICA DURANTE A CAMINHADA
         ###########################################################################################
+        self.TORSO_COM = np.array([0, 0, +3.2125e-1])
         if angulos_braco is None:
             angulos_braco = [0, 0, 0, 0, 0, 0]
-        self.TORSO_COM = np.array([0, 0, +3.2125e-1])
         joints_pos = np.array([
             [+1.8050e-2, -3.4000e-2, +3.5668e-1],
             [+1.8550e-2, -7.6400e-2, +3.4220e-1],
@@ -34,7 +38,6 @@ class Body():
         )
         atuador_braco_dir.angles = angulos_braco[:3]
         com_sup_dir = atuador_braco_dir.com()
-
         joints_pos = np.array([
             [+1.8050e-2, +3.3625e-2, +3.5668e-1],
             [+1.7350e-2, +7.6400e-2, +3.4220e-1],
@@ -60,37 +63,56 @@ class Body():
         atuador_braco_esq.angles = angulos_braco[3:]
         com_sup_esq = atuador_braco_esq.com()
 
+        self.pub = rospy.Publisher('Bioloid/body_solver/torso_angles', Float32MultiArray, queue_size=1)
+
+        rospy.Subscriber("/Bioloid/joint_pos", Float32MultiArray,
+                         self.update_current_angles_callback)
+
         self.comTroncoPos = ((com_sup_esq + com_sup_dir) / 2) + self.TORSO_COM
 
-        # GERANDO MANIPULADORES COM BASE NO PÉ ESQUERDO E ESQUERDO
+        # GERANDO MANIPULADORES COM BASE NO PÉ ESQUERDO E DIREITO
         #########################################################
         degree_of_freedom = [
-            "x",
-            "y",
-            "y",
-            "y",
-            "x",
-            "z",
-            "z",
-            "x",
-            "y",
-            "y",
-            "y",
-            "x"]
-        # esquerda para direita (duas perna)
+            "x",# LEFT ANKLE ROLL
+            "y",# LEFT ANKLE PITCH
+            "y",# LEFT KNEE
+            "y",# LEFT HIP PITCH
+            "x",# LEFT HIP ROLL
+            "z",# LEFT HIP YALL
+            "z",# RIGHT ANKLE ROLL
+            "x",# RIGHT ANKLE PITCH
+            "y",# RIGHT KNEE
+            "y",# RIGHT HIP PITCH
+            "y",# RIGHT HIP ROLL
+            "x"]# RIGHT HIP YALL
+        # esquerda para direita (duas pernas)
+
+        self.LEFT_ANKLE_ROLL = 0
+        self.LEFT_ANKLE_PITCH = 1
+        self.LEFT_KNEE = 2
+        self.LEFT_HIP_PITCH = 3
+        self.LEFT_HIP_ROLL = 4
+        self.LEFT_HIP_YALL = 5
+        self.RIGHT_ANKLE_ROLL = 6
+        self.RIGHT_ANKLE_PITCH = 7
+        self.RIGHT_KNEE = 8
+        self.RIGHT_HIP_PITCH = 9
+        self.RIGHT_HIP_ROLL = 10
+        self.RIGHT_HIP_YALL = 11
+
         joints_pos = np.array([
-            [+1.8734e-2, -3.3164e-2, +4.3530e-2],
-            [+3.5700e-2, -3.5004e-2, +4.3526e-2],
-            [+3.5700e-2, -3.5004e-2, +1.4353e-1],
-            [+3.5700e-2, -3.5003e-2, +2.4095e-1],
-            [+1.8885e-2, -3.2980e-2, +2.4090e-1],
-            [+1.6052e-2, -3.3005e-2, +2.8929e-1],
-            [+1.6049e-2, +3.2993e-2, +2.8930e-1],
-            [+1.8885e-2, +3.2982e-2, +2.4090e-1],
-            [+3.5700e-2, +3.5000e-2, +2.4095e-1],
-            [+3.5700e-2, +3.5000e-2, +1.4353e-1],
-            [+3.5700e-2, +3.5000e-2, +4.3526e-2],
-            [+1.8734e-2, +3.3167e-2, +4.3530e-2],
+            [+1.8734e-2, -3.3164e-2, +4.3530e-2],# LEFT ANKLE ROLL
+            [+3.5700e-2, -3.5004e-2, +4.3526e-2],# LEFT ANKLE PITCH
+            [+3.5700e-2, -3.5004e-2, +1.4353e-1],# LEFT KNEE
+            [+3.5700e-2, -3.5003e-2, +2.4095e-1],# LEFT HIP PITCH
+            [+1.8885e-2, -3.2980e-2, +2.4090e-1],# LEFT HIP ROLL
+            [+1.6052e-2, -3.3005e-2, +2.8929e-1],# LEFT HIP YALL
+            [+1.6049e-2, +3.2993e-2, +2.8930e-1],# RIGHT ANKLE ROLL
+            [+1.8885e-2, +3.2982e-2, +2.4090e-1],# RIGHT ANKLE PITCH
+            [+3.5700e-2, +3.5000e-2, +2.4095e-1],# RIGHT KNEE
+            [+3.5700e-2, +3.5000e-2, +1.4353e-1],# RIGHT HIP PITCH
+            [+3.5700e-2, +3.5000e-2, +4.3526e-2],# RIGHT HIP ROLL
+            [+1.8734e-2, +3.3167e-2, +4.3530e-2],# RIGHT HIP YALL
             [+1.8734e-2, +3.3167e-2, 0.004663]  # posição do pé que está no ar, não é junta
         ])
         # coms_pos = np.array([
@@ -114,23 +136,40 @@ class Body():
         for i, c in enumerate(degree_of_freedom):
             v.append(c)
             v.append(joints_pos[i + 1] - joints_pos[i])
-        self.perna_dir_para_esq = Actuator(
-            v,
-            center_of_mass_shitfts=None,
-            mass_parts=None
-        )
-
-        np.delete(joints_pos, 12, 0)
-        np.insert(joints_pos, 0, [+1.8734e-2, -3.3164e-2, 0.004663], 0)
-        v = [[0., 0., +3.8867e-2]]
-        for i, c in enumerate(degree_of_freedom):
-            v.append(c)
-            v.append(joints_pos[12 - (i + 1)] - joints_pos[12 - i])
         self.perna_esq_para_dir = Actuator(
             v,
             center_of_mass_shitfts=None,
             mass_parts=None
         )
+        
+        joints_pos = np.delete(joints_pos, 11, 0)
+        joints_pos = np.insert(joints_pos, 0, [+1.8734e-2, -3.3164e-2, 0.004663], 0)
+
+        v = [[0., 0., +3.8867e-2]]
+        for i, c in enumerate(degree_of_freedom):
+            v.append(c)
+            v.append(joints_pos[12 - (i + 1)] - joints_pos[12 - i])
+        self.perna_dir_para_esq = Actuator(
+            v,
+            center_of_mass_shitfts=None,
+            mass_parts=None
+        )
+        print("CoM TORSO: %s"%self.comTroncoPos)
+        a = self.perna_esq_para_dir
+        print("perna_esq_para_dir:  angles: %s | ee: %s"%(a.angles, a.ee))
+        a = self.perna_dir_para_esq
+        print("perna_dir_para_esq: angles: %s | ee: %s"%(a.angles, a.ee))
+
+
+
+    def update_current_angles_callback(self, msg):
+        self.perna_esq_para_dir.angles = np.array(msg.data[:12])
+        self.perna_dir_para_esq.angles = np.array(msg.data[11::-1])
+        msg_to_publish = Float32MultiArray()
+        msg_to_publish.data = np.concatenate(self.perna_esq_para_dir.ee, self.perna_dir_para_esq.ee)
+
+
+
 
 
 if __name__ == "__main__":

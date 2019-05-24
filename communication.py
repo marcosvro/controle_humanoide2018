@@ -1,3 +1,5 @@
+# -*- coding:utf-8 -*-
+
 import rospy
 from std_msgs.msg import Float32MultiArray
 import numpy as np
