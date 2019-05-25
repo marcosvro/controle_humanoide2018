@@ -29,7 +29,7 @@ class FKSolver(object):
         self._com_shifts = []
         if center_of_mass_shifts != None:
             self._com_shifts = np.flip(np.array(center_of_mass_shifts))
-            self._com_shifts = np.concatenate((center_of_mass_shifts, np.array([[1]*len(center_of_mass_shifts)]).transpose()), axis = 1)
+            self._com_shifts = np.concatenate((self._com_shifts, np.array([np.array([1]*len(center_of_mass_shifts))]).transpose()), axis = 1)
         self._matrices = matrices
         self._types = [0]*len(components)
         for it in joint_indexes:

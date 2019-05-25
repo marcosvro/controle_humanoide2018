@@ -1,4 +1,4 @@
 /.idea/*
 /venv/*
-*/__pycache/*
+*/__pycache__/*
 /*.iml

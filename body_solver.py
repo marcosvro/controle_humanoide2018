@@ -46,7 +46,7 @@ class Body():
 
         self.com_tronco_pos = ((com_sup_esq + com_sup_dir) / 2) + torso_com
         tronco_mass = atuador_braco_esq.total_mass + atuador_braco_dir.total_mass - 1
-
+        
         # GERANDO MANIPULADORES COM BASE NO PÉ ESQUERDO E ESQUERDO
         #########################################################
         degree_of_freedom = [
@@ -84,7 +84,7 @@ class Body():
             [+3.5375e-2, -3.2882e-2, +1.8951e-1],
             [+1.9000e-2, -3.3002e-2, +2.2700e-1],
             [+1.8825e-2, -3.3000e-2, +2.5348e-1],
-            [self.com_tronco_pos],
+            self.com_tronco_pos,
             [+1.8825e-2, +3.2999e-2, +2.5348e-1],
             [+1.9000e-2, +3.3000e-2, +2.2700e-1],
             [+3.5375e-2, +3.3024e-2, +1.8951e-1],
@@ -115,7 +115,7 @@ class Body():
             v.append(c)
             v.append(joints_pos[i + 1] - joints_pos[i])
             t.append(coms_pos[i + 1] - joints_pos[i])
-        print(np.array(t))
+
         self.perna_dir_para_esq = Actuator(v, center_of_mass_shitfts=t, mass_parts=links_mass)
 
         np.delete(joints_pos, 12, 0)
@@ -130,8 +130,8 @@ class Body():
             t.append(coms_pos[12 - (i + 1)] - joints_pos[12 - i])
         self.perna_esq_para_dir = Actuator(v, center_of_mass_shitfts=t, mass_parts=links_mass)
 
-        print(self.perna_esq_para_dir.com)
-        print(self.perna_dir_para_esq.com)
+        print(self.perna_esq_para_dir.com())
+        print(self.perna_dir_para_esq.com())
 
 
 if __name__ == "__main__":
