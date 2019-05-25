@@ -34,7 +34,7 @@ class Body():
 		com_sup_esq = atuador_braco_esq.com()
 
 		self.com_tronco_pos = ((com_sup_esq+com_sup_dir)/2)+torso_com
-
+		tronco_mass = atuador_braco_esq.total_mass+atuador_braco_dir.total_mass-1
 
 		#GERANDO MANIPULADORES COM BASE NO PÉ ESQUERDO E ESQUERDO
 		#########################################################
@@ -80,24 +80,46 @@ class Body():
 			[+3.5700e-2, +3.3147e-2, +9.3500e-2],
 			[+1.9450e-2, +3.3126e-2, +5.7527e-2],
 			[+1.8728e-2, +3.3167e-2, +3.3010e-2]])
+		links_mass = np.array([
+			1.000e-1,
+			1.300e-1,
+			4.000e-2,
+			1.200e-1,
+			1.300e-1,
+			1.500e-2,
+			tronco_mass,
+			1.500e-2,
+			1.300e-1,
+			1.200e-1,
+			4.000e-2,
+			1.300e-1,
+			1.000e-1])
 
 		v = []
 		t = []
 		v.append([0., 0., +3.8867e-2])
-		t.append([0., 0., ])
+		t.append(np.array([+1.8734e-2, -3.3163e-2, +3.3015e-2])-np.array([+1.8734e-2, -3.3164e-2, 0.])) # COM do primeiro link - Projeção da primeira junta no chão
 		for i, c in enumerate(degree_of_freedom):
 			v.append(c)
 			v.append(joints_pos[i+1]-joints_pos[i])
-		self.perna_dir_para_esq = Actuator(v, center_of_mass_shitfts=, mass_parts=)
+			t.append(coms_pos[i+1]-joints_pos[i])
+		print (np.array(t))
+		self.perna_dir_para_esq = Actuator(v, center_of_mass_shitfts=t, mass_parts=links_mass)
 
 		np.delete(joints_pos, 12, 0)
 		np.insert(joints_pos, 0, [+1.8734e-2, -3.3164e-2, 0.004663], 0)
 		v = []
+		t = []
 		v.append([0., 0., +3.8867e-2])
+		t.append(np.array([+1.8728e-2, +3.3167e-2, +3.3010e-2])-np.array([+1.8734e-2, +3.3167e-2, 0.]))
 		for i, c in enumerate(degree_of_freedom):
 			v.append(c)
 			v.append(joints_pos[12-(i+1)]-joints_pos[12-i])
-		self.perna_esq_para_dir = Actuator(v, center_of_mass_shitfts=, mass_parts=)
+			t.append(coms_pos[12-(i+1)]-joints_pos[12-i])
+		self.perna_esq_para_dir = Actuator(v, center_of_mass_shitfts=t, mass_parts=links_mass)
+
+		print (self.perna_esq_para_dir.com)
+		print (self.perna_dir_para_esq.com)
 
 
 
