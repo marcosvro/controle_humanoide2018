@@ -9,10 +9,9 @@ import numpy as np
 from functools import reduce
 import struct
 import csv
-from body_solver import Body
 
 try:
-    from std_msgs.msg import Float32MultiArray
+    from std_msgs.msg import Float32MultiArray, Int8
 except Exception as e:
     pass
 import receiver
@@ -21,6 +20,8 @@ try:
     import rospy
 except Exception as e:
     print("Falha ao importar a bibliotera 'rospy'!")
+    print(e)
+    raise e
 import math
 
 try:
@@ -167,8 +168,6 @@ class Controlador():
         self.activate = True
         self.caiu = False
 
-        # Calcula posição do centro de massa com base nos angulos das juntas
-        self.body = Body()
 
         self.RIGHT_ANKLE_ROLL = 0
         self.RIGHT_ANKLE_PITCH = 1
@@ -222,12 +221,18 @@ class Controlador():
     def inicia_modulo_simulador(self):
         # INICIA PUBLISHER PARA ENVIAR POSIÇÕES DOS MOTORES
         print("Iniciando ROS node para execucao do simulador..")
-        self.pub = rospy.Publisher('Bioloid/joint_pos', Float32MultiArray, queue_size=1)
         rospy.init_node('controller', anonymous=True)
+        self.pub = rospy.Publisher('Bioloid/joint_pos', Float32MultiArray, queue_size=1)
         self.rate = rospy.Rate(self.TEMPO_PASSO / self.N_ESTADOS)
         t = threading.Thread(target=self.envia_para_simulador)
         t.daemon = True
         t.start()
+
+        # INICIA PUBLISHER PARA ENVIAR INFORMAÇÃO DE QUAL PERNA ESTÁ NO CHÃO
+        self.pubPerna = rospy.Publisher('Bioloid/support_leg', Int8, queue_size=1)
+        thread_perna = threading.Thread(target = self.envia_perna)
+        thread_perna.daemon = True
+        thread_perna.start()
 
         # INICIA SUBSCRIBER PARA RECEBER DADOS DOS SENSORES INERCIAIS DOS PÉS
         rospy.Subscriber("/vrep_ros_interface/Bioloid/foot_inertial_sensor", Float32MultiArray,
@@ -243,9 +248,6 @@ class Controlador():
 
         # INICIA SUBSCRIBER PARA RECEBER COMANDOS DA VISÃO
         rospy.Subscriber("/Bioloid/visao_cmd", Float32MultiArray, self.visao_cmd_callback)
-
-        # INICIA SUBSCRIBER PARA RECEBER ANGULOS PARA COMPENSAR FORCA GRAVITACIONAL
-        rospy.Subscriber("/Bioloid/body_solver/torso_angles", Float32MultiArray, self.atualiza_compensador_gravitacional)
 
     def atualiza_fps(self):
         if self.timerFps >= 1:
@@ -304,8 +306,20 @@ class Controlador():
                     self.pub.publish(mat)
                     rospy.sleep(self.SIM_TRANS_RATE)
         except Exception as e:
+            print(e)
             pass
 
+    def envia_perna(self):
+        try:
+            msg = Int8()
+            if self.SIMULADOR_ATIVADO:
+                while not rospy.is_shutdown():
+                    msg.data = self.perna
+                    self.pubPerna.publish(msg)
+                    rospy.sleep(self.SIM_TRANS_RATE)
+        except Exception as e:
+            print(e)
+            pass
     # '''
     # 	- descrição: função que recebe informações de onde está a bola,
     #     atualizando as variaveis globais referêntes ao gimbal
@@ -937,20 +951,20 @@ class Controlador():
             
         self.msgToMicro[:18] = data
 
-    def atualiza_compensador_gravitacional(self, msg):
+    # def atualiza_compensador_gravitacional(self, msg):
         
-        LEFT_ANKLE_ROLL
-        LEFT_ANKLE_PITCH
-        LEFT_KNEE
-        LEFT_HIP_PITCH
-        LEFT_HIP_ROLL
-        LEFT_HIP_YALL
-        RIGHT_ANKLE_ROLL
-        RIGHT_ANKLE_PITCH
-        RIGHT_KNEE
-        RIGHT_HIP_PITCH
-        RIGHT_HIP_ROLL
-        RIGHT_HIP_YALL
+        # LEFT_ANKLE_ROLL
+        # LEFT_ANKLE_PITCH
+        # LEFT_KNEE
+        # LEFT_HIP_PITCH
+        # LEFT_HIP_ROLL
+        # LEFT_HIP_YALL
+        # RIGHT_ANKLE_ROLL
+        # RIGHT_ANKLE_PITCH
+        # RIGHT_KNEE
+        # RIGHT_HIP_PITCH
+        # RIGHT_HIP_ROLL
+        # RIGHT_HIP_YALL
 
 
 
