@@ -59,7 +59,7 @@ class Actuator(object):
         """The end-effector position."""
         return self._fk.solve(self.angles)
 
-    def com(self, com_by_indices=None):
+    def com(self, com_by_indices=None, return_mass=False):
         if not self.physics_enable:
             return None;
         com_pos_parts = self._fk.center_of_mass_parts(self.angles)
@@ -67,14 +67,18 @@ class Actuator(object):
             v_mult = np.multiply(com_pos_parts.transpose(), self.mass_parts).transpose()
             com_pos = reduce(lambda f, t: f+t, v_mult)
             com_pos /= self.total_mass
-            return com_pos
+            return com_pos if not return_mass else [com_pos, self.total_mass]
         else:
             coms_pos = []
             for bk in com_by_indices:
                 v_mult = np.multiply(com_pos_parts[bk:].transpose(), self.mass_parts[bk:]).transpose()
                 com_pos = reduce(lambda f, t: f+t, v_mult)
-                com_pos /= (self.total_mass - np.sum(self.mass_parts[:bk]))
-                coms_pos.append(com_pos)
+                mass_bk = self.total_mass - np.sum(self.mass_parts[:bk])
+                com_pos /= mass_bk
+                if return_mass:
+                    coms_pos.append([com_pos, mass_bk])
+                else:
+                    coms_pos.append(com_pos)
             return np.array(coms_pos)   
 
     @ee.setter
