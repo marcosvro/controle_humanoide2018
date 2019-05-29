@@ -1,5 +1,6 @@
 import numpy as np
 from k_solver.core import Actuator
+GRAVITY_AC=9.8
 
 class Body():
 	def __init__ (self, angulos_braco=None):
@@ -38,7 +39,7 @@ class Body():
 
 		#GERANDO MANIPULADORES COM BASE NO PÉ ESQUERDO E ESQUERDO
 		#########################################################
-		degree_of_freedom = [
+		self.degree_of_freedom = [
 			"x",
 			"y",
 			"y",
@@ -73,7 +74,7 @@ class Body():
 			[+3.5375e-2, -3.2882e-2, +1.8951e-1],
 			[+1.9000e-2, -3.3002e-2, +2.2700e-1],
 			[+1.8825e-2, -3.3000e-2, +2.5348e-1],
-			[self.com_tronco_pos],
+			self.com_tronco_pos,
 			[+1.8825e-2, +3.2999e-2, +2.5348e-1],
 			[+1.9000e-2, +3.3000e-2, +2.2700e-1],
 			[+3.5375e-2, +3.3024e-2, +1.8951e-1],
@@ -99,32 +100,53 @@ class Body():
 		t = []
 		v.append([0., 0., +3.8867e-2])
 		t.append(np.array([+1.8734e-2, -3.3163e-2, +3.3015e-2])-np.array([+1.8734e-2, -3.3164e-2, 0.])) # COM do primeiro link - Projeção da primeira junta no chão
-		for i, c in enumerate(degree_of_freedom):
+		for i, c in enumerate(self.degree_of_freedom):
 			v.append(c)
 			v.append(joints_pos[i+1]-joints_pos[i])
 			t.append(coms_pos[i+1]-joints_pos[i])
-		print (np.array(t))
+		#print (np.array(t))
 		self.perna_dir_para_esq = Actuator(v, center_of_mass_shitfts=t, mass_parts=links_mass)
 
-		np.delete(joints_pos, 12, 0)
-		np.insert(joints_pos, 0, [+1.8734e-2, -3.3164e-2, 0.004663], 0)
+		joints_pos = np.delete(joints_pos, 12, 0)
+		joints_pos = np.insert(joints_pos, 0, [+1.8734e-2, -3.3164e-2, 0.004663], 0)
 		v = []
 		t = []
 		v.append([0., 0., +3.8867e-2])
 		t.append(np.array([+1.8728e-2, +3.3167e-2, +3.3010e-2])-np.array([+1.8734e-2, +3.3167e-2, 0.]))
-		for i, c in enumerate(degree_of_freedom):
+		for i, c in enumerate(self.degree_of_freedom):
 			v.append(c)
 			v.append(joints_pos[12-(i+1)]-joints_pos[12-i])
 			t.append(coms_pos[12-(i+1)]-joints_pos[12-i])
 		self.perna_esq_para_dir = Actuator(v, center_of_mass_shitfts=t, mass_parts=links_mass)
 
-		print (self.perna_esq_para_dir.com)
-		print (self.perna_dir_para_esq.com)
+		print (self.perna_esq_para_dir.com())
+		print (self.perna_dir_para_esq.com())
+
+	#perna direita = 1, perna esquerda = 0
+	#vec_bk é o vetor que indica a partir de qual junta o CoM está sendo calculado
+	def get_torque_in_joint(self, perna_base, vec_bk=None):
+		coms = self.perna_dir_para_esq.com(com_by_indices=vec_bk, return_mass=True) if perna_base else self.perna_esq_para_dir.com(com_by_indices=vec_bk, return_mass=True)
+		torques = []
+		for i,tupla_com in enumerate(coms):
+			torque = np.cross(tupla_com[0], np.array([0, 0, tupla_com[1]*GRAVITY_AC]))
+			k = vec_bk[i]-1 if vec_bk is not None else 0
+			if (self.degree_of_freedom[k] == 'x'):
+				ek = np.array([-1, 0, 0])
+			elif (self.degree_of_freedom[k] == 'y'):
+				ek = np.array([0, -1, 0])
+			elif (self.degree_of_freedom[k] == 'z'):
+				ek = np.array([0, 0, -1])
+			torque = np.sum(torque*ek)
+			torques.append(torque)
+		return torques
 
 
 
 if __name__ == "__main__":
-	a = Body()		
+	a = Body()
+	t = a.get_torque_in_joint(1, [5])
+	print (t)
+
 
 '''
 ##COM PARTS POSITION
