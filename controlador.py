@@ -11,7 +11,7 @@ import struct
 import csv
 
 try:
-    from std_msgs.msg import Float32MultiArray, Int8
+	from std_msgs.msg import Float32MultiArray
 except Exception as e:
     pass
 import receiver
@@ -20,8 +20,6 @@ try:
     import rospy
 except Exception as e:
     print("Falha ao importar a bibliotera 'rospy'!")
-    print(e)
-    raise e
 import math
 
 try:

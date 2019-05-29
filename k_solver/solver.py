@@ -26,10 +26,10 @@ class FKSolver(object):
             a = [joints.get(i, None) for i in range(len(components))]
             return [c.matrix(a[i]) for i, c in enumerate(components)]
 
-        self._com_shifts = []
+        self.comShifts = []
         if center_of_mass_shifts != None:
-            self._com_shifts = np.flip(np.array(center_of_mass_shifts))
-            self._com_shifts = np.concatenate((self._com_shifts, np.array([np.array([1]*len(center_of_mass_shifts))]).transpose()), axis = 1)
+            self.comShifts = np.flip(np.array(center_of_mass_shifts))
+            self.comShifts = np.concatenate((self.comShifts, np.array([np.array([1]*len(center_of_mass_shifts))]).transpose()), axis = 1)
         self._matrices = matrices
         self._types = [0]*len(components)
         for it in joint_indexes:
@@ -46,13 +46,13 @@ class FKSolver(object):
         )[:3]
 
     def center_of_mass_parts (self, angles):
-        if (len(self._com_shifts) != 0):
+        if (len(self.comShifts) != 0):
             points = np.array([[0.], [0.], [0.], [1.]])
             it = 0
             for i, mat in enumerate(reversed(self._matrices(angles))):
                 points = np.dot(mat, points)
                 if (self._types[i] == 0): # link
-                    points = np.concatenate((points, np.array([self._com_shifts[it]]).transpose()), axis = 1)
+                    points = np.concatenate((points, np.array([self.comShifts[it]]).transpose()), axis = 1)
                     it += 1
             return np.flip(points.transpose()[1:,:3], axis = 0)
         else:
