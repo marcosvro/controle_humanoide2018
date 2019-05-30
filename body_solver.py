@@ -5,15 +5,30 @@ from k_solver.core import Actuator
 
 GRAVITY_AC = 9.8
 
+MICRO_PROPORTIONAL_GAIN = 0.5
+
+try:
+    import rospy
+except Exception as e:
+    print("Falha ao importar a bibliotera 'rospy'!")
+
+try:
+    from std_msgs.msg import Float32MultiArray, Bool
+except Exception as e:
+    pass
+
+import math
+
+
 
 class Body():
     def __init__(self, angulos_braco=None):
 
         self.perna = 0
-        self.angulosJuntas = [0] * 18
-        self.lastSentAngles = [0] * 12
+        self.lastSentAngles = [0] * 2  # [LEFT_HIP_ROLL, RIGHT_HIP_ROLL]
         self.pernaDirParaEsq = None
         self.pernaEsqParaDir = None
+        self.imu = [0]*3
 
         # CALCULANDO CENTRO DE MASSA DA PARTE SUPERIOR QUE É CONSIDERADA STÁTICA DURANTE A CAMINHADA
         # ##########################################################################################
@@ -29,10 +44,16 @@ class Body():
             [+1.8353e-2, -7.5398e-2, +3.1635e-1],  # Right Elbow Yall
             [+2.8550e-2, -7.6400e-2, +2.5370e-1]])  # Right Arm Roll
         self.atuadorBracoDir = Actuator(
-            [joints_pos[0] - self.torsoCom, "y", joints_pos[1] - joints_pos[0], "x", joints_pos[2] - joints_pos[1], "y",
-             coms_pos[2] - joints_pos[2]],
-            center_of_mass_shitfts=[[0, 0, 0], coms_pos[0] - joints_pos[0], coms_pos[1] - joints_pos[1],
-                                    coms_pos[2] - joints_pos[2]], mass_parts=[1, 8.000e-3, 1.200e-1, 2.000e-2])
+            [
+             joints_pos[0] - self.torsoCom, "y", joints_pos[1] - joints_pos[0], "x", joints_pos[2] - joints_pos[1], "y",
+             coms_pos[2] - joints_pos[2]
+            ],
+            center_of_mass_shitfts=[
+             [0, 0, 0], coms_pos[0] - joints_pos[0], coms_pos[1] - joints_pos[1],
+             coms_pos[2] - joints_pos[2]
+             ], 
+             mass_parts=[1, 8.000e-3, 1.200e-1, 2.000e-2]
+        )
         self.atuadorBracoDir.angles = angulos_braco[:3]
         com_sup_dir = self.atuadorBracoDir.com()
 
@@ -71,7 +92,7 @@ class Body():
             "y",  # RIGHT_ANKLE_PITCH
             "x"]  # RIGHT_ANKLE_ROLL
         # esquerda para direita (duas perna)
-        joints_pos = np.array([
+        joints_pos = np.array([ 
             [+1.8734e-2, -3.3164e-2, +4.3530e-2],  # LEFT_ANKLE_ROLL
             [+3.5700e-2, -3.5004e-2, +4.3526e-2],  # LEFT_ANKLE_PITCH
             [+3.5700e-2, -3.5004e-2, +1.4353e-1],  # LEFT_KNEE_PITCH
@@ -141,6 +162,68 @@ class Body():
 
             print(self.pernaEsqParaDir.com())
             print(self.pernaDirParaEsq.com())
+            
+        rospy.init_node('body_solver', anonymous=True)
+        self.pub = rospy.Publisher('Bioloid/g_compensation', Float32MultiArray, queue_size=1)
+        self.sub = rospy.Subscriber('Bioloid/join_pos', Float32MultiArray, self.update_angles)
+        self.subPerna = rospy.Subscriber('Bioloid/support_leg', Bool, self.update_leg)
+        self.subImu = rospy.Subscriber('/Bioloid/robot_inertial_sensor', Float32MultiArray, self.update_imu)
+        rospy.spin()
+
+    def update_imu(self, msg):
+        # roll, pitch, yall
+        self.imu = msg.data[:3]
+
+    def update_leg(self, msg):
+        if msg.data:
+            self.perna = 1
+        else:
+            self.perna = 0
+
+    def update_angles(self, msg):
+        
+        self.update_joint_angles(msg.data)
+
+        angulo = (self.get_torque_in_joint(self.perna, [4])[0] - imu[0]) / MICRO_PROPORTIONAL_GAIN
+        
+        self.lastSentAngles = [0,angulo] if self.perna == 1 else [angulo, 0]
+        
+        msg = Float32MultiArray()
+        msg.data = self.lastSentAngles
+        self.pub.publish(msg)
+        
+    def update_joint_angles(self, angulos):
+#        left_hip_roll = msg.data[10] - self.lastSentAngles[0] 
+#        right_hip_roll = msg.data[4] - self.lastSendAngles[1]
+# esq para dir: 
+# 0 L_ANK_ROLL, 6,
+# 1 L_ANK_PIT, 7,
+# 2 L_KN_PIT, 8,
+# 3 L_H_P, 9,
+# 4 L_H_R, 10,
+# 5 L_H_Y, 11,
+# 6 R_H_Y, 5,
+# 7 R_H_R, 4,
+# 8 R_H_P, 3,
+# 9 R_KN_P, 2,
+# 10 R_AN_P, 1,
+# 11 R_A,R 0
+        angulos_esq_para_dir = np.array(
+            angulos[6],
+            angulos[7],
+            angulos[8],
+            angulos[9],
+            angulos[10] - self.lastSentAngles[0],
+            angulos[11],
+            angulos[5],
+            angulos[4] - self.lastSentAngles[1],
+            angulos[3],
+            angulos[2],
+            angulos[1],
+            angulos[0]
+        )
+        self.pernaEsqParaDir.angles = angulos_esq_para_dir
+        self.pernaDirParaEsq.angles = np.array(angulos_esq_para_dir[11::-1])
 
     # perna direita = 1, perna esquerda = 0
     # vec_bk é o vetor que indica a partir de qual junta o CoM está sendo calculado
@@ -149,6 +232,7 @@ class Body():
             else self.pernaEsqParaDir.com(com_by_indices=vec_bk, return_mass=True)
         torques = []
         for i, tupla_com in enumerate(coms):
+            # tupla_com = [com_pos, mass]
             torque = np.cross(tupla_com[0], np.array([0, 0, tupla_com[1] * GRAVITY_AC]))
             k = vec_bk[i] - 1 if vec_bk is not None else 0
             ek = None
@@ -159,6 +243,7 @@ class Body():
             elif self.degreeOfFreedom[k] == 'z':
                 ek = np.array([0, 0, -1])
             torque = np.sum(torque * ek)
+            # torque = produto escalar((dist vet peso) esc eixo rot)
             torques.append(torque)
         return torques
 
