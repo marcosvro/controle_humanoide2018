@@ -119,13 +119,16 @@ class Body():
 			t.append(coms_pos[12-(i+1)]-joints_pos[12-i])
 		self.perna_esq_para_dir = Actuator(v, center_of_mass_shitfts=t, mass_parts=links_mass)
 
-		print (self.perna_esq_para_dir.com())
-		print (self.perna_dir_para_esq.com())
+		#print (self.perna_esq_para_dir.com())
+		#print (self.perna_dir_para_esq.com())
 
 	#perna direita = 1, perna esquerda = 0
 	#vec_bk é o vetor que indica a partir de qual junta o CoM está sendo calculado
 	def get_torque_in_joint(self, perna_base, vec_bk=None):
 		coms = self.perna_dir_para_esq.com(com_by_indices=vec_bk, return_mass=True) if perna_base else self.perna_esq_para_dir.com(com_by_indices=vec_bk, return_mass=True)
+		#com_esq_no_chao = self.perna_esq_para_dir.com()
+		#com_dir_no_chao = self.perna_dir_para_esq.com()
+		#print (np.around(com_esq_no_chao, decimals=3), np.around(com_dir_no_chao, decimals=3))
 		torques = []
 		for i,tupla_com in enumerate(coms):
 			torque = np.cross(tupla_com[0], np.array([0, 0, tupla_com[1]*GRAVITY_AC]))
@@ -139,6 +142,18 @@ class Body():
 			torque = np.sum(torque*ek)
 			torques.append(torque)
 		return torques
+
+	def set_angles(self, perna_base, angles_perna_dir, angles_perna_esq):
+		angles_perna_dir[0] *= -1
+		angles_perna_dir[4] *= -1
+		if perna_base:
+			in_vec = np.concatenate((angles_perna_dir, np.flip(angles_perna_esq)))
+			self.perna_dir_para_esq.angles = in_vec
+			self.perna_esq_para_dir.angles = np.flip(in_vec)
+		else:
+			in_vec = np.concatenate((angles_perna_esq, np.flip(angles_perna_dir)))
+			self.perna_dir_para_esq.angles = np.flip(in_vec)
+			self.perna_esq_para_dir.angles = in_vec
 
 
 

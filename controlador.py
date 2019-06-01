@@ -30,7 +30,10 @@ try:
 	RASPBERRY = True
 except Exception as e:
 	RASPBERRY = False
+from body_solver import Body
 
+
+KP_CONST = 0.6
 
 
 def sigmoid_deslocada(x, periodo):
@@ -43,12 +46,13 @@ class Controlador():
 				time_id=17,
 				robo_id=0,
 				altura_inicial=17.,
-				tempoPasso = 1.5,
-				deslocamentoYpelves = 3.4,
-				deslocamentoZpes = 2,
+				tempoPasso = 0.5,
+				deslocamentoYpelves = 2.2,
+				deslocamentoZpes = 2.6,
 				deslocamentoXpes= 2.,
 				deslocamentoZpelves = 30.,
 				inertial_foot_enable = False,
+				gravity_compensation_enable = False,
 				step_mode=False):
 		if (robo_id == -1):
 			print("ERRO: ID do robo inválido")
@@ -61,8 +65,8 @@ class Controlador():
 		self.time_id = time_id
 		self.robo_id = robo_id
 		self.altura = altura_inicial
-		self.pos_inicial_pelves = [0., 1.7, altura_inicial]
-		self.pos_inicial_foot = [0., 1.7, altura_inicial]
+		self.pos_inicial_pelves = [0., 1.4, altura_inicial]
+		self.pos_inicial_foot = [0., 1.4, altura_inicial]
 		self.deslocamentoXpes = 0.
 		self.deslocamentoYpelves = 0
 		self.deslocamentoZpes = 0
@@ -86,6 +90,7 @@ class Controlador():
 		self.count_frames = 0
 		self.timer_fps = 0
 		self.deltaTime = 0
+		self.time_ignore_GC = 0.1 #entre 0 e 1 - porcentagem de tempo para ignorar o gravity compensation
 		self.ON_PIN = 25
 		if RASPBERRY:
 			GPIO.setup(self.ON_PIN, GPIO.IN)
@@ -124,6 +129,7 @@ class Controlador():
 		self.Lfoot_orientation = [0,0,0]
 		self.Rfoot_orientation = [0,0,0]
 		self.inertial_foot_enable = inertial_foot_enable
+		self.gravity_compensation_enable = gravity_compensation_enable
 		self.Lfoot_press = [0,0,0,0]
 		self.Rfoot_press = [0,0,0,0]
 		self.total_press = 0
@@ -145,6 +151,8 @@ class Controlador():
 		self.caiu = False
 
 		self.rst_imu_pin = 18
+
+		self.body = Body()
 
 		try:
 			with open ('estados_levanta_frente.csv', newline='') as csvfile:
@@ -346,6 +354,24 @@ class Controlador():
 			print("ERRO: Estado invalido!!")
 
 
+	def gravity_compensation(self):
+		#return
+		if not self.gravity_compensation_enable or (self.t_state < self.tempoPasso/2 and self.t_state < self.tempoPasso*self.time_ignore_GC) or (self.t_state >= self.tempoPasso/2 and self.t_state > self.tempoPasso*(1-self.time_ignore_GC)) or self.deslocamentoYpelves != self.deslocamentoYpelvesMAX or self.state is "IDDLE":
+			return
+
+		torques = self.body.get_torque_in_joint(self.perna,[3,5])
+
+		dQ = (np.array(torques)/KP_CONST)/15
+		#print(dQ[1], self.perna)
+
+		dQ *= math.sin(self.t_state*math.pi/self.tempoPasso)
+		if self.perna:
+			self.msg_to_micro[2] += dQ[0]
+			self.msg_to_micro[4] += (dQ[1]*-1)
+		else:
+			self.msg_to_micro[6+2] += dQ[0]
+			self.msg_to_micro[6+4] += dQ[1]
+
 	def posiciona_robo(self):
 		if self.robo_yall > self.gimbal_yall:
 			esq_angle = self.robo_yall - self.gimbal_yall
@@ -367,7 +393,7 @@ class Controlador():
 		self.rot_desvio = 0
 		while (True):
 			try:
-				print ("%s GIMBAL_YALL:%.f  ROBO_YALL:%.2f  ANGULO PARA VIRAR:%.2f BOLA:%r"%(self.state, self.gimbal_yall, self.robo_yall, self.robo_yall_lock, self.visao_bola), flush=True)
+				#print ("%s GIMBAL_YALL:%.f  ROBO_YALL:%.2f  ANGULO PARA VIRAR:%.2f BOLA:%r"%(self.state, self.gimbal_yall, self.robo_yall, self.robo_yall_lock, self.visao_bola), flush=True)
 				#print (np.array(self.Rfoot_orientation).astype(np.int), np.array(self.Lfoot_orientation).astype(np.int))
 				if RASPBERRY:
 					#só executa oque se o dispositivo que estier rodando for a raspberry
@@ -454,6 +480,7 @@ class Controlador():
 				self.atualiza_fps()
 				self.chage_state()
 				self.atualiza_cinematica()
+				self.gravity_compensation()
 				#self.posiciona_gimbal()
 				self.posiciona_robo()
 				timer_main_loop += self.deltaTime
@@ -781,6 +808,9 @@ class Controlador():
 
 			#PÉ DIREITO ESTÁ EM CONTATO COM O CHÃO E PÉ ESQUERDO ESTÁ SE MOVENDO.
 			data = data_pelv + data_foot + [0]*6
+
+			#CONFIGURA BODY SOLVER PARA INVOCAR FUNÇÕES DO MODELO DINÂMICO DO ROBÔ
+			self.body.set_angles(self.perna, data_pelv, data_foot)
 		else:
 			#CINEMÁTICA INVERSA
 			data_pelv = self.footToHip(pelv_point)
@@ -817,6 +847,9 @@ class Controlador():
 			#PÉ ESQUERDO ESTÁ EM CONTATO COM O CHÃO E PÉ DIREITO ESTÁ SE MOVENDO.
 			data = data_foot + data_pelv + [0]*6
 
+			#CONFIGURA BODY SOLVER PARA INVOCAR FUNÇÕES DO MODELO DINÂMICO DO ROBÔ
+			self.body.set_angles(self.perna, data_foot, data_pelv)
+
 		self.msg_to_micro[:18] = data
 
 
@@ -834,5 +867,9 @@ class Controlador():
 
 
 if __name__ == '__main__':
-	control = Controlador(time_id = 17,robo_id = 0, simulador_enable=True, inertial_foot_enable=True)
+	control = Controlador(time_id = 17,
+												robo_id = 0, 
+												simulador_enable=True, 
+												inertial_foot_enable=False, 
+												gravity_compensation_enable=True)
 	control.run()
