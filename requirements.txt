@@ -1,4 +1,4 @@
-pyserial
-numpy
+pyserial-3.4
+numpy-1.16.3
 construct==2.5.3
-tinyik
+tinyik-1.2.0
