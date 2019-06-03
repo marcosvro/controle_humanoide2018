@@ -144,8 +144,6 @@ class Body():
 		return torques
 
 	def set_angles(self, perna_base, angles_perna_dir, angles_perna_esq):
-		angles_perna_dir[0] *= -1
-		angles_perna_dir[4] *= -1
 		if perna_base:
 			in_vec = np.concatenate((angles_perna_dir, np.flip(angles_perna_esq)))
 			self.perna_dir_para_esq.angles = in_vec
