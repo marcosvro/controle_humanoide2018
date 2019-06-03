@@ -50,3 +50,8 @@ class VrepEnvironment():
 
 		def get_init_state(self):
 
+
+		def step(self, action):
+			info = None
+			return s, r, done, info
+
