@@ -1,4 +1,3 @@
-import gym
 from environment import VrepEnvironment
 import threading
 import numpy as np
@@ -11,10 +10,12 @@ from worker import Worker
 from parameters import *
 
 
+
 if __name__ == "__main__":
     global_rewards = []
     global_episodes = 0
-    
+
+
     sess = tf.Session()
 
     with tf.device("/cpu:0"):
@@ -44,4 +45,4 @@ if __name__ == "__main__":
     plt.plot(np.arange(len(global_rewards)), global_rewards) # plot rewards
     plt.xlabel('step')
     plt.ylabel('total moving reward')
-		plt.show()
+    plt.show()

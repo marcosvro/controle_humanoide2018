@@ -122,6 +122,11 @@ class Body():
 		#print (self.perna_esq_para_dir.com())
 		#print (self.perna_dir_para_esq.com())
 
+
+	def get_com(self, perna_base):
+		com = self.perna_dir_para_esq.com() if perna_base else self.perna_esq_para_dir.com()
+		return com
+
 	#perna direita = 1, perna esquerda = 0
 	#vec_bk é o vetor que indica a partir de qual junta o CoM está sendo calculado
 	def get_torque_in_joint(self, perna_base, vec_bk=None):
@@ -143,15 +148,10 @@ class Body():
 			torques.append(torque)
 		return torques
 
-	def set_angles(self, perna_base, angles_perna_dir, angles_perna_esq):
-		if perna_base:
-			in_vec = np.concatenate((angles_perna_dir, np.flip(angles_perna_esq)))
-			self.perna_dir_para_esq.angles = in_vec
-			self.perna_esq_para_dir.angles = np.flip(in_vec)
-		else:
-			in_vec = np.concatenate((angles_perna_esq, np.flip(angles_perna_dir)))
-			self.perna_dir_para_esq.angles = np.flip(in_vec)
-			self.perna_esq_para_dir.angles = in_vec
+	def set_angles(self, angles_perna_dir, angles_perna_esq):
+		in_vec = np.concatenate((angles_perna_dir, np.flip(angles_perna_esq)))
+		self.perna_dir_para_esq.angles = in_vec
+		self.perna_esq_para_dir.angles = np.flip(in_vec)
 
 
 

@@ -2,7 +2,7 @@
 
 from functools import reduce
 
-import autograd.numpy as np
+import numpy as np
 
 from .component import Joint, Link
 

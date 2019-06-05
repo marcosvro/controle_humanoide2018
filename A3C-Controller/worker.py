@@ -32,7 +32,7 @@ class Worker(object):
 
                 ep_r += r
                 # save actions, states and rewards in buffer
-                buffer_s.append(s)          
+                buffer_s.append(s)
                 buffer_a.append(a)
                 buffer_r.append((r+8)/8)    # normalize reward
 

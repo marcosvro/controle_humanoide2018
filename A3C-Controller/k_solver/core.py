@@ -3,7 +3,7 @@
 from numbers import Number
 from functools import reduce
 
-import autograd.numpy as np
+import numpy as np
 
 from .component import Link, Joint
 from .solver import FKSolver, IKSolver

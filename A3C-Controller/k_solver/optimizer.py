@@ -1,6 +1,6 @@
 """Optimizers."""
 
-import autograd.numpy as np
+import numpy as np
 import autograd
 import scipy.optimize
 
