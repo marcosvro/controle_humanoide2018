@@ -1,3 +1,4 @@
+# coding: utf-8
 #State set
 COM_IN_STATE = True # If true, center of mass position inserted in state array
 TARGETS_POS_IN_STATE = True # If true, position of right leg, left leg and torso target are in state array
@@ -33,6 +34,7 @@ TIME_TO_IGNORE_GC = 0.1
 KP_CONST = 0.6
 
 #simulation
+TESTING = True
 VREP_PATH = '~/vrep'
 SCENE_FILE_PATH = '~/Documentos/controle_humanoide2018/teste_09_03.ttt'
 TIME_STEP_ACTION = 0.1
@@ -40,7 +42,8 @@ N_PUBS_STEP = 5
 ACTION_BOUND_LOW = -30
 ACTION_BOUND_HIGH = 30
 TIME_WAIT_ACK = 0.1
-TIME_WAIT_INIT_PUBS = 4
+TIME_WAIT_ACK_MAX = 4
+TIME_WAIT_INIT_PUBS = 15
 ANGLE_FALLEN_THRESHOLD = 60
 TARGET_BOUND_RANGE = 1.5
 

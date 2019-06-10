@@ -1,8 +1,10 @@
+# coding: utf-8
 import time
 import numpy as np
 try:
 	import rospy
 	from std_msgs.msg import Float32MultiArray
+	from geometry_msgs.msg import Vector3
 except Exception as e:
 	print("Falha ao importar módulos ROS!")
 import math
@@ -39,19 +41,19 @@ class Controlador():
 		self.pub_rate = pub_rate
 
 		#define subscribers para os dados do state
-		time.wait(TIME_WAIT_INIT_PUBS)
-		rospy.Subscriber("/vrep_ros_interface/"+simu_name_id+"/t_acc_last", Float32MultiArray, self.t_acc_last_callback)
-		rospy.Subscriber("/vrep_ros_interface/"+simu_name_id+"/t_ori_last", Float32MultiArray, self.t_ori_last_callback)
-		rospy.Subscriber("/vrep_ros_interface/"+simu_name_id+"/t_pos_last", Float32MultiArray, self.t_pos_last_callback)
+		time.sleep(TIME_WAIT_INIT_PUBS)
+		rospy.Subscriber("/vrep_ros_interface/"+simu_name_id+"/t_acc_last", Vector3, self.t_acc_last_callback)
+		rospy.Subscriber("/vrep_ros_interface/"+simu_name_id+"/t_ori_last", Vector3, self.t_ori_last_callback)
+		rospy.Subscriber("/vrep_ros_interface/"+simu_name_id+"/t_pos_last", Vector3, self.t_pos_last_callback)
 
 		self.reset()
 
 
 	def reset(self):
 		#variaveis do controlador marcos
-		self.altura = ALTURA_INICIAL
-		self.pos_inicial_pelves = [0., DISTANCIA_PES_INICIAL/2, ALTURA_INICIAL]
-		self.pos_inicial_foot = [0., DISTANCIA_PES_INICIAL/2, ALTURA_INICIAL]
+		self.altura = HEIGHT_INIT
+		self.pos_inicial_pelves = [0., DISTANCE_FOOT_INIT/2, HEIGHT_INIT]
+		self.pos_inicial_foot = [0., DISTANCE_FOOT_INIT/2, HEIGHT_INIT]
 		self.deslocamentoXpes = SHIFT_X_FOOT_INIT
 		self.deslocamentoYpelves = SHIFT_Y_HIP_INIT
 		self.deslocamentoZpes = SHIFT_Z_FOOT_INIT
@@ -59,8 +61,8 @@ class Controlador():
 		self.tempoPasso = TIME_STEP_INIT
 
 		#variaveis que a rede usa para executar a ação
-		self.r_point_last = np.array(pos_inicial_foot)
-		self.l_point_last = np.array(pos_inicial_pelves)
+		self.r_point_last = np.array(self.pos_inicial_foot)
+		self.l_point_last = np.array(self.pos_inicial_pelves)
 		self.t_angles_last = np.array([0., 0.])
 		self.lz_angles_last = np.array([0., 0.])
 		self.pos_target = (np.random.rand(2)*2-np.array([1, 1]))*TARGET_BOUND_RANGE  # posição alvo definida neste episódio
@@ -76,6 +78,8 @@ class Controlador():
 		self.t_acc_last = np.array([0., 0., 0.])	# accelerometer
 		self.t_ori_last = np.array([0., 0., 0.])	# IMU
 		self.t_pos_last = np.array([0., 0.])	    # position (X Y), odometry
+
+		return self.get_state()
 
 
 	def step(self, action):
@@ -116,6 +120,7 @@ class Controlador():
 			mat = Float32MultiArray()
 			mat.data = self.body_angles
 			self.pos_pub.publish(mat)
+			print(mat.data)
 			ant_t = atual_t
 			self.pub_rate.sleep()
 
@@ -137,7 +142,7 @@ class Controlador():
 			com_relative_esq = self.body.get_com(0) # left leg are support leg
 			state += (com_relative_dir.tolist()+com_relative_esq.tolist())
 		if TARGETS_POS_IN_STATE:
-			state += (self.r_point_last.tolist() + self.l_point_last.tolist() + t_angles_last.tolist() + lz_angles_last.tolist())
+			state += (self.r_point_last.tolist() + self.l_point_last.tolist() + self.t_angles_last.tolist() + self.lz_angles_last.tolist())
 		if TORSO_ACCELERATION_IN_STATE:
 			state += self.t_acc_last.tolist()
 		if TORSO_ORIENTATION_IN_STATE:
@@ -146,7 +151,7 @@ class Controlador():
 			state += self.action_last.tolist()
 
 		#check if done
-		if math.abs(self.t_ori_last[0]) > ANGLE_FALLEN_THRESHOLD or math.abs(self.t_ori_last[1]) < ANGLE_FALLEN_THRESHOLD:
+		if math.fabs(self.t_ori_last[0]) > ANGLE_FALLEN_THRESHOLD or math.fabs(self.t_ori_last[1]) < ANGLE_FALLEN_THRESHOLD:
 			self.done = True
 			reward = 0
 		else:
@@ -154,7 +159,7 @@ class Controlador():
 			erro_ori = (self.to_target[0]/(np.sum(to_target)))*math.cos(self.t_ori_last[2])-(self.to_target[1]/(np.sum(to_target)))*math.sin(self.t_ori_last[2])
 			reward = W_ORI*math.exp(-((1-erro_ori)**2))+W_INC/2*math.exp(-((self.t_ori_last[0])**2))+W_INC/2*math.exp(-((self.t_ori_last[1])**2))+W_DIST*math.exp(-(np.linalg.norm(self.t_pos_last-self.pos_target)))-(W_DIST+W_INC+W_ORI)
 
-		return state, self.done, reward
+		return np.array(state), self.done, reward
 
 	def cinematica_inversa(self, r_point, l_point, t_angles, lz_angles):
 		data_r = self.footToHip(r_point)
@@ -210,14 +215,14 @@ class Controlador():
 		return angulos
 
 
-	def t_acc_last_callback (self, msg):
-		self.t_acc_last = np.array(msg.data)
+	def t_acc_last_callback (self, vetor):
+		self.t_acc_last = np.array([vetor.x, vetor.y, vetor.z])
 
-	def t_ori_last_callback (self, msg):
-		self.t_ori_last = np.array(msg.data)
+	def t_ori_last_callback (self, vetor):
+		self.t_ori_last = np.array([vetor.x, vetor.y, vetor.z])*math.pi/180.
 
-	def t_pos_last_callback (self, msg):
-		self.t_pos_last = np.array(msg.data)
+	def t_pos_last_callback (self, vetor):
+		self.t_pos_last = np.array([vetor.x, vetor.y])
 
 	'''
 	def run(self):

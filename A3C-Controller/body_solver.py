@@ -1,3 +1,4 @@
+# coding: utf-8
 import numpy as np
 from k_solver.core import Actuator
 GRAVITY_AC=9.8

@@ -1,3 +1,4 @@
+# coding: utf-8
 import time
 from parameters import *
 from controlador import Controlador
@@ -13,22 +14,22 @@ class VrepEnvironment():
 		self.pub_rate = rospy.Rate(N_PUBS_STEP/TIME_STEP_ACTION)
 
 		self.ack = False
-		ack_confirm = not self.ack
 
 		#incialize vrep simulation and wait for confirmation
-		os.system(VREP_PATH+"/vrep.sh -h -s -g"+simu_name_id+" "+SCENE_FILE_PATH)
+		if TESTING:
+			os.system(VREP_PATH+"/vrep.sh -s -q -g"+simu_name_id+" "+SCENE_FILE_PATH+"&")
+		else:
+			os.system('xvfb-run --auto-servernum --server-num=1 -s "-screen 0 640x480x24" '+VREP_PATH+"/vrep.sh -h -q -s -g"+simu_name_id+" "+SCENE_FILE_PATH+"&")
 
 		self.sub_controller = Controlador(simu_name_id, self.pos_pub, self.pub_rate, gravity_compensation_enable=False)
 		rospy.Subscriber("/vrep_ros_interface/"+simu_name_id+'/ack', Bool, self.ack_callback)
-
+		print("Ambiente inicializado!!")
 
 	def reset(self):
 		#reset robot on environment
-		ack_confirm = not self.ack
 		self.reset_pub.publish(Bool(self.ack))
-		self.sub_controller.reset()
-		init_state, d, r = self.sub_controller.get_state()
-		self.wait_ack(ack_confirm) #wait for sim confirmation
+		self.wait_ack() #wait for sim confirmation
+		init_state, d, r  = self.sub_controller.reset()
 		return init_state
 
 	def step(self, action):
@@ -36,12 +37,15 @@ class VrepEnvironment():
 		s, done, r = self.sub_controller.step(action)
 		return s, r, done, info
 
-
 	def ack_callback(self, msg):
-		self.ack = msg.data
+		self.ack = True
 
-	def wait_ack(self, ack_confirm):
+	def wait_ack(self):
 		#wait for vrep reset simulation
-		while (self.ack != ack_confirm):
+		self.ack = False
+		timer = 0
+		while (not self.ack and timer < TIME_WAIT_ACK_MAX):
 			time.sleep(TIME_WAIT_ACK)
+			timer += TIME_WAIT_ACK
+
 
