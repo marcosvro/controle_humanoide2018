@@ -38,7 +38,7 @@ class Worker(object):
                 a = self.AC.choose_action(s)         # estimate stochastic action based on policy 
                 s_, r, done, info = self.env.step(a) # make step in environment
                 
-                done = True if ep_t == MAX_EP_STEP - 1 else False
+                #done = True if ep_t == MAX_EP_STEP - 1 else False
 
                 ep_r += r
                 # save actions, states and rewards in buffer

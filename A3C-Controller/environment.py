@@ -8,18 +8,20 @@ import os
 
 class VrepEnvironment():
 	def __init__ (self, simu_name_id):
+		#incialize vrep simulation and wait for confirmation
+		'''if TESTING:
+			os.system(VREP_PATH+"/vrep.sh -s -q -g"+simu_name_id+" "+SCENE_FILE_PATH+"&")
+		else:
+			os.system('xvfb-run --auto-servernum --server-num=1 -s "-screen 0 640x480x24" '+VREP_PATH+"/vrep.sh -h -q -s -g"+simu_name_id+" "+SCENE_FILE_PATH+"&")
+		time.sleep(TIME_WAIT_INIT_PUBS)
+		'''
 		self.reset_pub = rospy.Publisher(simu_name_id+'/reset', Bool, queue_size=1) # define publisher para resetar simulação
 		self.pos_pub = rospy.Publisher(simu_name_id+'/joint_pos', Float32MultiArray, queue_size=1) #define publisher para as posições
 		rospy.init_node('controller_A3C')
 		self.pub_rate = rospy.Rate(N_PUBS_STEP/TIME_STEP_ACTION)
 
 		self.ack = False
-
-		#incialize vrep simulation and wait for confirmation
-		if TESTING:
-			os.system(VREP_PATH+"/vrep.sh -s -q -g"+simu_name_id+" "+SCENE_FILE_PATH+"&")
-		else:
-			os.system('xvfb-run --auto-servernum --server-num=1 -s "-screen 0 640x480x24" '+VREP_PATH+"/vrep.sh -h -q -s -g"+simu_name_id+" "+SCENE_FILE_PATH+"&")
+		self.cmd = False
 
 		self.sub_controller = Controlador(simu_name_id, self.pos_pub, self.pub_rate, gravity_compensation_enable=False)
 		rospy.Subscriber("/vrep_ros_interface/"+simu_name_id+'/ack', Bool, self.ack_callback)
@@ -27,14 +29,16 @@ class VrepEnvironment():
 
 	def reset(self):
 		#reset robot on environment
-		self.reset_pub.publish(Bool(self.ack))
+		self.cmd =  not self.cmd
+		print("resetei no environment! cmd status : ", self.cmd)
+		self.reset_pub.publish(Bool(self.cmd))
 		self.wait_ack() #wait for sim confirmation
 		init_state, d, r  = self.sub_controller.reset()
 		return init_state
 
 	def step(self, action):
 		info = {}
-		s, done, r = self.sub_controller.step(action)
+		s, done, r = self.sub_controller.step(action, self.cmd)
 		return s, r, done, info
 
 	def ack_callback(self, msg):

@@ -1,4 +1,8 @@
 # coding: utf-8
+#utils
+DEG_2_RAD = 3.141592653589793/180.
+RAD_2_DEG = 180./3.141592653589793
+
 #State set
 COM_IN_STATE = True # If true, center of mass position inserted in state array
 TARGETS_POS_IN_STATE = True # If true, position of right leg, left leg and torso target are in state array
@@ -44,7 +48,7 @@ ACTION_BOUND_HIGH = 30
 TIME_WAIT_ACK = 0.1
 TIME_WAIT_ACK_MAX = 4
 TIME_WAIT_INIT_PUBS = 15
-ANGLE_FALLEN_THRESHOLD = 60
+ANGLE_FALLEN_THRESHOLD = 60*DEG_2_RAD
 TARGET_BOUND_RANGE = 1.5
 
 #task rewards weight

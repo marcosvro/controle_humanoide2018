@@ -82,7 +82,8 @@ class Controlador():
 		return self.get_state()
 
 
-	def step(self, action):
+	def step(self, action, cmd):
+		#print(cmd)
 		r_v = np.array(action[0:3])
 		l_v = np.array(action[3:6])
 		t_v = np.array(action[6:8])*10
@@ -107,7 +108,7 @@ class Controlador():
 
 			##### se dist entre att_r_p e (0,0,0) for maior que a+c : normalize para que a dist seja = a+c #######
 			try:
-				angles = self.cinematica_inversa(att_r_p, att_l_p, att_t_a, att_lz_a)
+				angles = self.cinematica_inversa(att_r_p, att_l_p, att_t_a, att_lz_a, cmd)
 			except Exception as e:
 				pass
 			else:
@@ -120,7 +121,7 @@ class Controlador():
 			mat = Float32MultiArray()
 			mat.data = self.body_angles
 			self.pos_pub.publish(mat)
-			print(mat.data)
+			#print(mat.data)
 			ant_t = atual_t
 			self.pub_rate.sleep()
 
@@ -151,17 +152,18 @@ class Controlador():
 			state += self.action_last.tolist()
 
 		#check if done
-		if math.fabs(self.t_ori_last[0]) > ANGLE_FALLEN_THRESHOLD or math.fabs(self.t_ori_last[1]) < ANGLE_FALLEN_THRESHOLD:
+		if math.fabs(self.t_ori_last[0]) > ANGLE_FALLEN_THRESHOLD or math.fabs(self.t_ori_last[1]) > ANGLE_FALLEN_THRESHOLD:
 			self.done = True
 			reward = 0
 		else:
 			to_target = self.pos_target - self.t_pos_last
-			erro_ori = (self.to_target[0]/(np.sum(to_target)))*math.cos(self.t_ori_last[2])-(self.to_target[1]/(np.sum(to_target)))*math.sin(self.t_ori_last[2])
+			erro_ori = (to_target[0]/(np.sum(to_target)))*math.cos(self.t_ori_last[2])-(to_target[1]/(np.sum(to_target)))*math.sin(self.t_ori_last[2])
 			reward = W_ORI*math.exp(-((1-erro_ori)**2))+W_INC/2*math.exp(-((self.t_ori_last[0])**2))+W_INC/2*math.exp(-((self.t_ori_last[1])**2))+W_DIST*math.exp(-(np.linalg.norm(self.t_pos_last-self.pos_target)))-(W_DIST+W_INC+W_ORI)
 
+		#print(self.done)
 		return np.array(state), self.done, reward
 
-	def cinematica_inversa(self, r_point, l_point, t_angles, lz_angles):
+	def cinematica_inversa(self, r_point, l_point, t_angles, lz_angles, cmd):
 		data_r = self.footToHip(r_point)
 		data_l = self.footToHip(l_point)
 		data_r[0] *= -1
@@ -177,7 +179,8 @@ class Controlador():
 		data_r[5] += lz_angles[0]
 		data_l[5] += lz_angles[1]
 
-		return np.array(data_r + data_l + [0]*6)
+		cmd_to_float = 1. if cmd else 0.
+		return np.array(data_r + data_l + [0]*6 + [cmd_to_float])
 
 
 	# Retorna os 6 angulos de da perna, calculando a cinematica inversa. Considerando o pé como base e o quadril como ponto variável
