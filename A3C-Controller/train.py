@@ -35,7 +35,7 @@ class Worker(object):
                 if self.name == 'W_0' and RENDER:
                     self.env.render()
                 '''
-                a = self.AC.choose_action(s)         # estimate stochastic action based on policy 
+                a = self.AC.choose_action(s)         # estimate stochastic action based on policy
                 s_, r, done, info = self.env.step(a) # make step in environment
                 
                 #done = True if ep_t == MAX_EP_STEP - 1 else False

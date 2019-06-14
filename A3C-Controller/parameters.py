@@ -5,13 +5,13 @@ RAD_2_DEG = 180./3.141592653589793
 
 #State set
 COM_IN_STATE = True # If true, center of mass position inserted in state array
-TARGETS_POS_IN_STATE = True # If true, position of right leg, left leg and torso target are in state array
-TORSO_ACCELERATION_IN_STATE = False #If true, vector acceleration of TORSO are in state array
+TARGETS_POS_IN_STATE = False # If true, position of right leg, left leg and torso target are in state array
+TORSO_ACCELERATION_IN_STATE = True #If true, vector acceleration of TORSO are in state array
 TORSO_ORIENTATION_IN_STATE = True #If true, torso orientation(IMU response) are in state array
-LAST_ACTION_IN_STATE = True #If true, last action are embbeded in state 
+LAST_ACTION_IN_STATE = True #If true, last action are embbeded in state
 
 #action mode
-USING_MARCOS_CONTROLLER = False #If true, the action are composed by variables set of Marcos controller. If false, the action is composed by 3 arrays (2 3D, 1 2D) indicating the position of swing foot, hip of support leg and torso angles velocity
+USING_MARCOS_CONTROLLER = True #If true, the action are composed by variables set of Marcos controller. If false, the action is composed by 3 arrays (2 3D, 1 2D) indicating the position of swing foot, hip of support leg and torso angles velocity
 
 #state init values
 HEIGHT_INIT = 17.
@@ -28,6 +28,7 @@ SHIFT_Z_FOOT_MAX = 2.6
 SHIFT_Y_HIP_MAX = 3.
 ANGLE_Z_HIP_MAX = 50.
 VELOCITY_POINTS_MAX = 1.
+TIME_STEP_MAX = 2.
 
 #marcos controller parameters
 UPPER_LEG_LENGHT = 10.5
@@ -41,10 +42,10 @@ KP_CONST = 0.6
 TESTING = True
 VREP_PATH = '~/vrep'
 SCENE_FILE_PATH = '~/Documentos/controle_humanoide2018/teste_09_03.ttt'
-TIME_STEP_ACTION = 0.1
+TIME_STEP_ACTION = 0.2
 N_PUBS_STEP = 5
-ACTION_BOUND_LOW = -30
-ACTION_BOUND_HIGH = 30
+ACTION_BOUND_LOW = -1
+ACTION_BOUND_HIGH = 1
 TIME_WAIT_ACK = 0.1
 TIME_WAIT_ACK_MAX = 4
 TIME_WAIT_INIT_PUBS = 15
@@ -61,7 +62,7 @@ OUTPUT_GRAPH = True         # safe logs
 RENDER=True                 # render one worker
 LOG_DIR = './log'           # savelocation for logs
 N_WORKERS = 1				# number of workers
-MAX_EP_STEP = 2000          # maxumum number of steps per episode
+MAX_EP_STEP = 40            # maxumum number of steps per episode
 MAX_GLOBAL_EP = 2000        # total number of episodes
 GLOBAL_NET_SCOPE = 'Global_Net'
 UPDATE_GLOBAL_ITER = 10     # sets how often the global net is updated
@@ -95,3 +96,5 @@ if TORSO_ORIENTATION_IN_STATE:
 	N_S += 3
 if LAST_ACTION_IN_STATE:
 	N_S += N_A
+if USING_MARCOS_CONTROLLER:
+	N_S += 1
