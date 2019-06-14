@@ -9,12 +9,14 @@ import os
 class VrepEnvironment():
 	def __init__ (self, simu_name_id):
 		#incialize vrep simulation and wait for confirmation
-		'''if TESTING:
+		'''
+		if TESTING:
 			os.system(VREP_PATH+"/vrep.sh -s -q -g"+simu_name_id+" "+SCENE_FILE_PATH+"&")
 		else:
 			os.system('xvfb-run --auto-servernum --server-num=1 -s "-screen 0 640x480x24" '+VREP_PATH+"/vrep.sh -h -q -s -g"+simu_name_id+" "+SCENE_FILE_PATH+"&")
-		time.sleep(TIME_WAIT_INIT_PUBS)
 		'''
+		time.sleep(TIME_WAIT_INIT_PUBS)
+		
 		self.reset_pub = rospy.Publisher(simu_name_id+'/reset', Bool, queue_size=1) # define publisher para resetar simulação
 		self.pos_pub = rospy.Publisher(simu_name_id+'/joint_pos', Float32MultiArray, queue_size=1) #define publisher para as posições
 		rospy.init_node('controller_A3C')
