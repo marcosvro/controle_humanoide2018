@@ -11,19 +11,10 @@ from utils import v_wrap, set_init, push_and_pull, record
 import torch.nn.functional as F
 import torch.multiprocessing as mp
 from shared_adam import SharedAdam
-import gym
+from environment import VrepEnvironment
 import math, os
 from parameters import *
 os.environ["OMP_NUM_THREADS"] = "1"
-
-UPDATE_GLOBAL_ITER = 5
-GAMMA = 0.9
-MAX_EP = 3000
-MAX_EP_STEP = 200
-
-env = gym.make('Pendulum-v0')
-N_S = env.observation_space.shape[0]
-N_A = env.action_space.shape[0]
 
 
 class Net(nn.Module):
@@ -75,7 +66,7 @@ class Worker(mp.Process):
         self.g_ep, self.g_ep_r, self.res_queue = global_ep, global_ep_r, res_queue
         self.gnet, self.opt = gnet, opt
         self.lnet = Net(N_S, N_A)           # local network
-        self.env = gym.make('Pendulum-v0').unwrapped
+        self.env = VrepEnvironment(self.name)
 
     def run(self):
         total_step = 1
@@ -84,10 +75,10 @@ class Worker(mp.Process):
             buffer_s, buffer_a, buffer_r = [], [], []
             ep_r = 0.
             for t in range(MAX_EP_STEP):
-                if self.name == 'w0':
-                    self.env.render()
+                #if self.name == 'w0':
+                #    self.env.render()
                 a = self.lnet.choose_action(v_wrap(s[None, :]))
-                s_, r, done, _ = self.env.step(a.clip(-2, 2))
+                s_, r, done, _ = self.env.step(a.clip(-1, 1))
                 if t == MAX_EP_STEP - 1:
                     done = True
                 ep_r += r
