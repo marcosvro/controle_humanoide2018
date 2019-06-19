@@ -14,6 +14,8 @@ from shared_adam import SharedAdam
 from environment import VrepEnvironment
 import math, os
 from parameters import *
+import rospy
+from std_msgs.msg import Float32MultiArray, Bool
 os.environ["OMP_NUM_THREADS"] = "1"
 
 
@@ -107,12 +109,15 @@ if __name__ == "__main__":
     global_ep, global_ep_r, res_queue = mp.Value('i', 0), mp.Value('d', 0.), mp.Queue()
 
     # create publishers
+    '''
+    rospy.init_node('controller_A3C')
     pubs = []
-    for x in range(N_WORKERS):
-        reset_pub = rospy.Publisher(simu_name_id+'/reset', Bool, queue_size=1) # define publisher para resetar simulação
-        pos_pub = rospy.Publisher(simu_name_id+'/joint_pos', Float32MultiArray, queue_size=1) #define publisher para as posições
-        pubs.append([])
-
+    for i in range(N_WORKERS):
+        name = 'w%i' % i
+        reset_pub = rospy.Publisher(name+'/reset', Bool, queue_size=1) # define publisher para resetar simulação
+        pos_pub = rospy.Publisher(name+'/joint_pos', Float32MultiArray, queue_size=1) #define publisher para as posições
+        pubs.append([pos_pub, reset_pub])
+    '''
 
     # parallel training
     workers = [Worker(gnet, opt, global_ep, global_ep_r, res_queue, i) for i in range(N_WORKERS)]
