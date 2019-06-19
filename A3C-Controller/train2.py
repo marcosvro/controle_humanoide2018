@@ -41,7 +41,7 @@ class Net(nn.Module):
     def choose_action(self, s):
         self.training = False
         mu, sigma, _ = self.forward(s)
-        m = self.distribution(mu.view(1, ).data, sigma.view(1, ).data)
+        m = self.distribution(mu.view(N_A, ).data, sigma.view(N_A, ).data)
         return m.sample().numpy()
 
     def loss_func(self, s, a, v_t):
@@ -107,7 +107,7 @@ if __name__ == "__main__":
     global_ep, global_ep_r, res_queue = mp.Value('i', 0), mp.Value('d', 0.), mp.Queue()
 
     # parallel training
-    workers = [Worker(gnet, opt, global_ep, global_ep_r, res_queue, i) for i in range(mp.cpu_count()*2)]
+    workers = [Worker(gnet, opt, global_ep, global_ep_r, res_queue, i) for i in range(1)]
     [w.start() for w in workers]
     res = []                    # record episode reward to plot
     while True:

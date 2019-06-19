@@ -108,7 +108,9 @@ class Controlador():
 			self.atualiza_fps()
 			mat = Float32MultiArray()
 			mat.data = self.body_angles
+			#print("published!!")
 			self.pos_pub.publish(mat)
+			self.pub_rate.sleep()
 
 		return self.get_state()
 
@@ -150,6 +152,7 @@ class Controlador():
 
 	def t_pos_last_callback (self, vetor):
 		self.t_pos_last = np.array([vetor.x, vetor.y])
+		print (self.t_pos_last)
 
 
 	#Change state
