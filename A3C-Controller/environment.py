@@ -8,7 +8,7 @@ from std_msgs.msg import Float32MultiArray, Bool
 import os
 
 class VrepEnvironment():
-	def __init__ (self, simu_name_id, ):
+	def __init__ (self, simu_name_id, pos_pub, reset_pub):
 		#incialize vrep simulation and wait for confirmation
 		'''
 		if TESTING:
@@ -18,9 +18,12 @@ class VrepEnvironment():
 		'''
 		time.sleep(TIME_WAIT_INIT_PUBS)
 
+		rospy.init_node('controller_A3C'+simu_name_id, anonymous=True)
+
+		'''
 		self.reset_pub = rospy.Publisher(simu_name_id+'/reset', Bool, queue_size=1) # define publisher para resetar simulação
 		self.pos_pub = rospy.Publisher(simu_name_id+'/joint_pos', Float32MultiArray, queue_size=1) #define publisher para as posições
-		rospy.init_node('controller_A3C'+simu_name_id)
+		'''
 		self.pub_rate = rospy.Rate(N_PUBS_STEP/TIME_STEP_ACTION)
 
 		self.ack = False

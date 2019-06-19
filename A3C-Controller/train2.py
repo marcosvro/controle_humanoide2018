@@ -106,8 +106,16 @@ if __name__ == "__main__":
     opt = SharedAdam(gnet.parameters(), lr=0.0002)  # global optimizer
     global_ep, global_ep_r, res_queue = mp.Value('i', 0), mp.Value('d', 0.), mp.Queue()
 
+    # create publishers
+    pubs = []
+    for x in range(N_WORKERS):
+        reset_pub = rospy.Publisher(simu_name_id+'/reset', Bool, queue_size=1) # define publisher para resetar simulação
+        pos_pub = rospy.Publisher(simu_name_id+'/joint_pos', Float32MultiArray, queue_size=1) #define publisher para as posições
+        pubs.append([])
+
+
     # parallel training
-    workers = [Worker(gnet, opt, global_ep, global_ep_r, res_queue, i) for i in range(1)]
+    workers = [Worker(gnet, opt, global_ep, global_ep_r, res_queue, i) for i in range(N_WORKERS)]
     [w.start() for w in workers]
     res = []                    # record episode reward to plot
     while True:
