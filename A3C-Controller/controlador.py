@@ -10,6 +10,7 @@ except Exception as e:
 import math
 from body_solver import Body
 from parameters import *
+import os
 
 
 def sigmoid_deslocada(x, periodo):
@@ -18,11 +19,16 @@ def sigmoid_deslocada(x, periodo):
 class Controlador():
 
 	def __init__(self,
-				simu_name_id,
+				idx,
 				pub,
 				pub_rate,
+				t_ori,
+				t_acc,
+				t_pos,
 				gravity_compensation_enable = False):
 		
+		simu_name_id = 'w%i' % idx
+		self.w_id = idx
 		self.a = UPPER_LEG_LENGHT
 		self.c = LOWER_LEG_LENGHT
 		self.deslocamentoXpesMAX = SHIFT_X_FOOT_MAX
@@ -38,8 +44,14 @@ class Controlador():
 		self.time_ignore_GC = TIME_TO_IGNORE_GC #entre 0 e 1 - gravity compensation rodará no intervalo (tempoPasso*time_ignore_GC, tempoPasso*(1-time_ignore_GC))
 		self.gravity_compensation_enable = gravity_compensation_enable
 		self.body = Body()
-		self.pos_pub = pub
+		self.pub_queue = pub
 		self.pub_rate = pub_rate
+
+		self.t_acc_shd = t_acc 	# accelerometer
+		self.t_ori_shd = t_ori 	# IMU
+		self.t_pos_shd = t_pos	    # position (X Y), odometry
+
+		self.reset()
 
 		#define subscribers para os dados do state
 		time.sleep(TIME_WAIT_INIT_PUBS)
@@ -47,10 +59,13 @@ class Controlador():
 		rospy.Subscriber("/vrep_ros_interface/"+simu_name_id+"/t_ori_last", Vector3, self.t_ori_last_callback)
 		rospy.Subscriber("/vrep_ros_interface/"+simu_name_id+"/t_pos_last", Vector3, self.t_pos_last_callback)
 
-		self.reset()
-
 
 	def reset(self):
+		#dados que vem do simulador
+		self.t_acc_last = np.array([0.]*3)
+		self.t_ori_last = np.array([0.]*3)
+		self.t_pos_last = np.array([0.]*2)
+
 		#variaveis do controlador marcos
 		self.altura = HEIGHT_INIT
 		self.pos_inicial_pelves = [0., DISTANCE_FOOT_INIT/2, HEIGHT_INIT]
@@ -75,11 +90,6 @@ class Controlador():
 		self.rota_dir = 0
 		self.rota_esq = 0
 		self.deltaTime = 0
-
-		#dados que vem do simulador
-		self.t_acc_last = np.array([0., 0., 0.])	# accelerometer
-		self.t_ori_last = np.array([0., 0., 0.])	# IMU
-		self.t_pos_last = np.array([0., 0.])	    # position (X Y), odometry
 
 		return self.get_state()
 
@@ -106,16 +116,23 @@ class Controlador():
 		while(not self.chage_state()):
 			self.atualiza_cinematica(cmd)
 			self.atualiza_fps()
+			'''
 			mat = Float32MultiArray()
 			mat.data = self.body_angles
 			#print("published!!")
 			self.pos_pub.publish(mat)
+			'''
+			self.pub_queue.put([False, self.w_id, self.body_angles])
 			self.pub_rate.sleep()
 
 		return self.get_state()
 
 
 	def get_state(self):
+		self.t_pos_last = np.array(self.t_pos_shd)
+		self.t_ori_last = np.array(self.t_ori_shd)
+		self.t_acc_last = np.array(self.t_acc_shd)
+
 		state = ((self.t_pos_last-self.pos_target)/np.linalg.norm(self.t_pos_last-self.pos_target)).tolist()
 		if COM_IN_STATE:
 			self.body.set_angles(self.body_angles[:6], self.body_angles[6:12])
@@ -125,12 +142,13 @@ class Controlador():
 		if USING_MARCOS_CONTROLLER:
 			state += [self.perna]
 		if TORSO_ACCELERATION_IN_STATE:
-			state += self.t_acc_last.tolist()
+			state += (self.t_acc_last/11.).tolist()
 		if TORSO_ORIENTATION_IN_STATE:
-			state += self.t_ori_last.tolist()
+			state += (self.t_ori_last/math.pi).tolist()
 		if LAST_ACTION_IN_STATE:
 			state += self.action_last.tolist()
 
+		print(self.t_ori_last)
 		#check if done
 		if math.fabs(self.t_ori_last[0]) > ANGLE_FALLEN_THRESHOLD or math.fabs(self.t_ori_last[1]) > ANGLE_FALLEN_THRESHOLD:
 			self.done = True
@@ -138,21 +156,25 @@ class Controlador():
 		else:
 			to_target = self.pos_target - self.t_pos_last
 			erro_ori = (to_target[0]/(np.sum(to_target)))*math.cos(self.t_ori_last[2])-(to_target[1]/(np.sum(to_target)))*math.sin(self.t_ori_last[2])
-			reward = W_ORI*math.exp(-((1-erro_ori)**2))+W_INC/2*math.exp(-((self.t_ori_last[0])**2))+W_INC/2*math.exp(-((self.t_ori_last[1])**2))+W_DIST*math.exp(-(np.linalg.norm(self.t_pos_last-self.pos_target)))-(W_DIST+W_INC+W_ORI)
+			reward = W_ORI*math.exp(-((1-erro_ori)**2))+W_INC/2*math.exp(-((self.t_ori_last[0])**2))+W_INC/2*math.exp(-((self.t_ori_last[1])**2))+W_DIST*math.exp(-(np.linalg.norm(self.t_pos_last-self.pos_target)))
 
 		#print(self.done)
 		return np.array(state), self.done, reward
 
 
 	def t_acc_last_callback (self, vetor):
-		self.t_acc_last = np.array([vetor.x, vetor.y, vetor.z])
+		self.t_acc_shd[0] = vetor.x
+		self.t_acc_shd[1] = vetor.y
+		self.t_acc_shd[2] = vetor.z
 
 	def t_ori_last_callback (self, vetor):
-		self.t_ori_last = np.array([vetor.x, vetor.y, vetor.z])*math.pi/180.
+		self.t_ori_shd[0] = vetor.x*DEG_2_RAD
+		self.t_ori_shd[1] = vetor.y*DEG_2_RAD
+		self.t_ori_shd[2] = vetor.z*DEG_2_RAD
 
 	def t_pos_last_callback (self, vetor):
-		self.t_pos_last = np.array([vetor.x, vetor.y])
-		print (self.t_pos_last)
+		self.t_pos_shd[0] = vetor.x
+		self.t_pos_shd[1] = vetor.y
 
 
 	#Change state

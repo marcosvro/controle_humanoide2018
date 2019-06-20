@@ -10,6 +10,7 @@ import torch.nn as nn
 from utils import v_wrap, set_init, push_and_pull, record
 import torch.nn.functional as F
 import torch.multiprocessing as mp
+from multiprocessing import Queue
 from shared_adam import SharedAdam
 from environment import VrepEnvironment
 import math, os
@@ -62,13 +63,13 @@ class Net(nn.Module):
 
 
 class Worker(mp.Process):
-    def __init__(self, gnet, opt, global_ep, global_ep_r, res_queue, name):
+    def __init__(self, gnet, opt, global_ep, global_ep_r, res_queue, idx, pub_queue, t_ori, t_acc, t_pos):
         super(Worker, self).__init__()
-        self.name = 'w%i' % name
+        self.name = 'w%i' % idx
         self.g_ep, self.g_ep_r, self.res_queue = global_ep, global_ep_r, res_queue
         self.gnet, self.opt = gnet, opt
         self.lnet = Net(N_S, N_A)           # local network
-        self.env = VrepEnvironment(self.name)
+        self.env = VrepEnvironment(idx, pub_queue, t_ori, t_acc, t_pos)
 
     def run(self):
         total_step = 1
@@ -106,28 +107,43 @@ if __name__ == "__main__":
     gnet = Net(N_S, N_A)        # global network
     gnet.share_memory()         # share the global parameters in multiprocessing
     opt = SharedAdam(gnet.parameters(), lr=0.0002)  # global optimizer
-    global_ep, global_ep_r, res_queue = mp.Value('i', 0), mp.Value('d', 0.), mp.Queue()
+    global_ep, global_ep_r, res_queue, pub_queue = mp.Value('i', 0), mp.Value('d', 0.), mp.Queue(), mp.Queue()
 
     # create publishers
-    '''
+    
     rospy.init_node('controller_A3C')
     pubs = []
+    states = []
     for i in range(N_WORKERS):
         name = 'w%i' % i
         reset_pub = rospy.Publisher(name+'/reset', Bool, queue_size=1) # define publisher para resetar simulação
         pos_pub = rospy.Publisher(name+'/joint_pos', Float32MultiArray, queue_size=1) #define publisher para as posições
+        t_ori_last = mp.Array('d', [0]*3)
+        t_acc_last = mp.Array('d', [0]*3)
+        t_pos_last = mp.Array('d', [0]*2)
+        states.append([t_ori_last, t_acc_last, t_pos_last])
         pubs.append([pos_pub, reset_pub])
-    '''
+    
 
     # parallel training
-    workers = [Worker(gnet, opt, global_ep, global_ep_r, res_queue, i) for i in range(N_WORKERS)]
+    workers = [Worker(gnet, opt, global_ep, global_ep_r, res_queue, i, pub_queue, states[i][0], states[i][1], states[i][2]) for i in range(N_WORKERS)]
     [w.start() for w in workers]
     res = []                    # record episode reward to plot
     while True:
-        r = res_queue.get()
-        if r is not None:
-            res.append(r)
+        msg = pub_queue.get()
+        if msg is not None:
+            trueReset_falseJointPos = msg[0]
+            i = msg[1]
+            if (trueReset_falseJointPos): # reset msg
+                to_send = Bool()
+                to_send.data = msg[2]
+                pubs[i][1].publish(to_send)
+            else: # joint position msg
+                to_send = Float32MultiArray()
+                to_send.data = msg[2]
+                pubs[i][0].publish(to_send)
         else:
+            print("Acabou")
             break
     [w.join() for w in workers]
 
