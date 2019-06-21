@@ -15,7 +15,7 @@ class VrepEnvironment():
 		if TESTING:
 			os.system(VREP_PATH+"/vrep.sh -s -q -g"+simu_name_id+" "+SCENE_FILE_PATH+"&")
 		else:
-			os.system('xvfb-run --auto-servernum --server-num=1 -s "-screen 0 640x480x24" '+VREP_PATH+"/vrep.sh -h -q -s -g"+simu_name_id+" "+SCENE_FILE_PATH+"&")
+			os.system('xvfb-run --auto-servernum -s "-screen 0 50x50x24" '+VREP_PATH+"/vrep.sh -q -s -g"+simu_name_id+" "+SCENE_FILE_PATH+"&")
 		self.w_id = idx
 
 		time.sleep(TIME_WAIT_INIT_PUBS)
