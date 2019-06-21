@@ -82,12 +82,14 @@ class Worker(mp.Process):
                 #    self.env.render()
                 a = self.lnet.choose_action(v_wrap(s[None, :]))
                 s_, r, done, _ = self.env.step(a.clip(-1, 1))
-                if t == MAX_EP_STEP - 1:
-                    done = True
+                
+                if done:
+                    r = -1
+
                 ep_r += r
                 buffer_a.append(a)
                 buffer_s.append(s)
-                buffer_r.append((r+8.1)/8.1)    # normalize
+                buffer_r.append(r)    # normalize
 
                 if total_step % UPDATE_GLOBAL_ITER == 0 or done:  # update global and assign to local net
                     # sync
@@ -106,7 +108,7 @@ class Worker(mp.Process):
 if __name__ == "__main__":
     gnet = Net(N_S, N_A)        # global network
     gnet.share_memory()         # share the global parameters in multiprocessing
-    opt = SharedAdam(gnet.parameters(), lr=0.0002)  # global optimizer
+    opt = SharedAdam(gnet.parameters(), lr=0.0001)  # global optimizer
     global_ep, global_ep_r, res_queue, pub_queue = mp.Value('i', 0), mp.Value('d', 0.), mp.Queue(), mp.Queue()
 
     # create publishers

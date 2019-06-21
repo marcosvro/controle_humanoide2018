@@ -39,7 +39,7 @@ TIME_TO_IGNORE_GC = 0.1
 KP_CONST = 0.6
 
 #simulation
-TESTING = True
+TESTING = False
 VREP_PATH = '~/vrep'
 SCENE_FILE_PATH = '~/Documentos/controle_humanoide2018/teste_09_03.ttt'
 TIME_STEP_ACTION = 0.2
@@ -61,7 +61,7 @@ W_INC = 0.25
 OUTPUT_GRAPH = True         # safe logs
 RENDER=True                 # render one worker
 LOG_DIR = './log'           # savelocation for logs
-N_WORKERS = 1				# number of workers
+N_WORKERS = 2				# number of workers
 MAX_EP_STEP = 10            # maxumum number of steps per episode
 MAX_EP = 300                # maximum number of episodes
 MAX_GLOBAL_EP = MAX_EP      # idem MAX_EP, but to tensorflow A3C implementation.

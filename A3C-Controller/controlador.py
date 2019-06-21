@@ -148,7 +148,7 @@ class Controlador():
 		if LAST_ACTION_IN_STATE:
 			state += self.action_last.tolist()
 
-		print(self.t_ori_last)
+		#print(self.t_ori_last)
 		#check if done
 		if math.fabs(self.t_ori_last[0]) > ANGLE_FALLEN_THRESHOLD or math.fabs(self.t_ori_last[1]) > ANGLE_FALLEN_THRESHOLD:
 			self.done = True

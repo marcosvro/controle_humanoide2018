@@ -37,7 +37,6 @@ class VrepEnvironment():
 	def reset(self):
 		#reset robot on environment
 		self.cmd =  not self.cmd
-		print("resetei no environment! cmd status : ", self.cmd)
 		#self.reset_pub.publish(Bool(self.cmd))
 		self.pub_queue.put([True, self.w_id, self.cmd])
 		self.wait_ack() #wait for sim confirmation
