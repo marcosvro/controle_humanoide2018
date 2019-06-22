@@ -63,10 +63,10 @@ class Net(nn.Module):
 
 
 class Worker(mp.Process):
-    def __init__(self, gnet, opt, global_ep, global_ep_r, res_queue, idx, pub_queue, t_ori, t_acc, t_pos):
+    def __init__(self, gnet, opt, global_ep, global_ep_r, res_queue, best_ep_r, idx, pub_queue, t_ori, t_acc, t_pos):
         super(Worker, self).__init__()
         self.name = 'w%i' % idx
-        self.g_ep, self.g_ep_r, self.res_queue = global_ep, global_ep_r, res_queue
+        self.g_ep, self.g_ep_r, self.res_queue, self.best_ep_r = global_ep, global_ep_r, res_queue, best_ep_r
         self.gnet, self.opt = gnet, opt
         self.lnet = Net(N_S, N_A)           # local network
         self.env = VrepEnvironment(idx, pub_queue, t_ori, t_acc, t_pos)
@@ -97,7 +97,7 @@ class Worker(mp.Process):
                     buffer_s, buffer_a, buffer_r = [], [], []
 
                     if done:  # done and print information
-                        record(self.g_ep, self.g_ep_r, ep_r, self.res_queue, self.name)
+                        record(self.g_ep, self.g_ep_r, ep_r, self.res_queue, self.best_ep_r, self.name, self.lnet.state_dict())
                         break
                 s = s_
                 total_step += 1
@@ -109,7 +109,7 @@ if __name__ == "__main__":
     gnet = Net(N_S, N_A)        # global network
     gnet.share_memory()         # share the global parameters in multiprocessing
     opt = SharedAdam(gnet.parameters(), lr=0.0001)  # global optimizer
-    global_ep, global_ep_r, res_queue, pub_queue = mp.Value('i', 0), mp.Value('d', 0.), mp.Queue(), mp.Queue()
+    global_ep, global_ep_r, res_queue, pub_queue, best_ep_r = mp.Value('i', 0), mp.Value('d', 0.), mp.Queue(), mp.Queue(), mp.Value('d', 0.)
 
     # create publishers
     
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     
 
     # parallel training
-    workers = [Worker(gnet, opt, global_ep, global_ep_r, res_queue, i, pub_queue, states[i][0], states[i][1], states[i][2]) for i in range(N_WORKERS)]
+    workers = [Worker(gnet, opt, global_ep, global_ep_r, res_queue, best_ep_r, i, pub_queue, states[i][0], states[i][1], states[i][2]) for i in range(N_WORKERS)]
     [w.start() for w in workers]
     res = []                    # record episode reward to plot
     while True:
