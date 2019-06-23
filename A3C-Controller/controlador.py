@@ -102,7 +102,7 @@ class Controlador():
 		action[3] = (action[3]+1)*SHIFT_Z_FOOT_MAX
 		self.rot_desvio = 1 if action[4] > 0 else -1
 		action[4] = math.fabs(action[4])*ANGLE_Z_HIP_MAX
-		action[5] = (action[5]+1) * TIME_STEP_MAX
+		action[5] = (action[5]+1) * TIME_STEP_MAX + TIME_STEP_MIN
 
 		self.altura = HEIGHT_INIT+action[0]
 		self.deslocamentoXpes = action[1]
