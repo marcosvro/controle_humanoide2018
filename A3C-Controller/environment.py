@@ -31,7 +31,7 @@ class VrepEnvironment():
 		self.cmd = False
 
 		self.sub_controller = Controlador(idx, pub_queue, pub_rate, t_ori, t_acc, t_pos, gravity_compensation_enable=True)
-		rospy.Subscriber("/vrep_ros_interface/"+simu_name_id+'/ack', Bool, self.ack_callback)
+		rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+'/ack', Bool, self.ack_callback)
 		print("Ambiente inicializado!!")
 
 	def reset(self):

@@ -1,7 +1,7 @@
 from torch import nn
 import torch
 import numpy as np
-
+from parameters import *
 
 def v_wrap(np_array, dtype=np.float32):
     if np_array.dtype != dtype:
@@ -63,7 +63,7 @@ def record(global_ep, global_ep_r, ep_r, res_queue, best_ep_r, name, state_dicts
     print(
         name,
         "Ep:", global_ep.value,
-        "| Ep_r: %.0f" % ep_r,
-        "| Global Ep_r: %.0f" % global_ep_r.value,
+        "| Ep_r: %.1f" % ep_r,
+        "| Global Ep_r: %.1f" % global_ep_r.value,
         saved_msg,
     )

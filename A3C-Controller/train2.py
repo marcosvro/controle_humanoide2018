@@ -82,7 +82,9 @@ class Worker(mp.Process):
                 #    self.env.render()
                 a = self.lnet.choose_action(v_wrap(s[None, :]))
                 s_, r, done, _ = self.env.step(a.clip(-1, 1))
-                
+
+                if math.isnan(r):
+                    r = 0
                 if done:
                     r = -1
 
@@ -112,7 +114,7 @@ if __name__ == "__main__":
     global_ep, global_ep_r, res_queue, pub_queue, best_ep_r = mp.Value('i', 0), mp.Value('d', 0.), mp.Queue(), mp.Queue(), mp.Value('d', 0.)
 
     # create publishers
-    
+
     rospy.init_node('controller_A3C')
     pubs = []
     states = []
@@ -125,7 +127,7 @@ if __name__ == "__main__":
         t_pos_last = mp.Array('d', [0]*2)
         states.append([t_ori_last, t_acc_last, t_pos_last])
         pubs.append([pos_pub, reset_pub])
-    
+
 
     # parallel training
     workers = [Worker(gnet, opt, global_ep, global_ep_r, res_queue, best_ep_r, i, pub_queue, states[i][0], states[i][1], states[i][2]) for i in range(N_WORKERS)]
@@ -133,6 +135,7 @@ if __name__ == "__main__":
     res = []                    # record episode reward to plot
     while True:
         msg = pub_queue.get()
+        print(pub_queue.qsize())
         if msg is not None:
             trueReset_falseJointPos = msg[0]
             i = msg[1]

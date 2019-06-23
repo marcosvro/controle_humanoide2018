@@ -48,7 +48,7 @@ ACTION_BOUND_LOW = -1
 ACTION_BOUND_HIGH = 1
 TIME_WAIT_ACK = 0.1
 TIME_WAIT_ACK_MAX = 4
-TIME_WAIT_INIT_PUBS = 5
+TIME_WAIT_INIT_PUBS = 15
 ANGLE_FALLEN_THRESHOLD = 60*DEG_2_RAD
 TARGET_BOUND_RANGE = 1.5
 
@@ -60,10 +60,10 @@ W_INC = 0.25
 #network
 OUTPUT_GRAPH = True         # safe logs
 RENDER=True                 # render one worker
-LOG_DIR = './log/weigths'   # savelocation for logs
-N_WORKERS = 20  	# number of workers
+LOG_DIR = './log'           # savelocation for logs
+N_WORKERS = 2				# number of workers
 MAX_EP_STEP = 10            # maxumum number of steps per episode
-MAX_EP = 1000000            # maximum number of episodes
+MAX_EP = 300                # maximum number of episodes
 MAX_GLOBAL_EP = MAX_EP      # idem MAX_EP, but to tensorflow A3C implementation.
 GLOBAL_NET_SCOPE = 'Global_Net'
 UPDATE_GLOBAL_ITER = 5      # sets how often the global net is updated
