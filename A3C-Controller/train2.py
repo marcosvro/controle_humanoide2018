@@ -63,25 +63,31 @@ class Net(nn.Module):
 
 
 class Worker(mp.Process):
-    def __init__(self, gnet, opt, global_ep, global_ep_r, res_queue, best_ep_r, idx, pub_queue, t_ori, t_acc, t_pos):
+    def __init__(self, gnet, opt, global_ep, global_ep_r, res_queue, best_ep_r, idx, pub_queue, t_ori, t_acc, t_pos, w_state):
         super(Worker, self).__init__()
+        self.w_state = w_state
+        self.w_state.value = 1
         self.name = 'w%i' % idx
         self.g_ep, self.g_ep_r, self.res_queue, self.best_ep_r = global_ep, global_ep_r, res_queue, best_ep_r
         self.gnet, self.opt = gnet, opt
         self.lnet = Net(N_S, N_A)           # local network
         self.env = VrepEnvironment(idx, pub_queue, t_ori, t_acc, t_pos)
+        self.w_state = w_state
 
     def run(self):
         total_step = 1
         while self.g_ep.value < MAX_EP:
+            self.w_state.value = 2
             s = self.env.reset()
             buffer_s, buffer_a, buffer_r = [], [], []
             ep_r = 0.
             for t in range(MAX_EP_STEP):
                 #if self.name == 'w0':
                 #    self.env.render()
+                self.w_state.value = 3
                 a = self.lnet.choose_action(v_wrap(s[None, :]))
                 s_, r, done, _ = self.env.step(a.clip(-1, 1))
+                self.w_state.value = 4
 
                 if math.isnan(r):
                     r = 0
@@ -94,6 +100,7 @@ class Worker(mp.Process):
                 buffer_r.append(r)    # normalize
 
                 if total_step % UPDATE_GLOBAL_ITER == 0 or done:  # update global and assign to local net
+                    self.w_state.value = 5
                     # sync
                     push_and_pull(self.opt, self.lnet, self.gnet, done, s_, buffer_s, buffer_a, buffer_r, GAMMA)
                     buffer_s, buffer_a, buffer_r = [], [], []
@@ -118,6 +125,7 @@ if __name__ == "__main__":
     rospy.init_node('controller_A3C')
     pubs = []
     states = []
+    w_states = []
     for i in range(N_WORKERS):
         name = 'w%i' % i
         reset_pub = rospy.Publisher(name+'/reset', Bool, queue_size=1) # define publisher para resetar simulação
@@ -125,17 +133,22 @@ if __name__ == "__main__":
         t_ori_last = mp.Array('d', [0]*3)
         t_acc_last = mp.Array('d', [0]*3)
         t_pos_last = mp.Array('d', [0]*2)
+        w_state = mp.Value('i', 0)
         states.append([t_ori_last, t_acc_last, t_pos_last])
         pubs.append([pos_pub, reset_pub])
+        w_states.append(w_state)
 
 
     # parallel training
-    workers = [Worker(gnet, opt, global_ep, global_ep_r, res_queue, best_ep_r, i, pub_queue, states[i][0], states[i][1], states[i][2]) for i in range(N_WORKERS)]
+    workers = [Worker(gnet, opt, global_ep, global_ep_r, res_queue, best_ep_r, i, pub_queue, states[i][0], states[i][1], states[i][2], w_states[i]) for i in range(N_WORKERS)]
     [w.start() for w in workers]
     res = []                    # record episode reward to plot
     while True:
         msg = pub_queue.get()
-        print(pub_queue.qsize())
+        debug = [0]*N_WORKERS
+        for i in range(N_WORKERS):
+            debug[i] = w_states[i].value
+        print (debug)
         if msg is not None:
             trueReset_falseJointPos = msg[0]
             i = msg[1]
