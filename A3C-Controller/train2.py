@@ -10,6 +10,7 @@ import torch.nn as nn
 from utils import v_wrap, set_init, push_and_pull, record
 import torch.nn.functional as F
 import torch.multiprocessing as mp
+import threading as mt
 from multiprocessing import Queue
 from shared_adam import SharedAdam
 from environment import VrepEnvironment
@@ -18,6 +19,17 @@ from parameters import *
 import rospy
 from std_msgs.msg import Float32MultiArray, Bool
 os.environ["OMP_NUM_THREADS"] = "1"
+
+def pub_worker_state(pub, w_states):
+    rate = rospy.Rate(10) # 10hz
+    while not rospy.is_shutdown():
+        debug = [0]*N_WORKERS
+        for i in range(N_WORKERS):
+            debug[i] = w_states[i].value
+        mat = Float32MultiArray()
+        mat.data = debug
+        pub.publish(mat)
+        rate.sleep()
 
 
 class Net(nn.Module):
@@ -138,6 +150,10 @@ if __name__ == "__main__":
         pubs.append([pos_pub, reset_pub])
         w_states.append(w_state)
 
+    # create worker state logger
+    w_state_pub = rospy.Publisher('worker_state_logger', Float32MultiArray, queue_size=1)
+    t = mt.Thread(target=pub_worker_state, args=(w_state_pub, w_states,))
+    t.start()
 
     # parallel training
     workers = [Worker(gnet, opt, global_ep, global_ep_r, res_queue, best_ep_r, i, pub_queue, states[i][0], states[i][1], states[i][2], w_states[i]) for i in range(N_WORKERS)]
@@ -145,10 +161,12 @@ if __name__ == "__main__":
     res = []                    # record episode reward to plot
     while True:
         msg = pub_queue.get()
+        '''
         debug = [0]*N_WORKERS
         for i in range(N_WORKERS):
             debug[i] = w_states[i].value
         print (debug)
+        '''
         if msg is not None:
             trueReset_falseJointPos = msg[0]
             i = msg[1]
