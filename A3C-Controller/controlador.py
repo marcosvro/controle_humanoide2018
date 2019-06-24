@@ -349,7 +349,7 @@ class Controlador():
 
 		cmd_to_float = 1. if cmd else 0.
 		self.body_angles = data+[cmd_to_float]
-		self.gravity_compensation()
+		#self.gravity_compensation()
 
 
 	def gravity_compensation(self):

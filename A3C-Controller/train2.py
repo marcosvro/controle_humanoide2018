@@ -37,20 +37,24 @@ class Net(nn.Module):
         super(Net, self).__init__()
         self.s_dim = s_dim
         self.a_dim = a_dim
-        self.a1 = nn.Linear(s_dim, 200)
-        self.mu = nn.Linear(200, a_dim)
-        self.sigma = nn.Linear(200, a_dim)
-        self.c1 = nn.Linear(s_dim, 100)
-        self.v = nn.Linear(100, 1)
-        set_init([self.a1, self.mu, self.sigma, self.c1, self.v])
+        self.a1 = nn.Linear(s_dim, 512)
+        self.a2 = nn.Linear(512, 256)
+        self.mu = nn.Linear(256, a_dim)
+        self.sigma = nn.Linear(256, a_dim)
+        self.c1 = nn.Linear(s_dim, 512)
+        self.c2 = nn.Linear(512, 256)
+        self.v = nn.Linear(256, 1)
+        set_init([self.a1, self.a2, self.mu, self.sigma, self.c1, self.c2, self.v])
         self.distribution = torch.distributions.Normal
 
     def forward(self, x):
         a1 = F.relu6(self.a1(x))
-        mu = 2 * F.tanh(self.mu(a1))
-        sigma = F.softplus(self.sigma(a1)) + 0.001      # avoid 0
+        a2 = F.relu6(self.a2(a1))
+        mu = 2 * F.tanh(self.mu(a2))
+        sigma = F.softplus(self.sigma(a2)) + 0.001      # avoid 0
         c1 = F.relu6(self.c1(x))
-        values = self.v(c1)
+        c2 = F.relu6(self.c2(c1))
+        values = self.v(c2)
         return mu, sigma, values
 
     def choose_action(self, s):
@@ -133,7 +137,6 @@ if __name__ == "__main__":
     global_ep, global_ep_r, res_queue, pub_queue, best_ep_r = mp.Value('i', 0), mp.Value('d', 0.), mp.Queue(), mp.Queue(), mp.Value('d', 0.)
 
     # create publishers
-
     rospy.init_node('controller_A3C')
     pubs = []
     states = []
