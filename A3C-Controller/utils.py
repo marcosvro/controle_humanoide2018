@@ -53,8 +53,8 @@ def record(global_ep, global_ep_r, ep_r, res_queue, best_ep_r, name, state_dicts
             global_ep_r.value = global_ep_r.value * 0.99 + ep_r * 0.01
     with best_ep_r.get_lock():
         saved = False
-        if ep_r > best_ep_r.value:
-            best_ep_r.value = ep_r
+        if global_ep_r.value > best_ep_r.value:
+            best_ep_r.value = global_ep_r.value
             torch.save(state_dicts, LOG_DIR)
             saved = True
 
@@ -65,5 +65,6 @@ def record(global_ep, global_ep_r, ep_r, res_queue, best_ep_r, name, state_dicts
         "Ep:", global_ep.value,
         "| Ep_r: %.1f" % ep_r,
         "| Global Ep_r: %.1f" % global_ep_r.value,
+        "| Best Global Ep_r: %.1f" % best_ep_r.value,
         saved_msg,
     )
