@@ -166,7 +166,7 @@ class Controlador():
 		else:
 			to_target = self.pos_target - self.t_pos_last
 			erro_ori = (to_target[0]/(np.sum(to_target)))*math.cos(self.t_ori_last[2])-(to_target[1]/(np.sum(to_target)))*math.sin(self.t_ori_last[2])
-			reward = W_ORI*math.exp(-((1-erro_ori)**2))+W_INC/2*math.exp(-((self.t_ori_last[0])**2))+W_INC/2*math.exp(-((self.t_ori_last[1])**2))+W_DIST*math.exp(-(np.linalg.norm(self.t_pos_last-self.pos_target)))
+			reward = W_ORI*math.exp(-((1-erro_ori)**2))+W_INC/2.*math.exp(-(math.fabs(self.t_ori_last[0])))+W_INC/2.*math.exp(-(math.fabs(self.t_ori_last[1])))+W_DIST*math.exp(-(np.linalg.norm(self.t_pos_last-self.pos_target)**2))
 
 		#print(self.done)
 		return np.array(state), self.done, reward

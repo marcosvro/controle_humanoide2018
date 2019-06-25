@@ -51,7 +51,7 @@ class Net(nn.Module):
     def forward(self, x):
         a1 = F.relu6(self.a1(x))
         a2 = F.relu6(self.a2(a1))
-        mu = 2 * F.tanh(self.mu(a2))
+        mu = F.tanh(self.mu(a2))
         sigma = F.softplus(self.sigma(a2)) + 0.001      # avoid 0
         c1 = F.relu6(self.c1(x))
         c2 = F.relu6(self.c2(c1))
@@ -109,21 +109,22 @@ class Worker(mp.Process):
                 if math.isnan(r):
                     r = 0
                 if done:
-                    r = -1
+                    r = 0
 
                 ep_r += r
                 buffer_a.append(a)
                 buffer_s.append(s)
                 buffer_r.append(r)    # normalize
 
-                if total_step % UPDATE_GLOBAL_ITER == 0 or done:  # update global and assign to local net
+                if t == MAX_EP_STEP-1 or done:  # update global and assign to local net
                     self.w_state.value = 5
                     # sync
                     push_and_pull(self.opt, self.lnet, self.gnet, done, s_, buffer_s, buffer_a, buffer_r, GAMMA)
                     buffer_s, buffer_a, buffer_r = [], [], []
 
-                    if done:  # done and print information
-                        record(self.g_ep, self.g_ep_r, ep_r, self.res_queue, self.best_ep_r, self.name, self.lnet.state_dict())
+                    # print information
+                    record(self.g_ep, self.g_ep_r, ep_r, self.res_queue, self.best_ep_r, self.name, self.lnet.state_dict())
+                    if done:  # done
                         break
                 s = s_
                 total_step += 1
