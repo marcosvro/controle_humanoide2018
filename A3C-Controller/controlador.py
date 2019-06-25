@@ -34,7 +34,6 @@ class Controlador():
 		self.deslocamentoXpesMAX = SHIFT_X_FOOT_MAX
 		self.deslocamentoZpesMAX = SHIFT_Z_FOOT_MAX
 		self.deslocamentoYpelvesMAX = SHIFT_Y_HIP_MAX
-		self.angulo_vira = ANGLE_Z_HIP_MAX
 		self.body_angles = [0]*19
 		self.fps_count = 0
 		self.last_time = 0
@@ -55,9 +54,9 @@ class Controlador():
 
 		#define subscribers para os dados do state
 		time.sleep(TIME_WAIT_INIT_PUBS)
-		rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_acc_last", Vector3, self.t_acc_last_callback)
-		rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_ori_last", Vector3, self.t_ori_last_callback)
-		rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_pos_last", Vector3, self.t_pos_last_callback)
+		rospy.Subscriber("/vrep_ros_interface/"+simu_name_id+"/t_acc_last", Vector3, self.t_acc_last_callback)
+		rospy.Subscriber("/vrep_ros_interface/"+simu_name_id+"/t_ori_last", Vector3, self.t_ori_last_callback)
+		rospy.Subscriber("/vrep_ros_interface/"+simu_name_id+"/t_pos_last", Vector3, self.t_pos_last_callback)
 
 
 	def reset(self):
@@ -104,14 +103,25 @@ class Controlador():
 		action[4] = math.fabs(action[4])*ANGLE_Z_HIP_MAX
 		action[5] = (action[5]+1) * TIME_STEP_MAX + TIME_STEP_MIN
 
+		
 		self.altura = HEIGHT_INIT+action[0]
 		self.deslocamentoXpes = action[1]
 		self.deslocamentoYpelves = action[2]
 		self.deslocamentoZpes = action[3]
 		self.deslocamentoZpelves = action[4]
 		self.tempoPasso = action[5]
+		
 
+		'''
+		self.altura = 17.
+		self.deslocamentoXpes = 2.
+		self.deslocamentoYpelves = 3.5
+		self.deslocamentoZpes = 1.5
+		self.deslocamentoZpelves = 5.
+		self.tempoPasso = 1.
+		'''
 
+		self.last_time = time.time()
 		self.atualiza_fps()
 		while(not self.chage_state()):
 			self.atualiza_cinematica(cmd)
@@ -289,20 +299,20 @@ class Controlador():
 		
 			#ROTINHA PARA VIRAR/PARAR DE VIRAR PARA A ESQUERDA
 			if self.rota_dir == 1:
-				data_pelv[5] = self.angulo_vira/2. + self.angulo_vira/2.*((np.exp((2*(x-125/2))/50) - np.exp((2*(x-125/2))/-50))/(np.exp((2*(x-125/2))/50)+np.exp((2*(x-125/2))/-50)))
+				data_pelv[5] = self.deslocamentoZpelves/2. + self.deslocamentoZpelves/2.*((np.exp((2*(x-125/2))/50) - np.exp((2*(x-125/2))/-50))/(np.exp((2*(x-125/2))/50)+np.exp((2*(x-125/2))/-50)))
 				data_pelv[5] = data_pelv[5] * math.pi/180.
 			elif self.rota_dir == -1:
-				data_pelv[5] = -self.angulo_vira/2. - self.angulo_vira/2.*((np.exp((2*(x-125/2))/50) - np.exp((2*(x-125/2))/-50))/(np.exp((2*(x-125/2))/50)+np.exp((2*(x-125/2))/-50)))
+				data_pelv[5] = -self.deslocamentoZpelves/2. - self.deslocamentoZpelves/2.*((np.exp((2*(x-125/2))/50) - np.exp((2*(x-125/2))/-50))/(np.exp((2*(x-125/2))/50)+np.exp((2*(x-125/2))/-50)))
 				data_pelv[5] = data_pelv[5] * math.pi/180.
 			else:
 				data_pelv[5] = 0
 
 			#ROTINHA PARA VIRAR/PARAR DE VIRAR PARA A DIREITA
 			if self.rota_esq == 2:
-				data_foot[5] = self.angulo_vira - (self.angulo_vira/2. + self.angulo_vira/2.*((np.exp((2*(x-125/2))/50) - np.exp((2*(x-125/2))/-50))/(np.exp((2*(x-125/2))/50)+np.exp((2*(x-125/2))/-50))))
+				data_foot[5] = self.deslocamentoZpelves - (self.deslocamentoZpelves/2. + self.deslocamentoZpelves/2.*((np.exp((2*(x-125/2))/50) - np.exp((2*(x-125/2))/-50))/(np.exp((2*(x-125/2))/50)+np.exp((2*(x-125/2))/-50))))
 				data_foot[5] = data_foot[5] * math.pi/180.
 			elif self.rota_esq == -2:
-				data_foot[5] = -self.angulo_vira - (-self.angulo_vira/2. - self.angulo_vira/2.*((np.exp((2*(x-125/2))/50) - np.exp((2*(x-125/2))/-50))/(np.exp((2*(x-125/2))/50)+np.exp((2*(x-125/2))/-50))))
+				data_foot[5] = -self.deslocamentoZpelves - (-self.deslocamentoZpelves/2. - self.deslocamentoZpelves/2.*((np.exp((2*(x-125/2))/50) - np.exp((2*(x-125/2))/-50))/(np.exp((2*(x-125/2))/50)+np.exp((2*(x-125/2))/-50))))
 				data_foot[5] = data_foot[5] * math.pi/180.
 			else:
 				data_foot[5] = 0
@@ -321,20 +331,20 @@ class Controlador():
 
 			#ROTINHA PARA VIRAR/PARAR DE VIRAR PARA A ESQUERDA
 			if self.rota_esq == 1:
-				data_pelv[5] =  self.angulo_vira/2. + self.angulo_vira/2.*((np.exp((2*(x-125/2))/50) - np.exp((2*(x-125/2))/-50))/(np.exp((2*(x-125/2))/50)+np.exp((2*(x-125/2))/-50)))
+				data_pelv[5] =  self.deslocamentoZpelves/2. + self.deslocamentoZpelves/2.*((np.exp((2*(x-125/2))/50) - np.exp((2*(x-125/2))/-50))/(np.exp((2*(x-125/2))/50)+np.exp((2*(x-125/2))/-50)))
 				data_pelv[5] = data_pelv[5] * math.pi/180.
 			elif self.rota_esq == -1:
-				data_pelv[5] =  -self.angulo_vira/2. - self.angulo_vira/2.*((np.exp((2*(x-125/2))/50) - np.exp((2*(x-125/2))/-50))/(np.exp((2*(x-125/2))/50)+np.exp((2*(x-125/2))/-50)))
+				data_pelv[5] =  -self.deslocamentoZpelves/2. - self.deslocamentoZpelves/2.*((np.exp((2*(x-125/2))/50) - np.exp((2*(x-125/2))/-50))/(np.exp((2*(x-125/2))/50)+np.exp((2*(x-125/2))/-50)))
 				data_pelv[5] = data_pelv[5] * math.pi/180.
 			else:
 				data_pelv[5] = 0
 
 			#ROTINHA PARA VIRAR/PARAR DE VIRAR PARA A DIREITA
 			if self.rota_dir == 2:
-				data_foot[5] =  self.angulo_vira - (self.angulo_vira/2. + self.angulo_vira/2.*((np.exp((2*(x-125/2))/50) - np.exp((2*(x-125/2))/-50))/(np.exp((2*(x-125/2))/50)+np.exp((2*(x-125/2))/-50))))
+				data_foot[5] =  self.deslocamentoZpelves - (self.deslocamentoZpelves/2. + self.deslocamentoZpelves/2.*((np.exp((2*(x-125/2))/50) - np.exp((2*(x-125/2))/-50))/(np.exp((2*(x-125/2))/50)+np.exp((2*(x-125/2))/-50))))
 				data_foot[5] = data_foot[5] * math.pi/180.
 			elif self.rota_dir == -2:
-				data_foot[5] =  -self.angulo_vira - (-self.angulo_vira/2. - self.angulo_vira/2.*((np.exp((2*(x-125/2))/50) - np.exp((2*(x-125/2))/-50))/(np.exp((2*(x-125/2))/50)+np.exp((2*(x-125/2))/-50))))		
+				data_foot[5] =  -self.deslocamentoZpelves - (-self.deslocamentoZpelves/2. - self.deslocamentoZpelves/2.*((np.exp((2*(x-125/2))/50) - np.exp((2*(x-125/2))/-50))/(np.exp((2*(x-125/2))/50)+np.exp((2*(x-125/2))/-50))))		
 				data_foot[5] = data_foot[5] * math.pi/180.
 			else:
 				data_foot[5] = 0
@@ -372,11 +382,6 @@ class Controlador():
 
 
 	def atualiza_fps(self):
-		if self.timer_fps >= 1:
-			self.fps_count = self.count_frames
-			self.count_frames = 0
-			self.timer_fps = 0
-			return self.fps_count
 		self.deltaTime = time.time() - self.last_time
 		self.last_time = time.time()
 		self.count_frames += 1

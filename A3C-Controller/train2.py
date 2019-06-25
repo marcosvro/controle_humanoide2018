@@ -13,6 +13,7 @@ import torch.multiprocessing as mp
 import threading as mt
 from multiprocessing import Queue
 from shared_adam import SharedAdam
+from shared_rmsprop import SharedRMSProp
 from environment import VrepEnvironment
 import math, os
 from parameters import *
@@ -133,7 +134,7 @@ class Worker(mp.Process):
 if __name__ == "__main__":
     gnet = Net(N_S, N_A)        # global network
     gnet.share_memory()         # share the global parameters in multiprocessing
-    opt = SharedAdam(gnet.parameters(), lr=0.0001)  # global optimizer
+    opt = SharedRMSProp(gnet.parameters(), lr=0.0001)  # global optimizer
     global_ep, global_ep_r, res_queue, pub_queue, best_ep_r = mp.Value('i', 0), mp.Value('d', 0.), mp.Queue(), mp.Queue(), mp.Value('d', 0.)
 
     # create publishers
