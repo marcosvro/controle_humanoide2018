@@ -22,8 +22,9 @@ from std_msgs.msg import Float32MultiArray, Bool
 os.environ["OMP_NUM_THREADS"] = "1"
 
 def pub_worker_state(pub, w_states):
-    rate = rospy.Rate(10) # 10hz
-    while not rospy.is_shutdown():
+    rate = rospy.Rate(5) # 10hz
+    global ended
+    while not rospy.is_shutdown() and not ended:
         debug = [0]*N_WORKERS
         for i in range(N_WORKERS):
             debug[i] = w_states[i].value
@@ -32,7 +33,9 @@ def pub_worker_state(pub, w_states):
         pub.publish(mat)
         rate.sleep()
 
-def finish_train()
+def finish_train(msg):
+    if not msg.data:
+        return
     global global_ep
     with global_ep.get_lock():
         global_ep.value = MAX_EP
@@ -94,6 +97,7 @@ class Worker(mp.Process):
         self.lnet = Net(N_S, N_A)           # local network
         self.env = VrepEnvironment(idx, pub_queue, t_ori, t_acc, t_pos)
         self.w_state = w_state
+        self.pub_queue = pub_queue
 
     def run(self):
         total_step = 1
@@ -132,7 +136,7 @@ class Worker(mp.Process):
                         break
                 s = s_
                 total_step += 1
-
+        self.pub_queue.put(None)
         self.res_queue.put(None)
 
 
@@ -141,6 +145,7 @@ if __name__ == "__main__":
     gnet.share_memory()         # share the global parameters in multiprocessing
     opt = SharedRMSProp(gnet.parameters(), lr=0.0001)  # global optimizer
     global_ep, global_ep_r, res_queue, pub_queue, best_ep_r = mp.Value('i', 0), mp.Value('d', 0.), mp.Queue(), mp.Queue(), mp.Value('d', 0.)
+    ended = False
 
     # create publishers
     rospy.init_node('controller_A3C')
@@ -194,14 +199,17 @@ if __name__ == "__main__":
             print("Acabou")
             break
     [w.join() for w in workers]
-    while 1:
+    ended = True
+    while res_queue.qsize() != 0:
         msg = res_queue.get()
-        if msg is None:
+        if msg is not None:
+            res.append(msg)
+        else:
             break
-        res.append(msg)
 
     import matplotlib.pyplot as plt
     plt.plot(res)
     plt.ylabel('Moving average ep reward')
     plt.xlabel('Step')
-    plt.show()
+    #plt.show()
+    plt.savefig('log/reward_graph.png')
