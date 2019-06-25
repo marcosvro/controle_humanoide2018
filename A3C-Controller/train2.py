@@ -32,6 +32,10 @@ def pub_worker_state(pub, w_states):
         pub.publish(mat)
         rate.sleep()
 
+def finish_train()
+    global global_ep
+    with global_ep.get_lock():
+        global_ep.value = MAX_EP
 
 class Net(nn.Module):
     def __init__(self, s_dim, a_dim):
@@ -160,6 +164,9 @@ if __name__ == "__main__":
     t = mt.Thread(target=pub_worker_state, args=(w_state_pub, w_states,))
     t.start()
 
+    # end comand
+    rospy.Subscriber("/finish_train", Bool, finish_train)
+
     # parallel training
     workers = [Worker(gnet, opt, global_ep, global_ep_r, res_queue, best_ep_r, i, pub_queue, states[i][0], states[i][1], states[i][2], w_states[i]) for i in range(N_WORKERS)]
     [w.start() for w in workers]
@@ -187,6 +194,11 @@ if __name__ == "__main__":
             print("Acabou")
             break
     [w.join() for w in workers]
+    while 1:
+        msg = res_queue.get()
+        if msg is None:
+            break
+        res.append(msg)
 
     import matplotlib.pyplot as plt
     plt.plot(res)
