@@ -8,7 +8,7 @@ from std_msgs.msg import Float32MultiArray, Bool
 import os
 
 class VrepEnvironment():
-	def __init__ (self, idx, pub_queue, t_ori, t_acc, t_pos):
+	def __init__ (self, idx, pub_queue, t_ori, t_acc, t_pos, t_joint):
 		#incialize vrep simulation and wait for confirmation
 		simu_name_id = 'w%i' % idx
 
@@ -30,7 +30,7 @@ class VrepEnvironment():
 		self.ack = False
 		self.cmd = False
 
-		self.sub_controller = Controlador(idx, pub_queue, pub_rate, t_ori, t_acc, t_pos, gravity_compensation_enable=True)
+		self.sub_controller = Controlador(idx, pub_queue, pub_rate, t_ori, t_acc, t_pos, t_joint, gravity_compensation_enable=True)
 		rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+'/ack', Bool, self.ack_callback)
 		print("Ambiente inicializado!!")
 

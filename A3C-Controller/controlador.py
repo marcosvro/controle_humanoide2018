@@ -25,6 +25,7 @@ class Controlador():
 				t_ori,
 				t_acc,
 				t_pos,
+				t_joint,
 				gravity_compensation_enable = False):
 		
 		simu_name_id = 'w%i' % idx
@@ -49,6 +50,7 @@ class Controlador():
 		self.t_acc_shd = t_acc 	# accelerometer
 		self.t_ori_shd = t_ori 	# IMU
 		self.t_pos_shd = t_pos	    # position (X Y), odometry
+		self.t_joint_shd = t_joint
 
 		self.reset()
 
@@ -57,6 +59,7 @@ class Controlador():
 		rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_acc_last", Vector3, self.t_acc_last_callback)
 		rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_ori_last", Vector3, self.t_ori_last_callback)
 		rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_pos_last", Vector3, self.t_pos_last_callback)
+		rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_joint_last", Float32MultiArray, self.t_joint_last_callback)
 
 
 	def reset(self):
@@ -142,6 +145,7 @@ class Controlador():
 		self.t_pos_last = np.array(self.t_pos_shd)
 		self.t_ori_last = np.array(self.t_ori_shd)
 		self.t_acc_last = np.array(self.t_acc_shd)
+		self.t_joint_last = np.array(self.t_joint_shd)
 
 		state = ((self.t_pos_last-self.pos_target)/np.linalg.norm(self.t_pos_last-self.pos_target)).tolist()
 		if COM_IN_STATE:
@@ -186,6 +190,10 @@ class Controlador():
 		self.t_pos_shd[0] = vetor.x
 		self.t_pos_shd[1] = vetor.y
 
+	def t_joint_last_callback (self, msg):
+		data = msg.data
+		for i in range(data):
+			self.t_joint_shd = data[i]
 
 	#Change state
 	def chage_state(self):

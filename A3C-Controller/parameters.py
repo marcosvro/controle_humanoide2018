@@ -4,7 +4,7 @@ DEG_2_RAD = 3.141592653589793/180.
 RAD_2_DEG = 180./3.141592653589793
 
 #State set
-COM_IN_STATE = True # If true, center of mass position inserted in state array
+COM_IN_STATE = False # If true, center of mass position inserted in state array
 TARGETS_POS_IN_STATE = False # If true, position of right leg, left leg and torso target are in state array
 TORSO_ACCELERATION_IN_STATE = True #If true, vector acceleration of TORSO are in state array
 TORSO_ORIENTATION_IN_STATE = True #If true, torso orientation(IMU response) are in state array

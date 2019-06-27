@@ -87,7 +87,7 @@ class Net(nn.Module):
 
 
 class Worker(mp.Process):
-    def __init__(self, gnet, opt, global_ep, global_ep_r, res_queue, best_ep_r, idx, pub_queue, t_ori, t_acc, t_pos, w_state):
+    def __init__(self, gnet, opt, global_ep, global_ep_r, res_queue, best_ep_r, idx, pub_queue, t_ori, t_acc, t_pos, t_joint, w_state):
         super(Worker, self).__init__()
         self.w_state = w_state
         self.w_state.value = 1
@@ -95,7 +95,7 @@ class Worker(mp.Process):
         self.g_ep, self.g_ep_r, self.res_queue, self.best_ep_r = global_ep, global_ep_r, res_queue, best_ep_r
         self.gnet, self.opt = gnet, opt
         self.lnet = Net(N_S, N_A)           # local network
-        self.env = VrepEnvironment(idx, pub_queue, t_ori, t_acc, t_pos)
+        self.env = VrepEnvironment(idx, pub_queue, t_ori, t_acc, t_pos, t_joint)
         self.w_state = w_state
         self.pub_queue = pub_queue
 
@@ -159,8 +159,9 @@ if __name__ == "__main__":
         t_ori_last = mp.Array('d', [0]*3)
         t_acc_last = mp.Array('d', [0]*3)
         t_pos_last = mp.Array('d', [0]*2)
+        t_joint_last = mp.Array('d', [0]*12)
         w_state = mp.Value('i', 0)
-        states.append([t_ori_last, t_acc_last, t_pos_last])
+        states.append([t_ori_last, t_acc_last, t_pos_last, t_joint_last])
         pubs.append([pos_pub, reset_pub])
         w_states.append(w_state)
 
@@ -173,7 +174,7 @@ if __name__ == "__main__":
     rospy.Subscriber("/finish_train", Bool, finish_train)
 
     # parallel training
-    workers = [Worker(gnet, opt, global_ep, global_ep_r, res_queue, best_ep_r, i, pub_queue, states[i][0], states[i][1], states[i][2], w_states[i]) for i in range(N_WORKERS)]
+    workers = [Worker(gnet, opt, global_ep, global_ep_r, res_queue, best_ep_r, i, pub_queue, states[i][0], states[i][1], states[i][2], states[i][3], w_states[i]) for i in range(N_WORKERS)]
     [w.start() for w in workers]
     res = []                    # record episode reward to plot
     while True:
