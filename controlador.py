@@ -436,7 +436,7 @@ class Controlador():
 
 		dQ *= math.sin(self.t_state*math.pi/self.tempoPasso)
 		if self.perna:
-			self.msg_to_micro[RIGHT_ANKLE_PITCH] += dQ[0]
+			self.msg_to_micro[RIGHT_KNEE] += dQ[0]
 			self.msg_to_micro[RIGHT_HIP_ROLL] -= dQ[1]
 		else:
 			self.msg_to_micro[LEFT_KNEE] += dQ[0]
@@ -870,14 +870,14 @@ class Controlador():
 			data_foot = self.footToHip(foot_point)
 
 			#CONTROLE PÉ SUSPENSO
-			
+
 			if (self.inertial_foot_enable):
 				if self.total_press == 0:
 					influencia = 0
 				else:
 					influencia = np.sum(self.Lfoot_press)/self.total_press
 				data_foot[:2] = np.array(data_foot[:2]) + np.array(self.Lfoot_orientation[:2])*(np.pi/180.)*(1-influencia)
-	
+
 			#ROTINHA PARA VIRAR/PARAR DE VIRAR PARA A ESQUERDA
 			if self.rota_dir == 1:
 				data_pelv[5] = self.angulo_vira/2. + self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50)))
@@ -931,7 +931,7 @@ class Controlador():
 				data_foot[5] =  self.angulo_vira - (self.angulo_vira/2. + self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50))))
 				data_foot[5] = data_foot[5] * math.pi/180.
 			elif self.rota_dir == -2:
-				data_foot[5] =  -self.angulo_vira - (-self.angulo_vira/2. - self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50))))		
+				data_foot[5] =  -self.angulo_vira - (-self.angulo_vira/2. - self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50))))
 				data_foot[5] = data_foot[5] * math.pi/180.
 			else:
 				data_foot[5] = 0
@@ -942,34 +942,28 @@ class Controlador():
 			#CONFIGURA BODY SOLVER PARA INVOCAR FUNÇÕES DO MODELO DINÂMICO DO ROBÔ
 			self.body.set_angles(self.perna, data_foot, data_pelv)
 
-		self.msg_to_micro[:18] = data
+		self.last_sent_angles[:18] = data
 
 		# os multiplicadores de correção são inicializados em 0.
-		# functionamento do loop:
-		# Para cada ângulo na lista os últimos ângulos(não corrigidos) enviados:
-		for curr_idx, curr_angle in enumerate(self.msg_to_micro[:18]):
-			curr_angle_mult = self.last_looseness_control_multipliers[curr_idx]
+        for idx,name in enumerate(PARAM_NAMES, 0):
+			curr_angle = data[idx]
+			curr_angle_mult = self.last_looseness_control_multipliers[idx]
 			# Se a última movimentação aumentou o ângulo na junta:
 			if(curr_angle_mult >=0):
 				# E a movimentação anterior foi na direção oposta:
-				if(curr_angle > self.last_sent_angles[curr_idx]):
+				if(curr_angle > self.last_sent_angles[idx]):
 					# O multiplicador do ângulo de correção da junta se torna 1
-					self.last_looseness_control_multipliers[curr_idx] = 1
-					continue
+					self.last_looseness_control_multipliers[idx] = 1
 			# Se a última movimentação reduziu o ângulo na junta:
 			if(curr_angle_mult <= 0):
 				# E a movimentação anterior foi na direção oposta:
-				if(curr_angle < self.last_sent_angles[curr_idx]):
+				if(curr_angle < self.last_sent_angles[idx]):
 					# O multiplicador do ângulo de correção da junta se torna -1
-					self.last_looseness_control_multipliers[curr_idx] = -1
-					continue
+					self.last_looseness_control_multipliers[idx] = -1
 
-		self.last_sent_angles[:18] = data
 
-		# Funcionamento deste LOOP:
-		# Para cada parâmetro de correção de folga de junta:
 
-		for idx,name in enumerate(PARAM_NAMES, 0):
+			# Para cada parâmetro de correção de folga de junta:
 			# Novo ângulo =
 			# Ângulo calculado pelo controlador +
 			# Multiplicador de correção de folga * ângulo de correção de folga
@@ -977,7 +971,7 @@ class Controlador():
 				# (param_name, default_value)
 			# Após calibrar corretamente os ângulos, os mesmos podem ser aplicados diretamente no código(setar DEFAULT_JOINT_LOOSENESS_CONTROL e remover o get_param), em vez de tentar pegar
 			new_joint_angle = \
-				self.msg_to_micro[idx] + \
+				curr_angle + \
 				self.last_looseness_control_multipliers[idx] * rospy.get_param(PARAM_SERVER_PREFIX + PARAM_NAMES[idx], self.DEFAULT_JOINT_LOOSENESS_CONTROL_ANGLES[idx])
 
 			# Verifica se os ângulos das juntas não ultrapassam os limites de ângulo possíveis para ser executados nas juntas
@@ -991,8 +985,8 @@ class Controlador():
 			else:
 				self.msg_to_micro[idx] = new_joint_angle
 
-		for idx, label in enumerate(PARAM_NAMES):
-			print(label, "| msg_to_micro: ", self.msg_to_micro[idx], " | old_angle: ", self.last_sent_angles[idx])
+		# for idx, label in enumerate(PARAM_NAMES):
+		#     print(label, "| msg_to_micro: ", self.msg_to_micro[idx], " | old_angle: ", self.last_sent_angles[idx])
 
 		if(self.simulador_ativado):
 			rospy.sleep(self.simTransRate)
