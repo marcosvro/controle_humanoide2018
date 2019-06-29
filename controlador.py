@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+
 import socket
 import threading
 import time
@@ -36,6 +37,47 @@ DEG_TO_RAD = np.pi / 180.
 
 KP_CONST = 0.6
 
+RIGHT_ANKLE_ROLL = 0
+RIGHT_ANKLE_PITCH = 1
+RIGHT_KNEE = 2
+RIGHT_HIP_PITCH = 3
+RIGHT_HIP_ROLL = 4
+RIGHT_HIP_YALL = 5
+LEFT_ANKLE_ROLL = 6
+LEFT_ANKLE_PITCH = 7
+LEFT_KNEE = 8
+LEFT_HIP_PITCH = 9
+LEFT_HIP_ROLL = 10
+LEFT_HIP_YALL = 11
+LEFT_ARM_PITCH = 12
+LEFT_ARM_YALL = 13
+LEFT_ARM_ROLL = 14
+RIGHT_ARM_PITCH = 15
+RIGHT_ARM_YALL = 16
+RIGHT_ARM_ROLL = 17
+
+PARAM_SERVER_PREFIX = "/Bioloid/params/angles/calibration/"
+
+PARAM_NAMES = [
+    'RIGHT_ANKLE_ROLL',
+    'RIGHT_ANKLE_PITCH',
+    'RIGHT_KNEE',
+    'RIGHT_HIP_PITCH',
+    'RIGHT_HIP_ROLL',
+    'RIGHT_HIP_YALL',
+    'LEFT_ANKLE_ROLL',
+    'LEFT_ANKLE_PITCH',
+    'LEFT_KNEE',
+    'LEFT_HIP_PITCH',
+    'LEFT_HIP_ROLL',
+    'LEFT_HIP_YALL',
+    'LEFT_ARM_PITCH',
+    'LEFT_ARM_YALL',
+    'LEFT_ARM_ROLL',
+    'RIGHT_ARM_PITCH',
+    'RIGHT_ARM_YALL',
+    'RIGHT_ARM_ROLL'
+]
 
 def sigmoid_deslocada(x, periodo):
 	return 1./(1.+math.exp(-(12./periodo)*(x-(periodo/2.))))
@@ -163,24 +205,14 @@ class Controlador():
 		self.rst_imu_pin = 18
 
 		self.body = Body()
-		self.RIGHT_ANKLE_ROLL = 0
-		self.RIGHT_ANKLE_PITCH = 1
-		self.RIGHT_KNEE = 2
-		self.RIGHT_HIP_PITCH = 3
-		self.RIGHT_HIP_ROLL = 4
-		self.RIGHT_HIP_YALL = 5
-		self.LEFT_ANKLE_ROLL = 6
-		self.LEFT_ANKLE_PITCH = 7
-		self.LEFT_KNEE = 8
-		self.LEFT_HIP_PITCH = 9
-		self.LEFT_HIP_ROLL = 10
-		self.LEFT_HIP_YALL = 11
-		self.LEFT_ARM_PITCH = 12
-		self.LEFT_ARM_YALL = 13
-		self.LEFT_ARM_ROLL = 14
-		self.RIGHT_ARM_PITCH = 15
-		self.RIGHT_ARM_YALL = 16
-		self.RIGHT_ARM_ROLL = 17
+
+		self.last_sent_angles = [0]*18
+
+		self.last_looseness_control_multipliers = [0] * 18
+
+		self.JOINT_ANGLES_MIN_MAX = [[None,None]] * 18
+
+		self.DEFAULT_JOINT_LOOSENESS_CONTROL_ANGLES = [0] * 18
 
 		self.RST_IMU_PIN = 18
 
@@ -269,14 +301,14 @@ class Controlador():
 				while not rospy.is_shutdown():
 					mat.data = self.msg_to_micro[:18]
 
-					# mat.data[10] = -mat.data[10] # quadril esquerdo ROLL
-					mat.data[0] = -mat.data[0] #calcanhar direito ROLL
+				# mat.data[10] = -mat.data[10] # quadril esquerdo ROLL
+				mat.data[0] = -mat.data[0] #calcanhar direito ROLL
 
-					mat.data[4] = -mat.data[4]
-					# mat.data[10] = -mat.data[10]
+				mat.data[4] = -mat.data[4]
+				# mat.data[10] = -mat.data[10]
 
-					self.pub.publish(mat)
-					rospy.sleep(self.simTransRate)
+				self.pub.publish(mat)
+				rospy.sleep(self.simTransRate)
 		except Exception as e:
 			pass
 	# '''
@@ -404,11 +436,11 @@ class Controlador():
 
 		dQ *= math.sin(self.t_state*math.pi/self.tempoPasso)
 		if self.perna:
-			self.msg_to_micro[self.RIGHT_ANKLE_PITCH] += dQ[0]
-			self.msg_to_micro[self.RIGHT_HIP_ROLL] += (dQ[1]*-1)
+			self.msg_to_micro[RIGHT_ANKLE_PITCH] += dQ[0]
+			self.msg_to_micro[RIGHT_HIP_ROLL] -= dQ[1]
 		else:
-			self.msg_to_micro[self.LEFT_KNEE] += dQ[0]
-			self.msg_to_micro[self.LEFT_HIP_ROLL] += dQ[1]
+			self.msg_to_micro[LEFT_KNEE] += dQ[0]
+			self.msg_to_micro[LEFT_HIP_ROLL] += dQ[1]
 
 	def posiciona_robo(self):
 		if self.robo_yall > self.gimbal_yall:
@@ -794,14 +826,16 @@ class Controlador():
 		aux = (2*dif_estado)/50
 		aux2 = ((math.exp(aux) - math.exp(- aux))/(math.exp(aux)+math.exp(-aux)))
 
+		pos1_aux = self.deslocamentoYpelves*math.sin(x*math.pi/self.nEstados)
+
 		p1 = (self.deslocamentoXpes/2)*aux2
 		pos_pelves[0] = p1
-		pos_pelves[1] += -self.deslocamentoYpelves*math.sin(x*math.pi/self.nEstados)
+		pos_pelves[1] += -pos1_aux
 
 		pos_foot = self.pos_inicial_pelves[:]
 		p2 = (-self.deslocamentoXpes/2)*aux2
 		pos_foot[0] = p2
-		pos_foot[1] += self.deslocamentoYpelves*math.sin(x*math.pi/self.nEstados)
+		pos_foot[1] += pos1_aux
 		pos_foot[2] = self.altura - self.deslocamentoZpes*math.exp(-(dif_estado**2)/600)
 		return pos_pelves, pos_foot
 
@@ -909,6 +943,59 @@ class Controlador():
 			self.body.set_angles(self.perna, data_foot, data_pelv)
 
 		self.msg_to_micro[:18] = data
+
+		# os multiplicadores de correção são inicializados em 0.
+		# functionamento do loop:
+		# Para cada ângulo na lista os últimos ângulos(não corrigidos) enviados:
+		for curr_idx, curr_angle in enumerate(self.msg_to_micro[:18]):
+			curr_angle_mult = self.last_looseness_control_multipliers[curr_idx]
+			# Se a última movimentação aumentou o ângulo na junta:
+			if(curr_angle_mult >=0):
+				# E a movimentação anterior foi na direção oposta:
+				if(curr_angle > self.last_sent_angles[curr_idx]):
+					# O multiplicador do ângulo de correção da junta se torna 1
+					self.last_looseness_control_multipliers[curr_idx] = 1
+					continue
+			# Se a última movimentação reduziu o ângulo na junta:
+			if(curr_angle_mult <= 0):
+				# E a movimentação anterior foi na direção oposta:
+				if(curr_angle < self.last_sent_angles[curr_idx]):
+					# O multiplicador do ângulo de correção da junta se torna -1
+					self.last_looseness_control_multipliers[curr_idx] = -1
+					continue
+
+		self.last_sent_angles[:18] = data
+
+		# Funcionamento deste LOOP:
+		# Para cada parâmetro de correção de folga de junta:
+
+		for idx,name in enumerate(PARAM_NAMES, 0):
+			# Novo ângulo =
+			# Ângulo calculado pelo controlador +
+			# Multiplicador de correção de folga * ângulo de correção de folga
+			# rospy.get_param: pega parâmetro do servidor de parâmetros.
+				# (param_name, default_value)
+			# Após calibrar corretamente os ângulos, os mesmos podem ser aplicados diretamente no código(setar DEFAULT_JOINT_LOOSENESS_CONTROL e remover o get_param), em vez de tentar pegar
+			new_joint_angle = \
+				self.msg_to_micro[idx] + \
+				self.last_looseness_control_multipliers[idx] * rospy.get_param(PARAM_SERVER_PREFIX + PARAM_NAMES[idx], self.DEFAULT_JOINT_LOOSENESS_CONTROL_ANGLES[idx])
+
+			# Verifica se os ângulos das juntas não ultrapassam os limites de ângulo possíveis para ser executados nas juntas
+			# Caso sejam ultrapassados, utiliza os valores máximos ou mímino definidos
+				# Tuplas (min,max) definidas na lista self.JOINT_ANGLES_MIN_MAX
+			min_angle, max_angle = self.JOINT_ANGLES_MIN_MAX[idx]
+			if(min_angle is not None and new_joint_angle < min_angle):
+				self.msg_to_micro[idx] = min_angle
+			elif(max_angle is not None and new_joint_angle > max_angle):
+				self.msg_to_micro[idx] = max_angle
+			else:
+				self.msg_to_micro[idx] = new_joint_angle
+
+		for idx, label in enumerate(PARAM_NAMES):
+			print(label, "| msg_to_micro: ", self.msg_to_micro[idx], " | old_angle: ", self.last_sent_angles[idx])
+
+		if(self.simulador_ativado):
+			rospy.sleep(self.simTransRate)
 
 
 
