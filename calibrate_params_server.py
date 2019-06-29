@@ -4,6 +4,9 @@ import rospy
 import numpy as np
 import os
 
+RAD_TO_DEG = 180/np.pi
+RAD_TO_DEG_10 = 10* RAD_TO_DEG
+
 PARAM_SERVER_PREFIX = "/Bioloid/params/angles/calibration/"
 
 PARAM_NAMES = [
@@ -30,16 +33,15 @@ PARAM_NAMES = [
 class LoosenessCalibrator():
     def __init__(self):
         rospy.init_node("param_setter",anonymous=True)
-        self.looseness_correction_angles = [0]*18
         while not rospy.is_shutdown():
             for idx, param_name in enumerate(PARAM_NAMES):
                 
                 os.system("clear")
-                print("angulo de correção atual para " + param_name + ": ", self.looseness_correction_angles[idx])
-
-                read_angle = input("Informe o novo angulo necessário para corrigir a folga da junta " + param_name)
-                read_angle = float(read_angle)
-                self.looseness_correction_angles[idx] = read_angle
+                
+                print("angulo(em graus) de correção atual para " + param_name + ": ", RAD_TO_DEG_10 * rospy.get_param(PARAM_SERVER_PREFIX + param_name, 0))
+                print("Informe o novo angulo(em graus) necessário para corrigir a folga da junta " + param_name)
+                read_angle = input()
+                read_angle = float(read_angle / RAD_TO_DEG_10)
 
                 rospy.set_param(PARAM_SERVER_PREFIX + param_name, read_angle)
 
