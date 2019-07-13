@@ -195,8 +195,8 @@ class Controlador():
 
 	def t_joint_last_callback (self, msg):
 		data = msg.data
-		for i in range(data):
-			self.t_joint_shd = data[i]
+		for i in range(len(data)):
+			self.t_joint_shd[i] = data[i]
 
 	#Change state
 	def chage_state(self):
