@@ -149,7 +149,7 @@ class Controlador():
 
 		state = ((self.t_pos_last-self.pos_target)/np.linalg.norm(self.t_pos_last-self.pos_target)).tolist()
 		if COM_IN_STATE:
-			self.body.set_angles(self.body_angles[:6], self.body_angles[6:12])
+			self.body.set_angles(self.t_joint_last[:6], self.t_joint_last[6:12])
 			com_relative_dir = self.body.get_com(1) # right leg are support leg
 			com_relative_esq = self.body.get_com(0) # left leg are support leg
 			state += (com_relative_dir.tolist()+com_relative_esq.tolist())
@@ -161,6 +161,9 @@ class Controlador():
 			state += (self.t_ori_last/math.pi).tolist()
 		if LAST_ACTION_IN_STATE:
 			state += self.action_last.tolist()
+		if LEG_JOINT_POSITION_IN_STATE:
+			state += (self.t_joint_last/math.pi).tolist()
+
 
 		#print(self.t_ori_last)
 		#check if done
@@ -532,8 +535,3 @@ class Controlador():
 		#print(self.done)
 		return np.array(state), self.done, reward
 	'''
-
-
-if __name__ == '__main__':
-	control = Controlador(gravity_compensation_enable=True)
-	control.run()

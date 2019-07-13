@@ -59,10 +59,3 @@ class VrepEnvironment():
 			time.sleep(TIME_WAIT_ACK)
 			timer += TIME_WAIT_ACK
 
-
-if __name__ == "__main__":
-	env = VrepEnvironment("test")
-	s = env.reset()
-	while 1:
-		a = [0]*6
-		env.step(a)

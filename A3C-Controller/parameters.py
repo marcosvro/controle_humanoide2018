@@ -9,6 +9,7 @@ TARGETS_POS_IN_STATE = False # If true, position of right leg, left leg and tors
 TORSO_ACCELERATION_IN_STATE = True #If true, vector acceleration of TORSO are in state array
 TORSO_ORIENTATION_IN_STATE = True #If true, torso orientation(IMU response) are in state array
 LAST_ACTION_IN_STATE = True #If true, last action are embbeded in state
+LEG_JOINT_POSITION_IN_STATE = True #If true, real joint position of robot simulation are embbede in state
 
 #action mode
 USING_MARCOS_CONTROLLER = True #If true, the action are composed by variables set of Marcos controller. If false, the action is composed by 3 arrays (2 3D, 1 2D) indicating the position of swing foot, hip of support leg and torso angles velocity
@@ -100,3 +101,5 @@ if LAST_ACTION_IN_STATE:
 	N_S += N_A
 if USING_MARCOS_CONTROLLER:
 	N_S += 1
+if LEG_JOINT_POSITION_IN_STATE:
+	N_S += 12
