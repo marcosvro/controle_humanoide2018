@@ -220,7 +220,8 @@ class Controlador():
 			erro_ori = (to_target[0]/(np.sum(to_target)))*math.cos(self.t_ori_last[2])-(to_target[1]/(np.sum(to_target)))*math.sin(self.t_ori_last[2])
 
 			#localização
-			angle_bet = math.acos((self.pos_target*vetor_mov)/(np.linalg.norm(self.pos_target)*np.linalg.norm(vetor_mov)))
+			aux = np.sum(self.pos_target*vetor_mov)
+			angle_bet = 0 if aux < 1e-6 else math.acos(aux/(np.linalg.norm(self.pos_target)*np.linalg.norm(vetor_mov)))
 			dist_no_rumo = 0.
 			if angle_bet > 90:
 				angle_bet = 180. - angle_bet
