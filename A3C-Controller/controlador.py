@@ -62,9 +62,6 @@ class Controlador():
 		rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_pos_last", Vector3, self.t_pos_last_callback)
 		rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_joint_last", Float32MultiArray, self.t_joint_last_callback)
 
-		#inicia thread que ficará publicando para o simulador
-		t = mt.Thread(target=self.run_marcos_controller)
-		t.start()
 
 	def reset(self):
 		#dados que vem do simulador
@@ -127,11 +124,6 @@ class Controlador():
 
 
 	def step(self, action, cmd):
-		print(self.altura,
-			self.deslocamentoXpes,
-			self.deslocamentoYpelves,
-			self.deslocamentoZpes,
-			self.deslocamentoZpelves)
 		#bounded
 		self.action_last = np.array(action)
 		action[0] *= (self.a+self.c-HEIGHT_INIT)
@@ -177,8 +169,12 @@ class Controlador():
 
 		return self.get_state()
 
-
 	def run_marcos_controller(self):
+		#inicia thread que ficará publicando para o simulador
+		t = mt.Thread(target=self._run_marcos_controller)
+		t.start()
+
+	def _run_marcos_controller(self):
 		self.last_time = time.time()
 		self.atualiza_fps()
 		while(True):
