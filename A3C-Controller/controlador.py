@@ -119,7 +119,7 @@ class Controlador():
 		if LAST_ACTION_IN_STATE:
 			state += self.action_last.tolist()
 		if LEG_JOINT_POSITION_IN_STATE:
-			state += (self.body_angles[:12]/math.pi).tolist()
+			state += (np.array(self.body_angles[:12])/math.pi).tolist()
 
 		return np.array(state)
 
