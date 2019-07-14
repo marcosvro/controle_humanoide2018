@@ -93,6 +93,7 @@ class Controlador():
 		self.done = False
 		self.perna = 0
 		self.t_state = 0
+		self.rot_desvio = 0
 		self.rota_dir = 0
 		self.rota_esq = 0
 		self.deltaTime = 0
