@@ -180,6 +180,12 @@ class Controlador():
 			self.atualiza_cinematica()
 			self.atualiza_fps()
 			
+			print(self.altura,
+				self.deslocamentoXpes,
+				self.deslocamentoYpelves,
+				self.deslocamentoZpes,
+				self.deslocamentoZpelves)
+
 			self.pub_queue.put([False, self.w_id, self.body_angles])
 			self.pub_rate.sleep()
 
