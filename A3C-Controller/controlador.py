@@ -54,16 +54,17 @@ class Controlador():
 		self.t_joint_shd = t_joint
 		
 		self.reset()
-		t = mt.Thread(target=self.run_marcos_controller)
-		t.start()
-
-		#define subscribers para os dados do state
+		
 		time.sleep(TIME_WAIT_INIT_PUBS)
+		#define subscribers para os dados do state
 		rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_acc_last", Vector3, self.t_acc_last_callback)
 		rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_ori_last", Vector3, self.t_ori_last_callback)
 		rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_pos_last", Vector3, self.t_pos_last_callback)
 		rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_joint_last", Float32MultiArray, self.t_joint_last_callback)
 
+		#inicia thread que ficará publicando para o simulador
+		t = mt.Thread(target=self.run_marcos_controller)
+		t.start()
 
 	def reset(self):
 		#dados que vem do simulador
