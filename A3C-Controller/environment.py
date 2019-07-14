@@ -32,8 +32,6 @@ class VrepEnvironment():
 
 		self.sub_controller = Controlador(idx, pub_queue, pub_rate, t_ori, t_acc, t_pos, t_joint, gravity_compensation_enable=True)
 		rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+'/ack', Bool, self.ack_callback)
-
-		self.sub_controller.run_marcos_controller()
 		print("Ambiente inicializado!!")
 
 	def reset(self):

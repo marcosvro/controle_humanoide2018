@@ -62,6 +62,12 @@ class Controlador():
 		rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_pos_last", Vector3, self.t_pos_last_callback)
 		rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_joint_last", Float32MultiArray, self.t_joint_last_callback)
 
+		#inicia thread que ficará publicando para o simulador
+
+		'''
+		t = mt.Thread(target=run_marcos_controller)
+		t.start()
+		'''
 
 	def reset(self):
 		#dados que vem do simulador
@@ -152,11 +158,9 @@ class Controlador():
 		self.tempoPasso = 1.
 		'''
 		self.cmd = cmd
-		#self.last_time = time.time()
-		#self.atualiza_fps()
-		
-		time.sleep(TIME_STEP_ACTION)
-		'''
+		self.last_time = time.time()
+		self.atualiza_fps()
+		self.t_step = 0
 		while(self.t_step < TIME_STEP_ACTION):
 			self.atualiza_cinematica()
 			self.atualiza_fps()
@@ -165,16 +169,11 @@ class Controlador():
 
 			self.pub_queue.put([False, self.w_id, self.body_angles])
 			self.pub_rate.sleep()
-		'''
 
 		return self.get_state()
 
-	def run_marcos_controller(self):
-		#inicia thread que ficará publicando para o simulador
-		t = mt.Thread(target=self._run_marcos_controller)
-		t.start()
 
-	def _run_marcos_controller(self):
+	def run_marcos_controller(self):
 		self.last_time = time.time()
 		self.atualiza_fps()
 		while(True):

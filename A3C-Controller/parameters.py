@@ -41,7 +41,7 @@ TIME_TO_IGNORE_GC = 0.1
 KP_CONST = 0.6
 
 #simulation
-TESTING = False
+TESTING = True
 VREP_PATH = '~/vrep'
 SCENE_FILE_PATH = '~/Documentos/controle_humanoide2018/teste_09_03.ttt'
 TIME_STEP_ACTION = 0.2
