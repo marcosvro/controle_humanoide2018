@@ -52,10 +52,10 @@ class Controlador():
 		self.t_ori_shd = t_ori 	# IMU
 		self.t_pos_shd = t_pos	    # position (X Y), odometry
 		self.t_joint_shd = t_joint
+		
+		self.reset()
 		t = mt.Thread(target=self.run_marcos_controller)
 		t.start()
-
-		self.reset()
 
 		#define subscribers para os dados do state
 		time.sleep(TIME_WAIT_INIT_PUBS)
@@ -70,6 +70,7 @@ class Controlador():
 		self.t_acc_last = np.array([0.]*3)
 		self.t_ori_last = np.array([0.]*3)
 		self.t_pos_last = np.array([0.]*2)
+		self.t_joint_last
 
 		#variaveis do controlador marcos
 		self.altura = HEIGHT_INIT
@@ -99,7 +100,9 @@ class Controlador():
 		self.cmd = False
 
 		#pega estado inicial
-
+		self.last_time = time.time()
+		self.atualiza_fps()
+		self.chage_state()
 		self.atualiza_cinematica()
 		state = self.pos_target.tolist()
 		#state += [np.linalg.norm(self.t_pos_last-self.pos_target)/TARGET_BOUND_RANGE]
@@ -117,7 +120,7 @@ class Controlador():
 		if LAST_ACTION_IN_STATE:
 			state += self.action_last.tolist()
 		if LEG_JOINT_POSITION_IN_STATE:
-			state += (self.t_joint_last/math.pi).tolist()
+			state += (self.body_angles[:12]/math.pi).tolist()
 
 		return np.array(state)
 
@@ -151,9 +154,8 @@ class Controlador():
 		self.tempoPasso = 1.
 		'''
 		self.cmd = cmd
-		self.last_time = time.time()
-		self.atualiza_fps()
-		self.t_step = 0.
+		#self.last_time = time.time()
+		#self.atualiza_fps()
 		
 		time.sleep(TIME_STEP_ACTION)
 		'''
@@ -173,9 +175,9 @@ class Controlador():
 		self.last_time = time.time()
 		self.atualiza_fps()
 		while(True):
+			self.chage_state()
 			self.atualiza_cinematica()
 			self.atualiza_fps()
-			self.chage_state()
 			
 			self.pub_queue.put([False, self.w_id, self.body_angles])
 			self.pub_rate.sleep()
