@@ -70,7 +70,6 @@ class Controlador():
 		self.t_acc_last = np.array([0.]*3)
 		self.t_ori_last = np.array([0.]*3)
 		self.t_pos_last = np.array([0.]*2)
-		self.t_joint_last
 
 		#variaveis do controlador marcos
 		self.altura = HEIGHT_INIT
