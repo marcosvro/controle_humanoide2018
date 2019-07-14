@@ -38,9 +38,9 @@ class VrepEnvironment():
 		#reset robot on environment
 		self.cmd =  not self.cmd
 		#self.reset_pub.publish(Bool(self.cmd))
+		init_state = self.sub_controller.reset()
 		self.pub_queue.put([True, self.w_id, self.cmd])
 		self.wait_ack() #wait for sim confirmation
-		init_state, d, r  = self.sub_controller.reset()
 		return init_state
 
 	def step(self, action):

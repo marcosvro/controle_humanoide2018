@@ -52,11 +52,11 @@ TIME_WAIT_ACK = 0.1
 TIME_WAIT_ACK_MAX = 4
 TIME_WAIT_INIT_PUBS = 5
 ANGLE_FALLEN_THRESHOLD = 70*DEG_2_RAD
-TARGET_BOUND_RANGE = 1.5
+TARGET_BOUND_RANGE = 5.
 
 #task rewards weight
 W_ORI = 0.2
-W_DIST = 0.6
+W_DIST = 5.
 W_INC = 0.2
 
 #network
@@ -83,7 +83,7 @@ if USING_MARCOS_CONTROLLER:
 	N_A += 1 # Side shift of hip 
 	N_A += 1 # Hip height
 	N_A += 1 # Angles to turn
-	N_A += 1 # Step time
+	#N_A += 1 # Step time
 else:
 	N_A += 10 # Velocity of swing foot, hip of support leg and torso angles
 
@@ -100,6 +100,6 @@ if TORSO_ORIENTATION_IN_STATE:
 if LAST_ACTION_IN_STATE:
 	N_S += N_A
 if USING_MARCOS_CONTROLLER:
-	N_S += 1
+	N_S += 2
 if LEG_JOINT_POSITION_IN_STATE:
 	N_S += 12

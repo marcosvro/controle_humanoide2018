@@ -10,6 +10,7 @@ except Exception as e:
 import math
 from body_solver import Body
 from parameters import *
+import threading as mt
 import os
 
 
@@ -51,6 +52,8 @@ class Controlador():
 		self.t_ori_shd = t_ori 	# IMU
 		self.t_pos_shd = t_pos	    # position (X Y), odometry
 		self.t_joint_shd = t_joint
+		t = mt.Thread(target=self.run_marcos_controller)
+		t.start()
 
 		self.reset()
 
@@ -84,6 +87,7 @@ class Controlador():
 		self.t_angles_last = np.array([0., 0.])
 		self.lz_angles_last = np.array([0., 0.])
 		self.pos_target = (np.random.rand(2)*2-np.array([1, 1]))*TARGET_BOUND_RANGE  # posição alvo definida neste episódio
+		self.pos_target = (self.t_pos_last-self.pos_target)/np.linalg.norm(self.t_pos_last-self.pos_target)
 
 		self.action_last = np.array([0.]*N_A)
 		self.done = False
@@ -92,8 +96,31 @@ class Controlador():
 		self.rota_dir = 0
 		self.rota_esq = 0
 		self.deltaTime = 0
+		self.cmd = False
 
-		return self.get_state()
+		#pega estado inicial
+
+		self.atualiza_cinematica()
+		state = self.pos_target.tolist()
+		#state += [np.linalg.norm(self.t_pos_last-self.pos_target)/TARGET_BOUND_RANGE]
+		if COM_IN_STATE:
+			self.body.set_angles(self.body_angles[:6], self.body_angles[6:12])
+			com_relative_dir = self.body.get_com(1) # right leg are support leg
+			com_relative_esq = self.body.get_com(0) # left leg are support leg
+			state += (com_relative_dir.tolist()+com_relative_esq.tolist())
+		if USING_MARCOS_CONTROLLER:
+			state += [self.perna, self.t_state/self.tempoPasso]
+		if TORSO_ACCELERATION_IN_STATE:
+			state += (self.t_acc_last/11.).tolist()
+		if TORSO_ORIENTATION_IN_STATE:
+			state += (self.t_ori_last/math.pi).tolist()
+		if LAST_ACTION_IN_STATE:
+			state += self.action_last.tolist()
+		if LEG_JOINT_POSITION_IN_STATE:
+			state += (self.t_joint_last/math.pi).tolist()
+
+		return np.array(state)
+
 
 	def step(self, action, cmd):
 		#bounded
@@ -104,7 +131,7 @@ class Controlador():
 		action[3] = (action[3]+1)*SHIFT_Z_FOOT_MAX
 		self.rot_desvio = 1 if action[4] > 0 else -1
 		action[4] = math.fabs(action[4])*ANGLE_Z_HIP_MAX
-		action[5] = (action[5]+1) * TIME_STEP_MAX + TIME_STEP_MIN
+		#action[5] = (action[5]+1) * TIME_STEP_MAX + TIME_STEP_MIN
 
 		
 		self.altura = HEIGHT_INIT+action[0]
@@ -112,7 +139,7 @@ class Controlador():
 		self.deslocamentoYpelves = action[2]
 		self.deslocamentoZpes = action[3]
 		self.deslocamentoZpelves = action[4]
-		self.tempoPasso = action[5]
+		#self.tempoPasso = action[5]
 		
 
 		'''
@@ -123,38 +150,53 @@ class Controlador():
 		self.deslocamentoZpelves = 5.
 		self.tempoPasso = 1.
 		'''
-
+		self.cmd = cmd
 		self.last_time = time.time()
 		self.atualiza_fps()
-		while(not self.chage_state()):
-			self.atualiza_cinematica(cmd)
+		self.t_step = 0.
+		
+		time.sleep(TIME_STEP_ACTION)
+		'''
+		while(self.t_step < TIME_STEP_ACTION):
+			self.atualiza_cinematica()
 			self.atualiza_fps()
-			'''
-			mat = Float32MultiArray()
-			mat.data = self.body_angles
-			#print("published!!")
-			self.pos_pub.publish(mat)
-			'''
+			self.chage_state()
+			self.t_step += self.deltaTime
+
 			self.pub_queue.put([False, self.w_id, self.body_angles])
 			self.pub_rate.sleep()
+		'''
 
 		return self.get_state()
 
+	def run_marcos_controller(self):
+		self.last_time = time.time()
+		self.atualiza_fps()
+		while(True):
+			self.atualiza_cinematica()
+			self.atualiza_fps()
+			self.chage_state()
+			
+			self.pub_queue.put([False, self.w_id, self.body_angles])
+			self.pub_rate.sleep()
+
 
 	def get_state(self):
+		vetor_mov = np.array(self.t_pos_shd)-self.t_pos_last
 		self.t_pos_last = np.array(self.t_pos_shd)
 		self.t_ori_last = np.array(self.t_ori_shd)
 		self.t_acc_last = np.array(self.t_acc_shd)
 		self.t_joint_last = np.array(self.t_joint_shd)
 
-		state = ((self.t_pos_last-self.pos_target)/np.linalg.norm(self.t_pos_last-self.pos_target)).tolist()
+		state = self.pos_target.tolist()
+		#state = ((self.t_pos_last-self.pos_target)/np.linalg.norm(self.t_pos_last-self.pos_target)).tolist()
 		if COM_IN_STATE:
 			self.body.set_angles(self.t_joint_last[:6], self.t_joint_last[6:12])
 			com_relative_dir = self.body.get_com(1) # right leg are support leg
 			com_relative_esq = self.body.get_com(0) # left leg are support leg
 			state += (com_relative_dir.tolist()+com_relative_esq.tolist())
 		if USING_MARCOS_CONTROLLER:
-			state += [self.perna]
+			state += [self.perna, self.t_state/self.tempoPasso]
 		if TORSO_ACCELERATION_IN_STATE:
 			state += (self.t_acc_last/11.).tolist()
 		if TORSO_ORIENTATION_IN_STATE:
@@ -171,9 +213,20 @@ class Controlador():
 			self.done = True
 			reward = 0
 		else:
-			to_target = self.pos_target - self.t_pos_last
+			#orientação
+			to_target = self.pos_target
 			erro_ori = (to_target[0]/(np.sum(to_target)))*math.cos(self.t_ori_last[2])-(to_target[1]/(np.sum(to_target)))*math.sin(self.t_ori_last[2])
-			reward = W_ORI*math.exp(-((1-erro_ori)**2))+W_INC/2.*math.exp(-(math.fabs(self.t_ori_last[0])))+W_INC/2.*math.exp(-(math.fabs(self.t_ori_last[1])))+W_DIST*math.exp(-(np.linalg.norm(self.t_pos_last-self.pos_target)**2))
+
+			#localização
+			angle_bet = math.acos((self.pos_target*vetor_mov)/(np.linalg.norm(self.pos_target)*np.linalg.norm(vetor_mov)))
+			dist_no_rumo = 0.
+			if angle_bet > 90:
+				angle_bet = 180. - angle_bet
+				dist_no_rumo = -math.cos(angle_bet)*np.linalg.norm(vetor_mov)
+			else:
+				dist_no_rumo = math.cos(angle_bet)*np.linalg.norm(vetor_mov)
+			
+			reward = W_ORI*math.exp(-((1-erro_ori)**2))+W_INC/2.*math.exp(-(math.fabs(self.t_ori_last[0])))+W_INC/2.*math.exp(-(math.fabs(self.t_ori_last[1])))+W_DIST*dist_no_rumo
 
 		#print(self.done)
 		return np.array(state), self.done, reward
@@ -300,7 +353,7 @@ class Controlador():
 		return pos_pelves, pos_foot
 
 
-	def atualiza_cinematica(self, cmd):
+	def atualiza_cinematica(self):
 		x = (self.t_state*125)/self.tempoPasso
 		pelv_point, foot_point = self.getTragectoryPoint(x)
 		if self.perna:
@@ -368,7 +421,7 @@ class Controlador():
 			#CONFIGURA BODY SOLVER PARA INVOCAR FUNÇÕES DO MODELO DINÂMICO DO ROBÔ
 			self.body.set_angles(data_foot, data_pelv)
 
-		cmd_to_float = 1. if cmd else 0.
+		cmd_to_float = 1. if self.cmd else 0.
 		self.body_angles = data+[cmd_to_float]
 		#self.gravity_compensation()
 
