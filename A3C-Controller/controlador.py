@@ -127,6 +127,11 @@ class Controlador():
 
 
 	def step(self, action, cmd):
+		print(self.altura,
+			self.deslocamentoXpes,
+			self.deslocamentoYpelves,
+			self.deslocamentoZpes,
+			self.deslocamentoZpelves)
 		#bounded
 		self.action_last = np.array(action)
 		action[0] *= (self.a+self.c-HEIGHT_INIT)
@@ -171,6 +176,7 @@ class Controlador():
 		'''
 
 		return self.get_state()
+
 
 	def run_marcos_controller(self):
 		self.last_time = time.time()
