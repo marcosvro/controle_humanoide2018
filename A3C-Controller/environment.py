@@ -13,7 +13,8 @@ class VrepEnvironment():
 		simu_name_id = 'w%i' % idx
 
 		if TESTING:
-			os.system(VREP_PATH+"/vrep.sh -s -q -g"+simu_name_id+" "+SCENE_FILE_PATH+"&")
+			print("Devia estar iniciando agora!!")
+			#os.system(VREP_PATH+"/vrep.sh -s -q -g"+simu_name_id+" "+SCENE_FILE_PATH+"&")
 		else:
 			os.system('DISPLAY=:0 '+VREP_PATH+"/vrep.sh -q -s -g"+simu_name_id+" "+SCENE_FILE_PATH+"&")
 		self.w_id = idx
@@ -46,6 +47,8 @@ class VrepEnvironment():
 	def step(self, action):
 		info = {}
 		s, done, r = self.sub_controller.step(action, self.cmd)
+		self.cmd = not self.cmd
+		print(3)
 		return s, r, done, info
 
 	def ack_callback(self, msg):

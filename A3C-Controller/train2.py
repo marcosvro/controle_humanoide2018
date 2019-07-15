@@ -46,12 +46,12 @@ class Net(nn.Module):
         super(Net, self).__init__()
         self.s_dim = s_dim
         self.a_dim = a_dim
-        self.a1 = nn.Linear(s_dim, 512)
-        self.a2 = nn.Linear(512, 256)
+        self.a1 = nn.Linear(s_dim, 256)
+        self.a2 = nn.Linear(256, 256)
         self.mu = nn.Linear(256, a_dim)
         self.sigma = nn.Linear(256, a_dim)
-        self.c1 = nn.Linear(s_dim, 512)
-        self.c2 = nn.Linear(512, 256)
+        self.c1 = nn.Linear(s_dim, 256)
+        self.c2 = nn.Linear(256, 256)
         self.v = nn.Linear(256, 1)
         set_init([self.a1, self.a2, self.mu, self.sigma, self.c1, self.c2, self.v])
         self.distribution = torch.distributions.Normal
@@ -68,8 +68,11 @@ class Net(nn.Module):
 
     def choose_action(self, s):
         self.training = False
+        print(8)
         mu, sigma, _ = self.forward(s)
+        print(9)
         m = self.distribution(mu.view(N_A, ).data, sigma.view(N_A, ).data)
+        print(10)
         return m.sample().numpy()
 
     def loss_func(self, s, a, v_t):
@@ -111,7 +114,9 @@ class Worker(mp.Process):
                 #if self.name == 'w0':
                 #    self.env.render()
                 self.w_state.value = 3
+                print(-1)
                 a = self.lnet.choose_action(v_wrap(s[None, :]))
+                print(0)
                 s_, r, done, _ = self.env.step(a.clip(-1, 1))
                 self.w_state.value = 4
 
