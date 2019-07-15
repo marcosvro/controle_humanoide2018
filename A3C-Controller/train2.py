@@ -19,6 +19,7 @@ import math, os
 from parameters import *
 import rospy
 from std_msgs.msg import Float32MultiArray, Bool
+from argparse import ArgumentParser
 os.environ["OMP_NUM_THREADS"] = "1"
 
 def pub_worker_state(pub, w_states):
@@ -141,7 +142,16 @@ class Worker(mp.Process):
 
 
 if __name__ == "__main__":
+    parser = ArgumentParser()
+    parser.add_argument("-l", "--load",
+                    action="store_true", dest="load_weight", default=False,
+                    help="Load model weights from path in paramters.py")
+    args = parser.parse_args()
+
     gnet = Net(N_S, N_A)        # global network
+    if args.load_weight:
+        gnet.load_state_dict(torch.load(LOG_DIR))
+        gnet.eval()
     gnet.share_memory()         # share the global parameters in multiprocessing
     opt = SharedRMSProp(gnet.parameters(), lr=0.0001)  # global optimizer
     global_ep, global_ep_r, res_queue, pub_queue, best_ep_r = mp.Value('i', 0), mp.Value('d', 0.), mp.Queue(), mp.Queue(), mp.Value('d', 0.)
