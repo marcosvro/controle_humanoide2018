@@ -48,7 +48,6 @@ class VrepEnvironment():
 		info = {}
 		s, done, r = self.sub_controller.step(action, self.cmd)
 		self.cmd = not self.cmd
-		print(3)
 		return s, r, done, info
 
 	def ack_callback(self, msg):

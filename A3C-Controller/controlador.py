@@ -163,7 +163,6 @@ class Controlador():
 		self.tempoPasso = 1.
 		'''
 
-		print(1)
 		self.cmd = cmd
 		self.last_time = time.time()
 		self.atualiza_fps()
@@ -178,7 +177,6 @@ class Controlador():
 			self.pub_rate.sleep()
 		cmd_to_float = 1. if not self.cmd else 0.
 		self.pub_queue.put([False, self.w_id, [0.]*18+[cmd_to_float]]) #command to pause simulation
-		print(2)
 
 		return self.get_state(action)
 

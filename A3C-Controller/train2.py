@@ -68,11 +68,8 @@ class Net(nn.Module):
 
     def choose_action(self, s):
         self.training = False
-        print(8)
         mu, sigma, _ = self.forward(s)
-        print(9)
         m = self.distribution(mu.view(N_A, ).data, sigma.view(N_A, ).data)
-        print(10)
         return m.sample().numpy()
 
     def loss_func(self, s, a, v_t):
@@ -114,9 +111,7 @@ class Worker(mp.Process):
                 #if self.name == 'w0':
                 #    self.env.render()
                 self.w_state.value = 3
-                print(-1)
                 a = self.lnet.choose_action(v_wrap(s[None, :]))
-                print(0)
                 s_, r, done, _ = self.env.step(a.clip(-1, 1))
                 self.w_state.value = 4
 
