@@ -89,7 +89,7 @@ else:
 	N_A += 10 # Velocity of swing foot, hip of support leg and torso angles
 
 # number of states
-N_S = 2
+N_S = 0
 if COM_IN_STATE:
 	N_S += 6
 if TARGETS_POS_IN_STATE:
