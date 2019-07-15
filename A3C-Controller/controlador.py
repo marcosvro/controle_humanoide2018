@@ -138,7 +138,6 @@ class Controlador():
 
 	def step(self, action, cmd):
 		#bounded
-		self.action_last = np.array(action)
 		action[0] *= (self.a+self.c-HEIGHT_INIT)
 		action[1] = (action[1]+1)*SHIFT_X_FOOT_MAX
 		action[2] = (action[2]+1)*SHIFT_Y_HIP_MAX
@@ -176,8 +175,7 @@ class Controlador():
 			self.pub_queue.put([False, self.w_id, self.body_angles])
 			self.pub_rate.sleep()
 
-		return self.get_state()
-
+		return self.get_state(action)
 
 	def run_marcos_controller(self):
 		self.last_time = time.time()
@@ -197,7 +195,7 @@ class Controlador():
 			self.pub_rate.sleep()
 
 
-	def get_state(self):
+	def get_state(self, action=None):
 		vetor_mov = np.array(self.t_pos_shd)-self.t_pos_last
 		self.t_pos_last = np.array(self.t_pos_shd)
 		self.t_ori_last = np.array(self.t_ori_shd)
@@ -220,6 +218,8 @@ class Controlador():
 			state += (self.t_ori_last/math.pi).tolist()
 		if LAST_ACTION_IN_STATE:
 			state += self.action_last.tolist()
+			if (action is not None):
+				self.action_last = np.array(action)
 		if LEG_JOINT_POSITION_IN_STATE:
 			state += (self.t_joint_last/math.pi).tolist()
 
