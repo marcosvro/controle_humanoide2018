@@ -150,8 +150,10 @@ if __name__ == "__main__":
 
     gnet = Net(N_S, N_A)        # global network
     if args.load_weight:
+        print("Carregando pesos..")
         gnet.load_state_dict(torch.load(LOG_DIR))
         gnet.eval()
+        print("Pesos carregados.")
     gnet.share_memory()         # share the global parameters in multiprocessing
     opt = SharedRMSProp(gnet.parameters(), lr=0.0001)  # global optimizer
     global_ep, global_ep_r, res_queue, pub_queue, best_ep_r = mp.Value('i', 0), mp.Value('d', 0.), mp.Queue(), mp.Queue(), mp.Value('d', 0.)

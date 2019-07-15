@@ -57,11 +57,16 @@ class Controlador():
 		
 		time.sleep(TIME_WAIT_INIT_PUBS)
 		#define subscribers para os dados do state
-		rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_acc_last", Vector3, self.t_acc_last_callback)
-		rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_ori_last", Vector3, self.t_ori_last_callback)
-		rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_pos_last", Vector3, self.t_pos_last_callback)
-		rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_joint_last", Float32MultiArray, self.t_joint_last_callback)
-
+		if not TESTING:
+			rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_acc_last", Vector3, self.t_acc_last_callback)
+			rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_ori_last", Vector3, self.t_ori_last_callback)
+			rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_pos_last", Vector3, self.t_pos_last_callback)
+			rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_joint_last", Float32MultiArray, self.t_joint_last_callback)
+		else:
+			rospy.Subscriber("vrep_ros_interface/"+simu_name_id+"/t_acc_last", Vector3, self.t_acc_last_callback)
+			rospy.Subscriber("vrep_ros_interface/"+simu_name_id+"/t_ori_last", Vector3, self.t_ori_last_callback)
+			rospy.Subscriber("vrep_ros_interface/"+simu_name_id+"/t_pos_last", Vector3, self.t_pos_last_callback)
+			rospy.Subscriber("vrep_ros_interface/"+simu_name_id+"/t_joint_last", Float32MultiArray, self.t_joint_last_callback)
 		#inicia thread que ficará publicando para o simulador
 
 		'''
@@ -90,8 +95,9 @@ class Controlador():
 		self.l_point_last = np.array(self.pos_inicial_pelves)
 		self.t_angles_last = np.array([0., 0.])
 		self.lz_angles_last = np.array([0., 0.])
-		self.pos_target = (np.random.rand(2)*2-np.array([1, 1]))*TARGET_BOUND_RANGE  # posição alvo definida neste episódio
-		self.pos_target = (self.t_pos_last-self.pos_target)/np.linalg.norm(self.t_pos_last-self.pos_target)
+		#self.pos_target = (np.random.rand(2)*2-np.array([1, 1]))*TARGET_BOUND_RANGE  # posição alvo definida neste episódio
+		#self.pos_target = (self.t_pos_last-self.pos_target)/np.linalg.norm(self.t_pos_last-self.pos_target)
+		self.pos_target = np.array([1.,0.])
 
 		self.action_last = np.array([0.]*N_A)
 		self.done = False
@@ -108,7 +114,8 @@ class Controlador():
 		self.atualiza_fps()
 		self.chage_state()
 		self.atualiza_cinematica()
-		state = self.pos_target.tolist()
+		state = []
+		#state = self.pos_target.tolist()
 		#state += [np.linalg.norm(self.t_pos_last-self.pos_target)/TARGET_BOUND_RANGE]
 		if COM_IN_STATE:
 			self.body.set_angles(self.body_angles[:6], self.body_angles[6:12])
@@ -148,7 +155,6 @@ class Controlador():
 		self.deslocamentoZpelves = action[4]
 		#self.tempoPasso = action[5]
 		
-
 		'''
 		self.altura = 17.
 		self.deslocamentoXpes = 2.
@@ -198,7 +204,8 @@ class Controlador():
 		self.t_acc_last = np.array(self.t_acc_shd)
 		self.t_joint_last = np.array(self.t_joint_shd)
 
-		state = self.pos_target.tolist()
+		state = []
+		#state = self.pos_target.tolist()
 		#state = ((self.t_pos_last-self.pos_target)/np.linalg.norm(self.t_pos_last-self.pos_target)).tolist()
 		if COM_IN_STATE:
 			self.body.set_angles(self.t_joint_last[:6], self.t_joint_last[6:12])
@@ -219,10 +226,12 @@ class Controlador():
 
 		#print(self.t_ori_last)
 		#check if done
+		reward = 0.
 		if math.fabs(self.t_ori_last[0]) > ANGLE_FALLEN_THRESHOLD or math.fabs(self.t_ori_last[1]) > ANGLE_FALLEN_THRESHOLD:
 			self.done = True
-			reward = 0
+			reward = W_ALIVE*-1
 		else:
+			'''
 			#orientação
 			to_target = self.pos_target
 			erro_ori = (to_target[0]/(np.sum(to_target)))*math.cos(self.t_ori_last[2])-(to_target[1]/(np.sum(to_target)))*math.sin(self.t_ori_last[2])
@@ -238,6 +247,16 @@ class Controlador():
 				dist_no_rumo = math.cos(angle_bet)*np.linalg.norm(vetor_mov)
 			
 			reward = W_ORI*math.exp(-((1-erro_ori)**2))+W_INC/2.*math.exp(-(math.fabs(self.t_ori_last[0])))+W_INC/2.*math.exp(-(math.fabs(self.t_ori_last[1])))+W_DIST*dist_no_rumo
+			'''
+			progress = vetor_mov[0]
+			bonus_alive = 1.
+			rewards =  [W_INC/2.*math.exp(-(math.fabs(self.t_ori_last[0]))),
+						W_INC/2.*math.exp(-(math.fabs(self.t_ori_last[1]))),
+						W_DIST*progress,
+						W_ALIVE*bonus_alive]
+			reward = np.sum(rewards)
+
+
 
 		#print(self.done)
 		return np.array(state), self.done, reward

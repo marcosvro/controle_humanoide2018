@@ -57,7 +57,8 @@ TARGET_BOUND_RANGE = 5.
 #task rewards weight
 W_ORI = 0.2
 W_DIST = 5.
-W_INC = 0.2
+W_INC = 1.
+W_ALIVE = 1.
 
 #network
 OUTPUT_GRAPH = True         # safe logs
