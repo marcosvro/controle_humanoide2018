@@ -12,7 +12,7 @@ LAST_ACTION_IN_STATE = False #If true, last action are embbeded in state
 LEG_JOINT_POSITION_IN_STATE = True #If true, real joint position of robot simulation are embbede in state
 
 #action mode
-USING_MARCOS_CONTROLLER = True #If true, the action are composed by variables set of Marcos controller. If false, the action is composed by 3 arrays (2 3D, 1 2D) indicating the position of swing foot, hip of support leg and torso angles velocity
+USING_MARCOS_CONTROLLER = False #If true, the action are composed by variables set of Marcos controller. If false, the action is composed by 3 arrays (2 3D, 1 2D) indicating the position of swing foot, hip of support leg and torso angles velocity
 
 #state init values
 HEIGHT_INIT = 17.
@@ -64,7 +64,7 @@ W_ALIVE = 5.
 OUTPUT_GRAPH = True         # safe logs
 RENDER=True                 # render one worker
 LOG_DIR = './log/weigths'   # savelocation for logs
-N_WORKERS = 1  	# number of workers
+N_WORKERS = 20  	# number of workers
 MAX_EP_STEP = 100            # maxumum number of steps per episode
 MAX_EP = 1000000            # maximum number of episodes
 MAX_GLOBAL_EP = MAX_EP      # idem MAX_EP, but to tensorflow A3C implementation.
