@@ -8,7 +8,7 @@ COM_IN_STATE = False # If true, center of mass position inserted in state array
 TARGETS_POS_IN_STATE = False # If true, position of right leg, left leg and torso target are in state array
 TORSO_ACCELERATION_IN_STATE = False #If true, vector acceleration of TORSO are in state array
 TORSO_ORIENTATION_IN_STATE = True #If true, torso orientation(IMU response) are in state array
-LAST_ACTION_IN_STATE = True #If true, last action are embbeded in state
+LAST_ACTION_IN_STATE = False #If true, last action are embbeded in state
 LEG_JOINT_POSITION_IN_STATE = True #If true, real joint position of robot simulation are embbede in state
 
 #action mode
@@ -44,7 +44,7 @@ KP_CONST = 0.6
 TESTING = False
 VREP_PATH = '~/vrep'
 SCENE_FILE_PATH = '~/Documentos/controle_humanoide2018/teste_09_03.ttt'
-TIME_STEP_ACTION = 0.2
+TIME_STEP_ACTION = 0.25
 N_PUBS_STEP = 5
 ACTION_BOUND_LOW = -1
 ACTION_BOUND_HIGH = 1
@@ -88,19 +88,23 @@ if USING_MARCOS_CONTROLLER:
 else:
 	N_A += 10 # Velocity of swing foot, hip of support leg and torso angles
 
+# number of state parts
+S_P = 4
+
 # number of states
-N_S = 0
+N_PS = 0
 if COM_IN_STATE:
-	N_S += 6
+	N_PS += 6
 if TARGETS_POS_IN_STATE:
-	N_S += 8
+	N_PS += 8
 if TORSO_ACCELERATION_IN_STATE:
-	N_S += 3
+	N_PS += 3
 if TORSO_ORIENTATION_IN_STATE:
-	N_S += 3
+	N_PS += 3
 if LAST_ACTION_IN_STATE:
-	N_S += N_A
+	N_PS += N_A
 if USING_MARCOS_CONTROLLER:
-	N_S += 2
+	N_PS += 2
 if LEG_JOINT_POSITION_IN_STATE:
-	N_S += 12
+	N_PS += 12
+N_S = N_PS*S_P*2

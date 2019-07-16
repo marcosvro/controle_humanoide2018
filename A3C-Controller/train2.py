@@ -1,10 +1,3 @@
-"""
-Reinforcement Learning (A3C) using Pytroch + multiprocessing.
-The most simple implementation for continuous action.
-
-View more on my Chinese tutorial page [莫烦Python](https://morvanzhou.github.io/).
-"""
-
 import torch
 import torch.nn as nn
 from utils import v_wrap, set_init, push_and_pull, record
@@ -37,9 +30,8 @@ def pub_worker_state(pub, w_states):
 def finish_train(msg):
     if not msg.data:
         return
-    global global_ep
-    with global_ep.get_lock():
-        global_ep.value = MAX_EP
+    global runing
+    runing = False
 
 class Net(nn.Module):
     def __init__(self, s_dim, a_dim):
@@ -99,10 +91,11 @@ class Worker(mp.Process):
         self.env = VrepEnvironment(idx, pub_queue, t_ori, t_acc, t_pos, t_joint)
         self.w_state = w_state
         self.pub_queue = pub_queue
+        self.exit = mp.Event()
 
     def run(self):
         total_step = 1
-        while self.g_ep.value < MAX_EP:
+        while self.g_ep.value < MAX_EP and not self.exit.is_set():
             self.w_state.value = 2
             s = self.env.reset()
             buffer_s, buffer_a, buffer_r = [], [], []
@@ -141,6 +134,10 @@ class Worker(mp.Process):
                 total_step += 1
         self.pub_queue.put(None)
         self.res_queue.put(None)
+
+    def shutdown(self):
+        print ("Shutdown %s initiated" %(self.name))
+        self.exit.set()
 
 
 if __name__ == "__main__":
@@ -191,28 +188,35 @@ if __name__ == "__main__":
     workers = [Worker(gnet, opt, global_ep, global_ep_r, res_queue, best_ep_r, i, pub_queue, states[i][0], states[i][1], states[i][2], states[i][3], w_states[i]) for i in range(N_WORKERS)]
     [w.start() for w in workers]
     res = []                    # record episode reward to plot
-    while True:
-        msg = pub_queue.get()
-        '''
-        debug = [0]*N_WORKERS
-        for i in range(N_WORKERS):
-            debug[i] = w_states[i].value
-        print (debug)
-        '''
-        if msg is not None:
-            trueReset_falseJointPos = msg[0]
-            i = msg[1]
-            if (trueReset_falseJointPos): # reset msg
-                to_send = Bool()
-                to_send.data = msg[2]
-                pubs[i][1].publish(to_send)
-            else: # joint position msg
-                to_send = Float32MultiArray()
-                to_send.data = msg[2]
-                pubs[i][0].publish(to_send)
-        else:
-            print("Acabou")
+
+    runing = True
+    while runing:
+        try:
+            msg = pub_queue.get()
+            '''
+            debug = [0]*N_WORKERS
+            for i in range(N_WORKERS):
+                debug[i] = w_states[i].value
+            print (debug)
+            '''
+            if msg is not None:
+                trueReset_falseJointPos = msg[0]
+                i = msg[1]
+                if (trueReset_falseJointPos): # reset msg
+                    to_send = Bool()
+                    to_send.data = msg[2]
+                    pubs[i][1].publish(to_send)
+                else: # joint position msg
+                    to_send = Float32MultiArray()
+                    to_send.data = msg[2]
+                    pubs[i][0].publish(to_send)
+            else:
+                print("Acabou")
+                break
+        except Exception as identifier:
             break
+
+    [w.shutdown() for w in workers]
     [w.join() for w in workers]
     ended = True
     while res_queue.qsize() != 0:

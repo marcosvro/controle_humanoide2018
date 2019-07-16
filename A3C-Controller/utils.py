@@ -46,17 +46,17 @@ def push_and_pull(opt, lnet, gnet, done, s_, bs, ba, br, gamma):
 def record(global_ep, global_ep_r, ep_r, res_queue, best_ep_r, name, state_dicts):
     with global_ep.get_lock():
         global_ep.value += 1
-    with global_ep_r.get_lock():
-        if global_ep_r.value == 0.:
-            global_ep_r.value = ep_r
-        else:
-            global_ep_r.value = global_ep_r.value * 0.99 + ep_r * 0.01
-    with best_ep_r.get_lock():
-        saved = False
-        if global_ep_r.value > best_ep_r.value:
-            best_ep_r.value = global_ep_r.value
-            torch.save(state_dicts, LOG_DIR)
-            saved = True
+        with global_ep_r.get_lock():
+            if global_ep_r.value == 0.:
+                global_ep_r.value = ep_r
+            else:
+                global_ep_r.value = global_ep_r.value * 0.99 + ep_r * 0.01
+            with best_ep_r.get_lock():
+                saved = False
+                if global_ep_r.value > best_ep_r.value:
+                    best_ep_r.value = global_ep_r.value
+                    torch.save(state_dicts, LOG_DIR)
+                    saved = True
 
     res_queue.put(global_ep_r.value)
     saved_msg = "New ep reward record" if saved else ""

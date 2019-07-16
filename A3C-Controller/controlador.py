@@ -114,6 +114,7 @@ class Controlador():
 		self.atualiza_fps()
 		self.chage_state()
 		self.atualiza_cinematica()
+
 		state = []
 		#state = self.pos_target.tolist()
 		#state += [np.linalg.norm(self.t_pos_last-self.pos_target)/TARGET_BOUND_RANGE]
@@ -133,7 +134,7 @@ class Controlador():
 		if LEG_JOINT_POSITION_IN_STATE:
 			state += (np.array(self.body_angles[:12])/math.pi).tolist()
 
-		return np.array(state)
+		return np.array(state+([0.]*N_PS*(S_P*2-1)))
 
 
 	def step(self, action, cmd):
@@ -147,21 +148,22 @@ class Controlador():
 		#action[5] = (action[5]+1) * TIME_STEP_MAX + TIME_STEP_MIN
 
 		
-		'''
 		self.altura = HEIGHT_INIT+action[0]
 		self.deslocamentoXpes = action[1]
 		self.deslocamentoYpelves = action[2]
 		self.deslocamentoZpes = action[3]
 		#self.deslocamentoZpelves = action[4]
 		#self.tempoPasso = action[5]
-		'''
+		
 
+		'''
 		self.altura = 17.
 		self.deslocamentoXpes = 2.
 		self.deslocamentoYpelves = 3.5
 		self.deslocamentoZpes = 1.5
 		self.deslocamentoZpelves = 5.
 		self.tempoPasso = 1.
+		'''
 
 		self.cmd = cmd
 		self.last_time = time.time()
@@ -226,6 +228,17 @@ class Controlador():
 		if LEG_JOINT_POSITION_IN_STATE:
 			state += (self.t_joint_last/math.pi).tolist()
 
+		if not self.perna:
+			i = int((self.t_state/self.tempoPasso)*S_P)
+			if i == 0:
+				state = state+([0.]*N_PS*(S_P*2-1))
+			else:
+				state = ([0.]*N_PS*i)+state+([0.]*N_PS*(S_P-i+1))+([0.]*N_PS*S_P)
+		else:
+			if i == 0:
+				state = ([0.]*N_PS*S_P)+state+([0.]*N_PS*(S_P-1))
+			else:
+				state = ([0.]*N_PS*S_P)+([0.]*N_PS*i)+state+([0.]*N_PS*(S_P-i+1))
 
 		#print(self.t_ori_last)
 		#check if done
