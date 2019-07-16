@@ -45,8 +45,7 @@ class VrepEnvironment():
 		return init_state
 
 	def step(self, action):
-		info = {}
-		s, done, r = self.sub_controller.step(action, self.cmd)
+		s, done, r, info = self.sub_controller.step(action, self.cmd)
 		self.cmd = not self.cmd
 		return s, r, done, info
 

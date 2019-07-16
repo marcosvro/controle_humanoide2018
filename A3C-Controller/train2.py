@@ -112,7 +112,8 @@ class Worker(mp.Process):
                 #    self.env.render()
                 self.w_state.value = 3
                 a = self.lnet.choose_action(v_wrap(s[None, :]))
-                s_, r, done, _ = self.env.step(a.clip(-1, 1))
+                s_, r, done, info = self.env.step(a.clip(-1, 1))
+                print(info['progress'])
                 self.w_state.value = 4
 
                 if math.isnan(r):
@@ -125,8 +126,9 @@ class Worker(mp.Process):
                 buffer_s.append(s)
                 buffer_r.append(r)    # normalize
 
-                if t == MAX_EP_STEP-1 or done:  # update global and assign to local net
+                if total_step%UPDATE_GLOBAL_ITER == 0 or done:  # update global and assign to local net
                     self.w_state.value = 5
+
                     # sync
                     push_and_pull(self.opt, self.lnet, self.gnet, done, s_, buffer_s, buffer_a, buffer_r, GAMMA)
                     buffer_s, buffer_a, buffer_r = [], [], []

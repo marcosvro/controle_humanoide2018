@@ -56,9 +56,9 @@ TARGET_BOUND_RANGE = 5.
 
 #task rewards weight
 W_ORI = 0.2
-W_DIST = 5.
+W_DIST = 50.
 W_INC = 1.
-W_ALIVE = 1.
+W_ALIVE = 5.
 
 #network
 OUTPUT_GRAPH = True         # safe logs
@@ -83,7 +83,7 @@ if USING_MARCOS_CONTROLLER:
 	N_A += 1 # Step length
 	N_A += 1 # Side shift of hip 
 	N_A += 1 # Hip height
-	N_A += 1 # Angles to turn
+	#N_A += 1 # Angles to turn
 	#N_A += 1 # Step time
 else:
 	N_A += 10 # Velocity of swing foot, hip of support leg and torso angles
