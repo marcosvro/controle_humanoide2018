@@ -228,17 +228,17 @@ class Controlador():
 		if LEG_JOINT_POSITION_IN_STATE:
 			state += (self.t_joint_last/math.pi).tolist()
 
+		i = int((self.t_state/self.tempoPasso)*S_P)
 		if not self.perna:
-			i = int((self.t_state/self.tempoPasso)*S_P)
 			if i == 0:
 				state = state+([0.]*N_PS*(S_P*2-1))
 			else:
-				state = ([0.]*N_PS*i)+state+([0.]*N_PS*(S_P-i+1))+([0.]*N_PS*S_P)
+				state = ([0.]*N_PS*i)+state+([0.]*N_PS*(S_P-(i+1)))+([0.]*N_PS*S_P)
 		else:
 			if i == 0:
 				state = ([0.]*N_PS*S_P)+state+([0.]*N_PS*(S_P-1))
 			else:
-				state = ([0.]*N_PS*S_P)+([0.]*N_PS*i)+state+([0.]*N_PS*(S_P-i+1))
+				state = ([0.]*N_PS*S_P)+([0.]*N_PS*i)+state+([0.]*N_PS*(S_P-(i+1)))
 
 		#print(self.t_ori_last)
 		#check if done

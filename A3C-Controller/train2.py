@@ -104,7 +104,6 @@ class Worker(mp.Process):
                 #if self.name == 'w0':
                 #    self.env.render()
                 self.w_state.value = 3
-                print(len(s), N_S)
                 a = self.lnet.choose_action(v_wrap(s[None, :]))
                 s_, r, done, info = self.env.step(a.clip(-1, 1))
                 #print(info['progress'])
