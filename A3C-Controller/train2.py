@@ -188,6 +188,8 @@ if __name__ == "__main__":
 
     # parallel training
     workers = [Worker(gnet, opt, global_ep, global_ep_r, res_queue, best_ep_r, i, pub_queue, states[i][0], states[i][1], states[i][2], states[i][3], w_states[i]) for i in range(N_WORKERS)]
+    for w in workers:
+        w.daemon = True
     [w.start() for w in workers]
     res = []                    # record episode reward to plot
 
@@ -219,8 +221,6 @@ if __name__ == "__main__":
             break
 
     [w.shutdown() for w in workers]
-    for w in workers:
-        w.daemon = True
     #[w.join() for w in workers]
     ended = True
     while res_queue.qsize() != 0:

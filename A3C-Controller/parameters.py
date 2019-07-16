@@ -59,7 +59,7 @@ TARGET_BOUND_RANGE = 5.
 W_ORI = 0.2
 W_DIST = 50.
 W_INC = 1.
-W_ALIVE = 5.
+W_ALIVE = 3.5
 
 #network
 OUTPUT_GRAPH = True         # safe logs
