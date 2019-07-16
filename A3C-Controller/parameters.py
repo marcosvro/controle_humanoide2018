@@ -17,13 +17,14 @@ USING_MARCOS_CONTROLLER = False #If true, the action are composed by variables s
 #state init values
 HEIGHT_INIT = 17.
 TIME_STEP_INIT = 1.
-DISTANCE_FOOT_INIT = 2.8
+DISTANCE_FOOT_INIT = 0.
 SHIFT_X_FOOT_INIT = 0.
 SHIFT_Y_HIP_INIT = 0
 SHIFT_Z_FOOT_INIT = 0
 ANGLE_Z_HIP_INIT = 0
 
 #constaints of controller
+DISTANCE_FOOT_MAX = 2.
 SHIFT_X_FOOT_MAX = 2.
 SHIFT_Z_FOOT_MAX = 2.
 SHIFT_Y_HIP_MAX = 2.
@@ -81,8 +82,9 @@ N_A = 0
 if USING_MARCOS_CONTROLLER:
 	N_A += 1 # Swing foot height
 	N_A += 1 # Step length
-	N_A += 1 # Side shift of hip 
+	N_A += 1 # Side shift of hip
 	N_A += 1 # Hip height
+	N_A += 1 # Distance between feet
 	#N_A += 1 # Angles to turn
 	#N_A += 1 # Step time
 else:
