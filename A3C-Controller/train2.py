@@ -113,7 +113,7 @@ class Worker(mp.Process):
                 self.w_state.value = 3
                 a = self.lnet.choose_action(v_wrap(s[None, :]))
                 s_, r, done, info = self.env.step(a.clip(-1, 1))
-                print(info['progress'])
+                #print(info['progress'])
                 self.w_state.value = 4
 
                 if math.isnan(r):
