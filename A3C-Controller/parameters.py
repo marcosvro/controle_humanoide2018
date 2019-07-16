@@ -6,7 +6,7 @@ RAD_2_DEG = 180./3.141592653589793
 #State set
 COM_IN_STATE = False # If true, center of mass position inserted in state array
 TARGETS_POS_IN_STATE = False # If true, position of right leg, left leg and torso target are in state array
-TORSO_ACCELERATION_IN_STATE = True #If true, vector acceleration of TORSO are in state array
+TORSO_ACCELERATION_IN_STATE = False #If true, vector acceleration of TORSO are in state array
 TORSO_ORIENTATION_IN_STATE = True #If true, torso orientation(IMU response) are in state array
 LAST_ACTION_IN_STATE = True #If true, last action are embbeded in state
 LEG_JOINT_POSITION_IN_STATE = True #If true, real joint position of robot simulation are embbede in state
@@ -64,7 +64,7 @@ W_ALIVE = 5.
 OUTPUT_GRAPH = True         # safe logs
 RENDER=True                 # render one worker
 LOG_DIR = './log/weigths'   # savelocation for logs
-N_WORKERS = 20  	# number of workers
+N_WORKERS = 1  	# number of workers
 MAX_EP_STEP = 100            # maxumum number of steps per episode
 MAX_EP = 1000000            # maximum number of episodes
 MAX_GLOBAL_EP = MAX_EP      # idem MAX_EP, but to tensorflow A3C implementation.

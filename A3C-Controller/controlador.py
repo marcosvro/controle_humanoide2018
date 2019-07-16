@@ -147,21 +147,21 @@ class Controlador():
 		#action[5] = (action[5]+1) * TIME_STEP_MAX + TIME_STEP_MIN
 
 		
+		'''
 		self.altura = HEIGHT_INIT+action[0]
 		self.deslocamentoXpes = action[1]
 		self.deslocamentoYpelves = action[2]
 		self.deslocamentoZpes = action[3]
 		#self.deslocamentoZpelves = action[4]
 		#self.tempoPasso = action[5]
-		
 		'''
+
 		self.altura = 17.
 		self.deslocamentoXpes = 2.
 		self.deslocamentoYpelves = 3.5
 		self.deslocamentoZpes = 1.5
 		self.deslocamentoZpelves = 5.
 		self.tempoPasso = 1.
-		'''
 
 		self.cmd = cmd
 		self.last_time = time.time()
