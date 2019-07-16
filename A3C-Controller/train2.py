@@ -101,6 +101,8 @@ class Worker(mp.Process):
             buffer_s, buffer_a, buffer_r = [], [], []
             ep_r = 0.
             for t in range(MAX_EP_STEP):
+                if self.exit.is_set():
+                    return
                 #if self.name == 'w0':
                 #    self.env.render()
                 self.w_state.value = 3
@@ -217,7 +219,9 @@ if __name__ == "__main__":
             break
 
     [w.shutdown() for w in workers]
-    [w.join() for w in workers]
+    for w in workers:
+        w.daemon = True
+    #[w.join() for w in workers]
     ended = True
     while res_queue.qsize() != 0:
         msg = res_queue.get()
