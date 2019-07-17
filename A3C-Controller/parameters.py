@@ -10,6 +10,7 @@ TORSO_ACCELERATION_IN_STATE = False #If true, vector acceleration of TORSO are i
 TORSO_ORIENTATION_IN_STATE = True #If true, torso orientation(IMU response) are in state array
 LAST_ACTION_IN_STATE = False #If true, last action are embbeded in state
 LEG_JOINT_POSITION_IN_STATE = True #If true, real joint position of robot simulation are embbede in state
+PRESSURE_FEET_IN_STATE = True
 
 #action mode
 USING_MARCOS_CONTROLLER = False #If true, the action are composed by variables set of Marcos controller. If false, the action is composed by 3 arrays (2 3D, 1 2D) indicating the position of swing foot, hip of support leg and torso angles velocity
@@ -45,7 +46,7 @@ KP_CONST = 0.6
 TESTING = False
 VREP_PATH = '~/vrep'
 SCENE_FILE_PATH = '~/Documentos/controle_humanoide2018/teste_09_03.ttt'
-TIME_STEP_ACTION = 0.25
+TIME_STEP_ACTION = 0.2
 N_PUBS_STEP = 5
 ACTION_BOUND_LOW = -1
 ACTION_BOUND_HIGH = 1
@@ -65,7 +66,7 @@ W_ALIVE = 3.5
 OUTPUT_GRAPH = True         # safe logs
 RENDER=True                 # render one worker
 LOG_DIR = './log/weigths'   # savelocation for logs
-N_WORKERS = 20  	# number of workers
+N_WORKERS = 1  	# number of workers
 MAX_EP_STEP = 100            # maxumum number of steps per episode
 MAX_EP = 1000000            # maximum number of episodes
 MAX_GLOBAL_EP = MAX_EP      # idem MAX_EP, but to tensorflow A3C implementation.
@@ -91,22 +92,25 @@ else:
 	N_A += 5 # Velocity of swing foot, hip of support leg and torso angles
 
 # number of state parts
-S_P = 4
+S_P = 5
 
 # number of states
 N_PS = 0
+N_PA = 0
 if COM_IN_STATE:
-	N_PS += 6
+	N_PA += 6
 if TARGETS_POS_IN_STATE:
-	N_PS += 8
+	N_PA += 8
 if TORSO_ACCELERATION_IN_STATE:
-	N_PS += 3
+	N_PA += 3
 if TORSO_ORIENTATION_IN_STATE:
-	N_PS += 3
+	N_PA += 3
 if LAST_ACTION_IN_STATE:
-	N_PS += N_A
+	N_PA += N_A
 if USING_MARCOS_CONTROLLER:
-	N_PS += 2
+	N_PA += 2
+if PRESSURE_FEET_IN_STATE:
+	N_PA += 8
 if LEG_JOINT_POSITION_IN_STATE:
 	N_PS += 12
-N_S = N_PS*S_P*2
+N_S = N_PS*S_P*2 + N_PA

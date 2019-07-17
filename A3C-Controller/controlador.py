@@ -27,6 +27,7 @@ class Controlador():
 				t_acc,
 				t_pos,
 				t_joint,
+				t_force,
 				gravity_compensation_enable = False):
 		
 		simu_name_id = 'w%i' % idx
@@ -52,6 +53,7 @@ class Controlador():
 		self.t_ori_shd = t_ori 	# IMU
 		self.t_pos_shd = t_pos	    # position (X Y), odometry
 		self.t_joint_shd = t_joint
+		self.t_force_shd = t_force
 		
 		self.reset()
 		
@@ -62,12 +64,13 @@ class Controlador():
 			rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_ori_last", Vector3, self.t_ori_last_callback)
 			rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_pos_last", Vector3, self.t_pos_last_callback)
 			rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_joint_last", Float32MultiArray, self.t_joint_last_callback)
+			rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_force_last", Float32MultiArray, self.t_force_last_callback)
 		else:
 			rospy.Subscriber("vrep_ros_interface/"+simu_name_id+"/t_acc_last", Vector3, self.t_acc_last_callback)
 			rospy.Subscriber("vrep_ros_interface/"+simu_name_id+"/t_ori_last", Vector3, self.t_ori_last_callback)
 			rospy.Subscriber("vrep_ros_interface/"+simu_name_id+"/t_pos_last", Vector3, self.t_pos_last_callback)
 			rospy.Subscriber("vrep_ros_interface/"+simu_name_id+"/t_joint_last", Float32MultiArray, self.t_joint_last_callback)
-		#inicia thread que ficará publicando para o simulador
+			rospy.Subscriber("vrep_ros_interface/"+simu_name_id+"/t_force_last", Float32MultiArray, self.t_force_last_callback)
 
 		'''
 		t = mt.Thread(target=run_marcos_controller)
@@ -79,6 +82,7 @@ class Controlador():
 		self.t_acc_last = np.array([0.]*3)
 		self.t_ori_last = np.array([0.]*3)
 		self.t_pos_last = np.array([0.]*2)
+		self.t_force_last = np.array([0.125]*8)
 
 		#variaveis do controlador marcos
 		self.altura = HEIGHT_INIT
@@ -115,6 +119,7 @@ class Controlador():
 		self.chage_state()
 		self.atualiza_cinematica()
 
+		state_a = []
 		state = []
 		#state = self.pos_target.tolist()
 		#state += [np.linalg.norm(self.t_pos_last-self.pos_target)/TARGET_BOUND_RANGE]
@@ -122,19 +127,23 @@ class Controlador():
 			self.body.set_angles(self.body_angles[:6], self.body_angles[6:12])
 			com_relative_dir = self.body.get_com(1) # right leg are support leg
 			com_relative_esq = self.body.get_com(0) # left leg are support leg
-			state += (com_relative_dir.tolist()+com_relative_esq.tolist())
+			state_a += (com_relative_dir.tolist()+com_relative_esq.tolist())
 		if USING_MARCOS_CONTROLLER:
-			state += [self.perna, self.t_state/self.tempoPasso]
+			state_a += [self.perna, self.t_state/self.tempoPasso]
 		if TORSO_ACCELERATION_IN_STATE:
-			state += (self.t_acc_last/11.).tolist()
+			state_a += (self.t_acc_last/11.).tolist()
 		if TORSO_ORIENTATION_IN_STATE:
-			state += (self.t_ori_last/math.pi).tolist()
+			state_a += (self.t_ori_last/math.pi).tolist()
 		if LAST_ACTION_IN_STATE:
-			state += self.action_last.tolist()
+			state_a += self.action_last.tolist()
+		if PRESSURE_FEET_IN_STATE:
+			state_a += self.t_force_last.tolist()
 		if LEG_JOINT_POSITION_IN_STATE:
 			state += (np.array(self.body_angles[:12])/math.pi).tolist()
 
-		return np.array(state+([0.]*N_PS*(S_P*2-1)))
+		state = state+([0.]*N_PS*(S_P*2-1))
+		state += state_a
+		return np.array(state)
 
 
 	def step(self, action, cmd):
@@ -210,6 +219,7 @@ class Controlador():
 		self.t_acc_last = np.array(self.t_acc_shd)
 		self.t_joint_last = np.array(self.t_joint_shd)
 
+		state_a = []
 		state = []
 		#state = self.pos_target.tolist()
 		#state = ((self.t_pos_last-self.pos_target)/np.linalg.norm(self.t_pos_last-self.pos_target)).tolist()
@@ -217,17 +227,19 @@ class Controlador():
 			self.body.set_angles(self.t_joint_last[:6], self.t_joint_last[6:12])
 			com_relative_dir = self.body.get_com(1) # right leg are support leg
 			com_relative_esq = self.body.get_com(0) # left leg are support leg
-			state += (com_relative_dir.tolist()+com_relative_esq.tolist())
+			state_a += (com_relative_dir.tolist()+com_relative_esq.tolist())
 		if USING_MARCOS_CONTROLLER:
-			state += [self.perna, self.t_state/self.tempoPasso]
+			state_a += [self.perna, self.t_state/self.tempoPasso]
 		if TORSO_ACCELERATION_IN_STATE:
-			state += (self.t_acc_last/11.).tolist()
+			state_a += (self.t_acc_last/11.).tolist()
 		if TORSO_ORIENTATION_IN_STATE:
-			state += (self.t_ori_last/math.pi).tolist()
+			state_a += (self.t_ori_last/math.pi).tolist()
 		if LAST_ACTION_IN_STATE:
-			state += self.action_last.tolist()
+			state_a += self.action_last.tolist()
 			if (action is not None):
 				self.action_last = np.array(action)
+		if PRESSURE_FEET_IN_STATE:
+			state_a += self.t_force_last.tolist()
 		if LEG_JOINT_POSITION_IN_STATE:
 			state += (self.t_joint_last/math.pi).tolist()
 
@@ -242,6 +254,8 @@ class Controlador():
 				state = ([0.]*N_PS*S_P)+state+([0.]*N_PS*(S_P-1))
 			else:
 				state = ([0.]*N_PS*S_P)+([0.]*N_PS*i)+state+([0.]*N_PS*(S_P-(i+1)))
+
+		state += state_a
 
 		#print(self.t_ori_last)
 		#check if done
@@ -282,6 +296,7 @@ class Controlador():
 		info = {'progress': progress}
 		return np.array(state), self.done, reward, info
 
+#############################	CALLBACKS	##############################################
 
 	def t_acc_last_callback (self, vetor):
 		self.t_acc_shd[0] = vetor.x
@@ -301,6 +316,13 @@ class Controlador():
 		data = msg.data
 		for i in range(len(data)):
 			self.t_joint_shd[i] = data[i]
+
+	def t_force_last_callback (self, msg):
+		data = msg.data
+		for i in range(len(data)):
+			self.t_force_shd[i] = data[i]/30.
+
+	###################################################################################
 
 	#Change state
 	def chage_state(self):
