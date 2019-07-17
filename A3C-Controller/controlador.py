@@ -332,7 +332,7 @@ class Controlador():
 			elif att_t_a[1] < -TORSO_COMPENSATION_MAX:
 				att_t_a[1] = -TORSO_COMPENSATION_MAX
 
-			print(att_r_p, att_l_p)
+			#print(att_r_p, att_l_p)
 			#inverse kinematics
 			try:
 				angles = self.cinematica_inversa(att_r_p, att_l_p, att_t_a, cmd)
