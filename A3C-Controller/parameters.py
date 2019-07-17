@@ -88,7 +88,7 @@ if USING_MARCOS_CONTROLLER:
 	#N_A += 1 # Angles to turn
 	#N_A += 1 # Step time
 else:
-	N_A += 10 # Velocity of swing foot, hip of support leg and torso angles
+	N_A += 5 # Velocity of swing foot, hip of support leg and torso angles
 
 # number of state parts
 S_P = 4
