@@ -290,9 +290,9 @@ class Controlador():
 
 	def step(self, action, cmd):
 		#print(cmd)
-		r_v = np.array(action[0:3])
-		l_v = np.array(action[3:6])
-		t_v = np.array(action[6:8])*10
+		r_v = np.array(action[0:3])*2
+		l_v = np.array(action[3:6])*2
+		t_v = np.array(action[6:8])
 		#lz_v = np.array(action[8:10])*10
 
 		r_p = self.r_point_last
