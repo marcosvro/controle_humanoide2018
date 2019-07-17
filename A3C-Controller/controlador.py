@@ -114,6 +114,9 @@ class Controlador():
 		state_a = []
 		#state = self.pos_target.tolist()
 		#state += [np.linalg.norm(self.t_pos_last-self.pos_target)/TARGET_BOUND_RANGE]
+
+		self.body_angles = self.cinematica_inversa(self.r_point_last, self.l_point_last, self.t_angles_last, False)
+
 		if COM_IN_STATE:
 			self.body.set_angles(self.body_angles[:6], self.body_angles[6:12])
 			com_relative_dir = self.body.get_com(1) # right leg are support leg
@@ -127,6 +130,8 @@ class Controlador():
 			state_a += (self.t_ori_last/math.pi).tolist()
 		if LAST_ACTION_IN_STATE:
 			state_a += self.action_last.tolist()
+		if PRESSURE_FEET_IN_STATE:
+			state_a += [0.125]*8
 		if LEG_JOINT_POSITION_IN_STATE:
 			state += (np.array(self.body_angles[:12])/math.pi).tolist()
 
