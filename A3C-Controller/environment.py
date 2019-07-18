@@ -12,7 +12,11 @@ class VrepEnvironment():
 	def __init__ (self, idx, pub_queue, t_ori, t_acc, t_pos, t_joint, t_force):
 		#incialize vrep simulation and wait for confirmation
 		simu_name_id = 'w%i' % idx
-		porta = 19980+idx
+
+		if idx == 17:
+			porta = 19980+21
+		else:
+			porta = 19980+idx
 
 		if TESTING:
 			print("Devia estar iniciando agora!!")
