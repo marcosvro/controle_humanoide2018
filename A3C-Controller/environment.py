@@ -6,20 +6,31 @@ import rospy
 import numpy as np
 from std_msgs.msg import Float32MultiArray, Bool
 import os
+import vrep
 
 class VrepEnvironment():
 	def __init__ (self, idx, pub_queue, t_ori, t_acc, t_pos, t_joint, t_force):
 		#incialize vrep simulation and wait for confirmation
 		simu_name_id = 'w%i' % idx
+		porta = 19980+idx
 
 		if TESTING:
 			print("Devia estar iniciando agora!!")
 			#os.system(VREP_PATH+"/vrep.sh -s -q -g"+simu_name_id+" "+SCENE_FILE_PATH+"&")
 		else:
-			os.system('DISPLAY=:0 '+VREP_PATH+"/vrep.sh -q -g"+simu_name_id+" "+SCENE_FILE_PATH+"&")
+			os.system('DISPLAY=:0 '+VREP_PATH+"/vrep.sh -q -g"+simu_name_id+" gREMOTEAPISERVERSERVICE_"+porta+"_FALSE_FALSE "+SCENE_FILE_PATH+"&")
 		self.w_id = idx
 
 		time.sleep(TIME_WAIT_INIT_PUBS)
+		clientID=vrep.simxStart('127.0.0.1',porta,True,True,5000,5) # Connect to V-REP
+
+		if clientID!=-1:
+			# start the simulation:
+			vrep.simxStartSimulation(clientID,vrep.simx_opmode_blocking)
+		else:
+			print ("Processo %i não iniciou uma conexão com o simulador, abortando!!")
+			exit()
+
 		self.pub_queue = pub_queue
 		'''
 		rospy.init_node('controller_A3C'+simu_name_id, anonymous=True)
