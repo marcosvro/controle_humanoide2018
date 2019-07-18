@@ -18,7 +18,7 @@ class VrepEnvironment():
 			print("Devia estar iniciando agora!!")
 			#os.system(VREP_PATH+"/vrep.sh -s -q -g"+simu_name_id+" "+SCENE_FILE_PATH+"&")
 		else:
-			os.system('DISPLAY=:0 '+VREP_PATH+"/vrep.sh -q -g"+simu_name_id+" gREMOTEAPISERVERSERVICE_"+str(porta)+"_FALSE_FALSE "+SCENE_FILE_PATH+"&")
+			os.system('DISPLAY=:0 '+VREP_PATH+"/vrep.sh -q -g"+simu_name_id+" -gREMOTEAPISERVERSERVICE_"+str(porta)+"_FALSE_FALSE "+SCENE_FILE_PATH+"&")
 		self.w_id = idx
 
 		time.sleep(TIME_WAIT_INIT_PUBS)
