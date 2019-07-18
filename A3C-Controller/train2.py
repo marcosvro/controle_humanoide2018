@@ -221,10 +221,11 @@ if __name__ == "__main__":
         except Exception as identifier:
             break
 
+    size_res_queue = res_queue.qsize()
     [w.shutdown() for w in workers]
-    #[w.join() for w in workers]
+
     ended = True
-    while res_queue.qsize() != 0:
+    for i in range (size_res_queue):
         msg = res_queue.get()
         if msg is not None:
             res.append(msg)
