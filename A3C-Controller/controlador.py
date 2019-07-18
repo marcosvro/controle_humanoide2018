@@ -314,7 +314,7 @@ class Controlador():
 	def t_force_last_callback (self, msg):
 		data = msg.data
 		for i in range(len(data)):
-			self.t_force_shd[i] = data[i]/30.
+			self.t_force_shd[i] = data[i]/(self.mass*9.8)
 
 	###################################################################################
 
