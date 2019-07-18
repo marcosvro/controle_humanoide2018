@@ -28,7 +28,7 @@ class VrepEnvironment():
 			# start the simulation:
 			vrep.simxStartSimulation(clientID,vrep.simx_opmode_blocking)
 		else:
-			print ("Processo %i não iniciou uma conexão com o simulador, abortando!!")
+			print ("Processo %i não iniciou uma conexão com o simulador, abortando!!" % (idx))
 			exit()
 
 		self.pub_queue = pub_queue

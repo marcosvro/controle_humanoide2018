@@ -46,6 +46,7 @@ class Controlador():
 		self.time_ignore_GC = TIME_TO_IGNORE_GC #entre 0 e 1 - gravity compensation rodará no intervalo (tempoPasso*time_ignore_GC, tempoPasso*(1-time_ignore_GC))
 		self.gravity_compensation_enable = gravity_compensation_enable
 		self.body = Body()
+		self.mass = self.body.perna_dir_para_esq.total_mass
 		self.pub_queue = pub
 		self.pub_rate = pub_rate
 
@@ -71,11 +72,6 @@ class Controlador():
 			rospy.Subscriber("vrep_ros_interface/"+simu_name_id+"/t_pos_last", Vector3, self.t_pos_last_callback)
 			rospy.Subscriber("vrep_ros_interface/"+simu_name_id+"/t_joint_last", Float32MultiArray, self.t_joint_last_callback)
 			rospy.Subscriber("vrep_ros_interface/"+simu_name_id+"/t_force_last", Float32MultiArray, self.t_force_last_callback)
-
-		'''
-		t = mt.Thread(target=run_marcos_controller)
-		t.start()
-		'''
 
 	def reset(self):
 		#dados que vem do simulador
@@ -153,9 +149,7 @@ class Controlador():
 		action[2] = (action[2]+1)*SHIFT_Y_HIP_MAX
 		action[3] = (action[3]+1)*SHIFT_Z_FOOT_MAX
 		action[4] = (action[4]+1)*DISTANCE_FOOT_MAX
-		#self.rot_desvio = 1 if action[4] > 0 else -1
-		#action[4] = math.fabs(action[4])*ANGLE_Z_HIP_MAX
-		#action[5] = (action[5]+1) * TIME_STEP_MAX + TIME_STEP_MIN
+		action[5] = (action[5]+1) * TIME_STEP_MAX_FACTOR + TIME_STEP_MIN
 
 		
 		self.altura = HEIGHT_INIT+action[0]
@@ -164,8 +158,7 @@ class Controlador():
 		self.deslocamentoXpes = action[1]
 		self.deslocamentoYpelves = action[2]
 		self.deslocamentoZpes = action[3]
-		#self.deslocamentoZpelves = action[4]
-		#self.tempoPasso = action[5]
+		self.tempoPasso = action[5]
 		
 
 		'''
@@ -194,23 +187,6 @@ class Controlador():
 
 		return self.get_state(action)
 
-	def run_marcos_controller(self):
-		self.last_time = time.time()
-		self.atualiza_fps()
-		while(True):
-			self.chage_state()
-			self.atualiza_cinematica()
-			self.atualiza_fps()
-			
-			print(self.altura,
-				self.deslocamentoXpes,
-				self.deslocamentoYpelves,
-				self.deslocamentoZpes,
-				self.deslocamentoZpelves)
-
-			self.pub_queue.put([False, self.w_id, self.body_angles])
-			self.pub_rate.sleep()
-
 
 	def get_state(self, action=None):
 		vetor_mov = np.array(self.t_pos_shd)-self.t_pos_last
@@ -218,6 +194,7 @@ class Controlador():
 		self.t_ori_last = np.array(self.t_ori_shd)
 		self.t_acc_last = np.array(self.t_acc_shd)
 		self.t_joint_last = np.array(self.t_joint_shd)
+		self.t_force_last = np.array(self.t_force_shd)
 
 		state_a = []
 		state = []
@@ -282,12 +259,29 @@ class Controlador():
 			
 			reward = W_ORI*math.exp(-((1-erro_ori)**2))+W_INC/2.*math.exp(-(math.fabs(self.t_ori_last[0])))+W_INC/2.*math.exp(-(math.fabs(self.t_ori_last[1])))+W_DIST*dist_no_rumo
 			'''
+
+			
+			pessao_pe_esq = np.sum(self.t_force_last[:4])
+			pessao_pe_dir = np.sum(self.t_force_last[4:])
+			if self.perna: # pé direito no chão
+				pessao_ideal_pe_esq = 0
+				pessao_ideal_pe_dir = self.mass*9.8 # peso
+			else: #pé esquerdo no chão
+				pessao_ideal_pe_esq = self.mass*9.8
+				pessao_ideal_pe_dir = 0
+			bad_support = 0
+			erro_press_esq = math.fabs(pessao_ideal_pe_esq-pessao_pe_esq)
+			erro_press_dir = math.fabs(pessao_ideal_pe_dir-pessao_pe_dir)
+			bad_support -= (1 - math.exp(-erro_press_esq))
+			bad_support -= (1 - math.exp(-erro_press_dir))
+
 			progress = vetor_mov[0]
 			bonus_alive = 1.
 			rewards =  [W_INC/2.*math.exp(-(math.fabs(self.t_ori_last[0]))),
 						W_INC/2.*math.exp(-(math.fabs(self.t_ori_last[1]))),
 						W_DIST*progress,
-						W_ALIVE*bonus_alive]
+						W_ALIVE*bonus_alive,
+						W_APOIO*bad_support]
 			reward = np.sum(rewards)
 
 

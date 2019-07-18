@@ -31,7 +31,7 @@ SHIFT_Z_FOOT_MAX = 3.
 SHIFT_Y_HIP_MAX = 3.
 ANGLE_Z_HIP_MAX = 50.
 VELOCITY_POINTS_MAX = 1.
-TIME_STEP_MAX = 1.5
+TIME_STEP_MAX_FACTOR = 1.
 TIME_STEP_MIN = 0.5
 
 #marcos controller parameters
@@ -61,6 +61,7 @@ W_ORI = 0.2
 W_DIST = 50.
 W_INC = 1.
 W_ALIVE = 3.5
+W_APOIO = 3.5
 
 #network
 OUTPUT_GRAPH = True         # safe logs
@@ -79,17 +80,7 @@ LR_C = 0.001                # learning rate for critic
 A_BOUND = [ACTION_BOUND_LOW, ACTION_BOUND_HIGH] # action bounds
 
 # number of actions
-N_A = 0
-if USING_MARCOS_CONTROLLER:
-	N_A += 1 # Swing foot height
-	N_A += 1 # Step length
-	N_A += 1 # Side shift of hip
-	N_A += 1 # Hip height
-	N_A += 1 # Distance between feet
-	#N_A += 1 # Angles to turn
-	#N_A += 1 # Step time
-else:
-	N_A += 5 # Velocity of swing foot, hip of support leg and torso angles
+N_A = 6
 
 # number of state parts
 S_P = 5
