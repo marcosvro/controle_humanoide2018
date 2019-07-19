@@ -17,7 +17,7 @@ USING_MARCOS_CONTROLLER = False #If true, the action are composed by variables s
 
 #state init values
 HEIGHT_INIT = 17.
-TIME_STEP_INIT = 1.
+TIME_STEP_INIT = 0.5
 DISTANCE_FOOT_INIT = 0.
 SHIFT_X_FOOT_INIT = 0.
 SHIFT_Y_HIP_INIT = 0
@@ -46,7 +46,7 @@ KP_CONST = 0.6
 TESTING = False
 VREP_PATH = '~/vrep'
 SCENE_FILE_PATH = '~/Documentos/controle_humanoide2018/teste_09_03.ttt'
-TIME_STEP_ACTION = 0.2
+TIME_STEP_ACTION = 0.25
 N_PUBS_STEP = 5
 ACTION_BOUND_LOW = -1
 ACTION_BOUND_HIGH = 1
@@ -72,7 +72,7 @@ MAX_EP_STEP = 100            # maxumum number of steps per episode
 MAX_EP = 1000000            # maximum number of episodes
 MAX_GLOBAL_EP = MAX_EP      # idem MAX_EP, but to tensorflow A3C implementation.
 GLOBAL_NET_SCOPE = 'Global_Net'
-UPDATE_GLOBAL_ITER = 5      # sets how often the global net is updated
+UPDATE_GLOBAL_ITER = 10      # sets how often the global net is updated
 GAMMA = 0.90                # discount factor
 ENTROPY_BETA = 0.01         # entropy factor
 LR_A = 0.0001               # learning rate for actor
@@ -80,10 +80,10 @@ LR_C = 0.001                # learning rate for critic
 A_BOUND = [ACTION_BOUND_LOW, ACTION_BOUND_HIGH] # action bounds
 
 # number of actions
-N_A = 6
+N_A = 5
 
 # number of state parts
-S_P = 5
+S_P = 2
 
 # number of states
 N_PS = 0

@@ -149,7 +149,7 @@ class Controlador():
 		action[2] = (action[2]+1)*SHIFT_Y_HIP_MAX
 		action[3] = (action[3]+1)*SHIFT_Z_FOOT_MAX
 		action[4] = (action[4]+1)*DISTANCE_FOOT_MAX
-		action[5] = (action[5]+1) * TIME_STEP_MAX_FACTOR + TIME_STEP_MIN
+		#action[5] = (action[5]+1) * TIME_STEP_MAX_FACTOR + TIME_STEP_MIN
 
 		
 		self.altura = HEIGHT_INIT+action[0]
@@ -158,7 +158,7 @@ class Controlador():
 		self.deslocamentoXpes = action[1]
 		self.deslocamentoYpelves = action[2]
 		self.deslocamentoZpes = action[3]
-		self.tempoPasso = action[5]
+		#self.tempoPasso = action[5]
 		
 
 		'''
