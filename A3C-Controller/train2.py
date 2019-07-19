@@ -88,6 +88,7 @@ class Worker(mp.Process):
         self.g_ep, self.g_ep_r, self.res_queue, self.best_ep_r = global_ep, global_ep_r, res_queue, best_ep_r
         self.gnet, self.opt = gnet, opt
         self.lnet = Net(N_S, N_A)           # local network
+        self.lnet.load_state_dict(gnet.state_dict())
         self.env = VrepEnvironment(idx, pub_queue, t_ori, t_acc, t_pos, t_joint, t_force)
         self.w_state = w_state
         self.pub_queue = pub_queue

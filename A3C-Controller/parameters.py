@@ -18,7 +18,7 @@ USING_MARCOS_CONTROLLER = False #If true, the action are composed by variables s
 #state init values
 HEIGHT_INIT = 17.
 TIME_STEP_INIT = 0.5
-DISTANCE_FOOT_INIT = 0.
+DISTANCE_FOOT_INIT = 2.8
 SHIFT_X_FOOT_INIT = 0.
 SHIFT_Y_HIP_INIT = 0
 SHIFT_Z_FOOT_INIT = 0
@@ -80,7 +80,7 @@ LR_C = 0.001                # learning rate for critic
 A_BOUND = [ACTION_BOUND_LOW, ACTION_BOUND_HIGH] # action bounds
 
 # number of actions
-N_A = 4
+N_A = 3
 
 # number of state parts
 S_P = 1
