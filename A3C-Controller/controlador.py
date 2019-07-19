@@ -145,10 +145,10 @@ class Controlador():
 	def step(self, action, cmd):
 		#bounded
 		#action[0] *= (self.a+self.c-HEIGHT_INIT)
-		action[0] = (action[1]+1)*SHIFT_X_FOOT_MAX
-		action[1] = (action[2]+1)*SHIFT_Y_HIP_MAX
-		action[2] = (action[3]+1)*SHIFT_Z_FOOT_MAX
-		action[3] = (action[4]+1)*DISTANCE_FOOT_MAX
+		action[0] = (action[0]+1)*SHIFT_X_FOOT_MAX
+		action[1] = (action[1]+1)*SHIFT_Y_HIP_MAX
+		action[2] = (action[2]+1)*SHIFT_Z_FOOT_MAX
+		action[3] = (action[3]+1)*DISTANCE_FOOT_MAX
 		#action[5] = (action[5]+1) * TIME_STEP_MAX_FACTOR + TIME_STEP_MIN
 
 		
