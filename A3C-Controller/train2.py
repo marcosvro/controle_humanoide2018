@@ -126,7 +126,7 @@ class Worker(mp.Process):
 
                     # sync
                     push_and_pull(self.opt, self.lnet, self.gnet, done, s_, buffer_s, buffer_a, buffer_r, GAMMA)
-                    buffer_s, buffer_a, buffer_r = [], [], []
+                    #buffer_s, buffer_a, buffer_r = [], [], []
 
                     # print information
                     record(self.g_ep, self.g_ep_r, ep_r, self.res_queue, self.best_ep_r, self.name, self.lnet.state_dict())
