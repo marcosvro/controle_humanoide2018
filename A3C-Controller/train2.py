@@ -51,7 +51,7 @@ class Net(nn.Module):
     def forward(self, x):
         a1 = F.relu6(self.a1(x))
         a2 = F.relu6(self.a2(a1))
-        mu = F.tanh(self.mu(a2))
+        mu = 2 * F.tanh(self.mu(a2))
         sigma = F.softplus(self.sigma(a2)) + 0.001      # avoid 0
         c1 = F.relu6(self.c1(x))
         c2 = F.relu6(self.c2(c1))
@@ -156,7 +156,7 @@ if __name__ == "__main__":
         gnet.eval()
         print("Pesos carregados.")
     gnet.share_memory()         # share the global parameters in multiprocessing
-    opt = SharedRMSProp(gnet.parameters(), lr=0.0001)  # global optimizer
+    opt = SharedAdam(gnet.parameters(), lr=0.0001)  # global optimizer
     global_ep, global_ep_r, res_queue, pub_queue, best_ep_r = mp.Value('i', 0), mp.Value('d', 0.), mp.Queue(), mp.Queue(), mp.Value('d', 0.)
     ended = False
 

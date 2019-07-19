@@ -58,10 +58,10 @@ TARGET_BOUND_RANGE = 5.
 
 #task rewards weight
 W_ORI = 0.2
-W_DIST = 50.
+W_DIST = 60.
 W_INC = 1.
 W_ALIVE = 3.5
-W_APOIO = 3.5
+W_APOIO = 1.5
 
 #network
 OUTPUT_GRAPH = True         # safe logs
@@ -83,7 +83,7 @@ A_BOUND = [ACTION_BOUND_LOW, ACTION_BOUND_HIGH] # action bounds
 N_A = 5
 
 # number of state parts
-S_P = 2
+S_P = 1
 
 # number of states
 N_PS = 0

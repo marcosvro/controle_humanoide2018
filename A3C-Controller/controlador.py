@@ -174,11 +174,11 @@ class Controlador():
 		self.last_time = time.time()
 		self.atualiza_fps()
 		self.t_step = 0
-		while(self.t_step < TIME_STEP_ACTION):
+		while(not self.chage_state()):
 			self.atualiza_cinematica()
 			self.atualiza_fps()
-			self.chage_state()
-			self.t_step += self.deltaTime
+			#self.chage_state()
+			#self.t_step += self.deltaTime
 
 			self.pub_queue.put([False, self.w_id, self.body_angles])
 			self.pub_rate.sleep()
