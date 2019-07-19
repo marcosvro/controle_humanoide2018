@@ -60,7 +60,7 @@ TARGET_BOUND_RANGE = 5.
 W_ORI = 0.2
 W_DIST = 60.
 W_INC = 1.
-W_ALIVE = 2.
+W_ALIVE = 1.
 W_APOIO = 0.
 
 #network
@@ -80,7 +80,7 @@ LR_C = 0.001                # learning rate for critic
 A_BOUND = [ACTION_BOUND_LOW, ACTION_BOUND_HIGH] # action bounds
 
 # number of actions
-N_A = 5
+N_A = 4
 
 # number of state parts
 S_P = 1
