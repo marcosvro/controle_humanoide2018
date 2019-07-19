@@ -60,8 +60,8 @@ TARGET_BOUND_RANGE = 5.
 W_ORI = 0.2
 W_DIST = 60.
 W_INC = 1.
-W_ALIVE = 3.5
-W_APOIO = 1.5
+W_ALIVE = 2.
+W_APOIO = 0.
 
 #network
 OUTPUT_GRAPH = True         # safe logs
@@ -72,7 +72,7 @@ MAX_EP_STEP = 100            # maxumum number of steps per episode
 MAX_EP = 1000000            # maximum number of episodes
 MAX_GLOBAL_EP = MAX_EP      # idem MAX_EP, but to tensorflow A3C implementation.
 GLOBAL_NET_SCOPE = 'Global_Net'
-UPDATE_GLOBAL_ITER = 10      # sets how often the global net is updated
+UPDATE_GLOBAL_ITER = 3      # sets how often the global net is updated
 GAMMA = 0.90                # discount factor
 ENTROPY_BETA = 0.01         # entropy factor
 LR_A = 0.0001               # learning rate for actor
