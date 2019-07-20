@@ -18,7 +18,7 @@ USING_MARCOS_CONTROLLER = False #If true, the action are composed by variables s
 #state init values
 HEIGHT_INIT = 17.
 TIME_STEP_INIT = 0.5
-DISTANCE_FOOT_INIT = 2.8
+DISTANCE_FOOT_INIT = 3.4
 SHIFT_X_FOOT_INIT = 0.
 SHIFT_Y_HIP_INIT = 0
 SHIFT_Z_FOOT_INIT = 0
