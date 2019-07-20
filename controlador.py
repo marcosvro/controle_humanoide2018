@@ -979,52 +979,52 @@ class Controlador():
 
 		self.last_sent_angles[:18] = data
 
-	# os multiplicadores de correção são inicializados em 0.
-	for idx, name in enumerate(PARAM_NAMES, 0):
-		curr_angle = data[idx]
-		curr_angle_mult = self.last_looseness_control_multipliers[idx]
-		# Se a última movimentação aumentou o ângulo na junta:
-		if (curr_angle_mult >= 0):
-			# E a movimentação anterior foi na direção oposta:
-			if (curr_angle > self.last_sent_angles[idx]):
-				# O multiplicador do ângulo de correção da junta se torna 1
-				self.last_looseness_control_multipliers[idx] = 1
-		# Se a última movimentação reduziu o ângulo na junta:
-		if (curr_angle_mult <= 0):
-			# E a movimentação anterior foi na direção oposta:
-			if (curr_angle < self.last_sent_angles[idx]):
-				# O multiplicador do ângulo de correção da junta se torna -1
-				self.last_looseness_control_multipliers[idx] = -1
+		# os multiplicadores de correção são inicializados em 0.
+		for idx, name in enumerate(PARAM_NAMES, 0):
+			curr_angle = data[idx]
+			curr_angle_mult = self.last_looseness_control_multipliers[idx]
+			# Se a última movimentação aumentou o ângulo na junta:
+			if (curr_angle_mult >= 0):
+				# E a movimentação anterior foi na direção oposta:
+				if (curr_angle > self.last_sent_angles[idx]):
+					# O multiplicador do ângulo de correção da junta se torna 1
+					self.last_looseness_control_multipliers[idx] = 1
+			# Se a última movimentação reduziu o ângulo na junta:
+			if (curr_angle_mult <= 0):
+				# E a movimentação anterior foi na direção oposta:
+				if (curr_angle < self.last_sent_angles[idx]):
+					# O multiplicador do ângulo de correção da junta se torna -1
+					self.last_looseness_control_multipliers[idx] = -1
 
-		# Para cada parâmetro de correção de folga de junta:
-		# Novo ângulo =
-		# Ângulo calculado pelo controlador +
-		# Multiplicador de correção de folga * ângulo de correção de folga
-		# rospy.get_param: pega parâmetro do servidor de parâmetros.
-		# (param_name, default_value)
-		# Após calibrar corretamente os ângulos, os mesmos podem ser aplicados diretamente no código(setar DEFAULT_JOINT_LOOSENESS_CONTROL e remover o get_param), em vez de tentar pegar
-		new_joint_angle = \
-			curr_angle + \
-			self.last_looseness_control_multipliers[idx] * rospy.get_param(PARAM_SERVER_PREFIX + PARAM_NAMES[idx],
-																		   self.DEFAULT_JOINT_LOOSENESS_CONTROL_ANGLES[
-																			   idx])
+			# Para cada parâmetro de correção de folga de junta:
+			# Novo ângulo =
+			# Ângulo calculado pelo controlador +
+			# Multiplicador de correção de folga * ângulo de correção de folga
+			# rospy.get_param: pega parâmetro do servidor de parâmetros.
+			# (param_name, default_value)
+			# Após calibrar corretamente os ângulos, os mesmos podem ser aplicados diretamente no código(setar DEFAULT_JOINT_LOOSENESS_CONTROL e remover o get_param), em vez de tentar pegar
+			new_joint_angle = \
+				curr_angle + \
+				self.last_looseness_control_multipliers[idx] * rospy.get_param(PARAM_SERVER_PREFIX + PARAM_NAMES[idx],
+																			self.DEFAULT_JOINT_LOOSENESS_CONTROL_ANGLES[
+																				idx])
 
-		# Verifica se os ângulos das juntas não ultrapassam os limites de ângulo possíveis para ser executados nas juntas
-		# Caso sejam ultrapassados, utiliza os valores máximos ou mímino definidos
-		# Tuplas (min,max) definidas na lista self.JOINT_ANGLES_MIN_MAX
-		min_angle, max_angle = self.JOINT_ANGLES_MIN_MAX[idx]
-		if (min_angle is not None and new_joint_angle < min_angle):
-			self.msg_to_micro[idx] = min_angle
-		elif (max_angle is not None and new_joint_angle > max_angle):
-			self.msg_to_micro[idx] = max_angle
-		else:
-			self.msg_to_micro[idx] = new_joint_angle
+			# Verifica se os ângulos das juntas não ultrapassam os limites de ângulo possíveis para ser executados nas juntas
+			# Caso sejam ultrapassados, utiliza os valores máximos ou mímino definidos
+			# Tuplas (min,max) definidas na lista self.JOINT_ANGLES_MIN_MAX
+			min_angle, max_angle = self.JOINT_ANGLES_MIN_MAX[idx]
+			if (min_angle is not None and new_joint_angle < min_angle):
+				self.msg_to_micro[idx] = min_angle
+			elif (max_angle is not None and new_joint_angle > max_angle):
+				self.msg_to_micro[idx] = max_angle
+			else:
+				self.msg_to_micro[idx] = new_joint_angle
 
-		# for idx, label in enumerate(PARAM_NAMES):
-		#     print(label, "| msg_to_micro: ", self.msg_to_micro[idx], " | old_angle: ", self.last_sent_angles[idx])
+			# for idx, label in enumerate(PARAM_NAMES):
+			#     print(label, "| msg_to_micro: ", self.msg_to_micro[idx], " | old_angle: ", self.last_sent_angles[idx])
 
-	if (self.simulador_ativado):
-		rospy.sleep(self.simTransRate)
+		if (self.simulador_ativado):
+			rospy.sleep(self.simTransRate)
 
 
 # '''
