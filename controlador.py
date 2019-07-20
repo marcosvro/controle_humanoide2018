@@ -215,7 +215,7 @@ class Controlador():
 
 		self.last_looseness_control_multipliers = [0] * 18
 
-		self.JOINT_ANGLES_MIN_MAX = [[None, None]] * 18
+		self.JOINT_ANGLES_MIN_MAX = [[-1000, 1000]] * 18
 
 		self.DEFAULT_JOINT_LOOSENESS_CONTROL_ANGLES = [0] * 18
 
@@ -981,7 +981,7 @@ class Controlador():
 
 		# os multiplicadores de correção são inicializados em 0.
 		for idx, name in enumerate(PARAM_NAMES, 0):
-			curr_angle = data[idx]
+			curr_angle = self.last_sent_angles[idx]
 			curr_angle_mult = self.last_looseness_control_multipliers[idx]
 			# Se a última movimentação aumentou o ângulo na junta:
 			if (curr_angle_mult >= 0):
@@ -1021,7 +1021,7 @@ class Controlador():
 				self.msg_to_micro[idx] = new_joint_angle
 
 			# for idx, label in enumerate(PARAM_NAMES):
-			#     print(label, "| msg_to_micro: ", self.msg_to_micro[idx], " | old_angle: ", self.last_sent_angles[idx])
+			    # print(label, "| msg_to_micro: ", self.msg_to_micro[idx], " | old_angle: ", self.last_sent_angles[idx])
 
 		if (self.simulador_ativado):
 			rospy.sleep(self.simTransRate)
