@@ -68,12 +68,12 @@ class Net(nn.Module):
         self.s_dim = s_dim
         self.a_dim = a_dim
         self.a1 = nn.Linear(s_dim, 512)
-        self.a2 = nn.Linear(256, 128)
-        self.mu = nn.Linear(128, a_dim)
-        self.sigma = nn.Linear(128, a_dim)
+        self.a2 = nn.Linear(512, 256)
+        self.mu = nn.Linear(256, a_dim)
+        self.sigma = nn.Linear(256, a_dim)
         self.c1 = nn.Linear(s_dim, 512)
-        self.c2 = nn.Linear(256, 128)
-        self.v = nn.Linear(128, 1)
+        self.c2 = nn.Linear(512, 256)
+        self.v = nn.Linear(256, 1)
         set_init([self.a1, self.a2, self.mu, self.sigma, self.c1, self.c2, self.v])
         self.distribution = torch.distributions.Normal
 
