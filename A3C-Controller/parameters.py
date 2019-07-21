@@ -18,7 +18,7 @@ USING_MARCOS_CONTROLLER = False #If true, the action are composed by variables s
 #state init values
 HEIGHT_INIT = 17.
 TIME_STEP_INIT = 0.5
-DISTANCE_FOOT_INIT = 2.8
+DISTANCE_FOOT_INIT = 3.5
 SHIFT_X_FOOT_INIT = 0.
 SHIFT_Y_HIP_INIT = 0
 SHIFT_Z_FOOT_INIT = 0
@@ -72,7 +72,7 @@ MAX_EP_STEP = 100            # maxumum number of steps per episode
 MAX_EP = 1000000            # maximum number of episodes
 MAX_GLOBAL_EP = MAX_EP      # idem MAX_EP, but to tensorflow A3C implementation.
 GLOBAL_NET_SCOPE = 'Global_Net'
-UPDATE_GLOBAL_ITER = 3      # sets how often the global net is updated
+UPDATE_GLOBAL_ITER = 4      # sets how often the global net is updated
 GAMMA = 0.90                # discount factor
 ENTROPY_BETA = 0.01         # entropy factor
 LR_A = 0.0001               # learning rate for actor
