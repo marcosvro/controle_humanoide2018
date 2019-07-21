@@ -203,23 +203,27 @@ class Worker(mp.Process):
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("-l", "--load",
-                    action="store_true", dest="load_weight", default=False,
-                    help="Load model weights from path in paramters.py")
+                    type=float, dest="load_weight", default=0.,
+                    help="Load model weights from path (in paramters.py) with best_global_reward defined by value entered.")
+    parser.add_argument('-n','--name', type=str, default='unnamed', help='Execution name (optional)')
     args = parser.parse_args()
 
     gnet = Net(N_S, N_A)        # global network
-    if args.load_weight:
-        print("Carregando pesos..")
-        gnet.load_state_dict(torch.load(LOG_DIR))
-        gnet.eval()
-        print("Pesos carregados.")
     gnet.share_memory()         # share the global parameters in multiprocessing
     opt = SharedAdam(gnet.parameters(), lr=0.0001)  # global optimizer
     global_ep, global_ep_r, stat_queue, pub_queue, best_ep_r = mp.Value('i', 0), mp.Value('d', 0.), mp.Queue(), mp.Queue(), mp.Value('d', 0.)
     runing = True
 
+    # load weight
+    if args.load_weight:
+        print("Carregando pesos..")
+        gnet.load_state_dict(torch.load(LOG_DIR))
+        gnet.eval()
+        best_ep_r.value = args.load_weight
+        print("Pesos carregados.")
+
     #inicia writeer tensorboard
-    stat_writer = SummaryWriter(comment="-A3C com ação livre")
+    stat_writer = SummaryWriter(comment="-A3C- "+args.name)
 
     # create publishers
     rospy.init_node('controller_A3C')
