@@ -62,7 +62,7 @@ W_ORI = 0.2
 W_DIST = 10.
 W_INC = 1.
 W_ALIVE = 1.
-W_APOIO = 1.5
+W_APOIO = 2.
 
 #network
 OUTPUT_GRAPH = True         # safe logs
