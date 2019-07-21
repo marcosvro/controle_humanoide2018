@@ -19,18 +19,19 @@ class VrepEnvironment():
 			porta = 19980+idx
 
 		if TESTING:
-			print("Devia estar iniciando agora!!")
-			#os.system(VREP_PATH+"/vrep.sh -s -q -g"+simu_name_id+" "+SCENE_FILE_PATH+"&")
+			os.system(VREP_PATH+"/vrep.sh -q -g"+simu_name_id+" -gREMOTEAPISERVERSERVICE_"+str(porta)+"_FALSE_FALSE "+SCENE_FILE_PATH+"&")
+			time.sleep(5)
+			#print("Devia estar iniciando agora!!")
 		else:
 			os.system('DISPLAY=:0 '+VREP_PATH+"/vrep.sh -q -g"+simu_name_id+" -gREMOTEAPISERVERSERVICE_"+str(porta)+"_FALSE_FALSE "+SCENE_FILE_PATH+"&")
 		self.w_id = idx
 
 		time.sleep(TIME_WAIT_INIT_PUBS)
-		clientID=vrep.simxStart('127.0.0.1',porta,True,True,5000,5) # Connect to V-REP
+		self.clientID=vrep.simxStart('127.0.0.1',porta,True,True,5000,5) # Connect to V-REP
 
-		if clientID!=-1:
+		if self.clientID!=-1:
 			# start the simulation:
-			vrep.simxStartSimulation(clientID,vrep.simx_opmode_blocking)
+			vrep.simxStartSimulation(self.clientID,vrep.simx_opmode_blocking)
 		else:
 			print ("Processo %i não iniciou uma conexão com o simulador, abortando!!" % (idx))
 			exit()
@@ -74,4 +75,7 @@ class VrepEnvironment():
 		while (not self.ack and timer < TIME_WAIT_ACK_MAX):
 			time.sleep(TIME_WAIT_ACK)
 			timer += TIME_WAIT_ACK
+
+	def close(self):
+		vrep.simxStopSimulation(self.clientID, vrep.simx_opmode_blocking)
 

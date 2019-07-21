@@ -18,7 +18,7 @@ USING_MARCOS_CONTROLLER = False #If true, the action are composed by variables s
 #state init values
 HEIGHT_INIT = 17.
 TIME_STEP_INIT = 0.5
-DISTANCE_FOOT_INIT = 3.4
+DISTANCE_FOOT_INIT = 2.8
 SHIFT_X_FOOT_INIT = 0.
 SHIFT_Y_HIP_INIT = 0
 SHIFT_Z_FOOT_INIT = 0
@@ -32,7 +32,8 @@ SHIFT_Y_HIP_MAX = 3.
 ANGLE_Z_HIP_MAX = 50.
 VELOCITY_POINTS_MAX = 1.
 TIME_STEP_MAX_FACTOR = 1.
-TIME_STEP_MIN = 0.5
+TIME_STEP_MIN = 0.6
+TORSO_COMPENSATION_MAX = 0.5
 
 #marcos controller parameters
 UPPER_LEG_LENGHT = 10.5
@@ -46,7 +47,7 @@ KP_CONST = 0.6
 TESTING = False
 VREP_PATH = '~/vrep'
 SCENE_FILE_PATH = '~/Documentos/controle_humanoide2018/teste_09_03.ttt'
-TIME_STEP_ACTION = 0.25
+TIME_STEP_ACTION = 0.15
 N_PUBS_STEP = 5
 ACTION_BOUND_LOW = -1
 ACTION_BOUND_HIGH = 1
@@ -61,18 +62,18 @@ W_ORI = 0.2
 W_DIST = 60.
 W_INC = 1.
 W_ALIVE = 1.
-W_APOIO = 0.
+W_APOIO = 1.
 
 #network
 OUTPUT_GRAPH = True         # safe logs
 RENDER=True                 # render one worker
 LOG_DIR = './log/weigths'   # savelocation for logs
 N_WORKERS = 20  	# number of workers
-MAX_EP_STEP = 100            # maxumum number of steps per episode
+MAX_EP_STEP = 150           # maxumum number of steps per episode
 MAX_EP = 1000000            # maximum number of episodes
 MAX_GLOBAL_EP = MAX_EP      # idem MAX_EP, but to tensorflow A3C implementation.
 GLOBAL_NET_SCOPE = 'Global_Net'
-UPDATE_GLOBAL_ITER = 3      # sets how often the global net is updated
+UPDATE_GLOBAL_ITER = 5      # sets how often the global net is updated
 GAMMA = 0.90                # discount factor
 ENTROPY_BETA = 0.01         # entropy factor
 LR_A = 0.0001               # learning rate for actor
@@ -80,10 +81,10 @@ LR_C = 0.001                # learning rate for critic
 A_BOUND = [ACTION_BOUND_LOW, ACTION_BOUND_HIGH] # action bounds
 
 # number of actions
-N_A = 3
+N_A = 8
 
 # number of state parts
-S_P = 1
+S_P = 4
 
 # number of states
 N_PS = 0
@@ -104,4 +105,4 @@ if PRESSURE_FEET_IN_STATE:
 	N_PA += 8
 if LEG_JOINT_POSITION_IN_STATE:
 	N_PS += 12
-N_S = N_PS*S_P*2 + N_PA
+N_S = N_PS*S_P + N_PA

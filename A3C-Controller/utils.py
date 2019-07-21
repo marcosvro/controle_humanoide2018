@@ -27,7 +27,7 @@ def push_and_pull(opt, lnet, gnet, done, s_, bs, ba, br, gamma):
         buffer_v_target.append(v_s_)
     buffer_v_target.reverse()
 
-    loss = lnet.loss_func(
+    loss, c_loss, a_loss, adv = lnet.loss_func(
         v_wrap(np.vstack(bs)),
         v_wrap(np.array(ba), dtype=np.int64) if ba[0].dtype == np.int64 else v_wrap(np.vstack(ba)),
         v_wrap(np.array(buffer_v_target)[:, None]))
@@ -42,15 +42,18 @@ def push_and_pull(opt, lnet, gnet, done, s_, bs, ba, br, gamma):
     # pull global parameters
     lnet.load_state_dict(gnet.state_dict())
 
+    return loss.detach() ,c_loss, a_loss, adv
 
-def record(global_ep, global_ep_r, ep_r, res_queue, best_ep_r, name, state_dicts):
+
+def record(global_ep, global_ep_r, stats, best_ep_r, name, state_dicts):
     with global_ep.get_lock():
         global_ep.value += 1
+        ep = global_ep.value
         with global_ep_r.get_lock():
             if global_ep_r.value == 0.:
-                global_ep_r.value = ep_r
+                global_ep_r.value = stats['reward']
             else:
-                global_ep_r.value = global_ep_r.value * 0.99 + ep_r * 0.01
+                global_ep_r.value = global_ep_r.value * 0.99 + stats['reward'] * 0.01
             with best_ep_r.get_lock():
                 saved = False
                 if global_ep_r.value > best_ep_r.value:
@@ -58,13 +61,17 @@ def record(global_ep, global_ep_r, ep_r, res_queue, best_ep_r, name, state_dicts
                     torch.save(state_dicts, LOG_DIR)
                     saved = True
 
-    res_queue.put(global_ep_r.value)
     saved_msg = "New ep reward record" if saved else ""
     print(
         name,
-        "Ep:", global_ep.value,
-        "| Ep_r: %.1f" % ep_r,
+        "Ep:", ep,
+        "| Ep_r: %.1f" % stats['reward'],
+        "| v_loss: %.1f" % stats['MeanValueLoss'],
+        "| time: %.1f" % stats['TimeEpisodeDuration'],
+        "| Adv: %.1f" % stats['MeanAdvantage'],
         "| Global Ep_r: %.1f" % global_ep_r.value,
         "| Best Global Ep_r: %.1f" % best_ep_r.value,
         saved_msg,
     )
+    
+    return ep
