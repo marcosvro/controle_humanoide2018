@@ -258,6 +258,7 @@ class Controlador():
 		#check if done
 		reward = 0.
 		progress = vetor_mov[0]
+		bad_support = 0.
 		if math.fabs(self.t_ori_last[0]) > ANGLE_FALLEN_THRESHOLD or math.fabs(self.t_ori_last[1]) > ANGLE_FALLEN_THRESHOLD:
 			self.done = True
 			reward = W_ALIVE*-1
@@ -288,11 +289,12 @@ class Controlador():
 			elif i == 3: #pé esquerdo no chão
 				pessao_ideal_pe_esq = self.mass*9.8
 				pessao_ideal_pe_dir = 0
-			bad_support = 0
-			erro_press_esq = math.fabs(pessao_ideal_pe_esq-pessao_pe_esq)
-			erro_press_dir = math.fabs(pessao_ideal_pe_dir-pessao_pe_dir)
-			bad_support -= (1 - math.exp(-erro_press_esq))
-			bad_support -= (1 - math.exp(-erro_press_dir))
+
+			if i == 3 or i == 1:
+				erro_press_esq = math.fabs(pessao_ideal_pe_esq-pessao_pe_esq)
+				erro_press_dir = math.fabs(pessao_ideal_pe_dir-pessao_pe_dir)
+				bad_support -= (1 - math.exp(-erro_press_esq))
+				bad_support -= (1 - math.exp(-erro_press_dir))
 
 			progress = vetor_mov[0]
 			bonus_alive = 1.
