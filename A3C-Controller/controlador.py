@@ -28,6 +28,7 @@ class Controlador():
 				t_pos,
 				t_joint,
 				t_force,
+				t_pos_feet,
 				gravity_compensation_enable = False):
 		
 		simu_name_id = 'w%i' % idx
@@ -55,6 +56,7 @@ class Controlador():
 		self.t_pos_shd = t_pos	    # position (X Y), odometry
 		self.t_joint_shd = t_joint
 		self.t_force_shd = t_force
+		self.t_pos_feet_shd = t_pos_feet
 		
 		self.reset()
 		
@@ -66,12 +68,14 @@ class Controlador():
 			rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_pos_last", Vector3, self.t_pos_last_callback)
 			rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_joint_last", Float32MultiArray, self.t_joint_last_callback)
 			rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_force_last", Float32MultiArray, self.t_force_last_callback)
+			rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+"/t_feet_pos_last", Float32MultiArray, self.t_pos_feet_last_callback)
 		else:
 			rospy.Subscriber("vrep_ros_interface/"+simu_name_id+"/t_acc_last", Vector3, self.t_acc_last_callback)
 			rospy.Subscriber("vrep_ros_interface/"+simu_name_id+"/t_ori_last", Vector3, self.t_ori_last_callback)
 			rospy.Subscriber("vrep_ros_interface/"+simu_name_id+"/t_pos_last", Vector3, self.t_pos_last_callback)
 			rospy.Subscriber("vrep_ros_interface/"+simu_name_id+"/t_joint_last", Float32MultiArray, self.t_joint_last_callback)
 			rospy.Subscriber("vrep_ros_interface/"+simu_name_id+"/t_force_last", Float32MultiArray, self.t_force_last_callback)
+			rospy.Subscriber("vrep_ros_interface/"+simu_name_id+"/t_feet_pos_last", Float32MultiArray, self.t_pos_feet_last_callback)
 
 	#################################### FUNÇÕES DO EVIROMENT #############################
 
@@ -81,6 +85,7 @@ class Controlador():
 		self.t_ori_last = np.array([0.]*3)
 		self.t_pos_last = np.array([0.]*2)
 		self.t_force_last = np.array([0.125]*8)
+		self.t_pos_feet_last = np.array([0., DISTANCE_FOOT_INIT/2, 0., -DISTANCE_FOOT_INIT/2])
 
 		#variaveis do controlador marcos
 		self.altura = HEIGHT_INIT
@@ -203,7 +208,7 @@ class Controlador():
 		self.t_state += TIME_STEP_ACTION
 		if (self.t_state > self.tempoPasso):
 			self.t_state = 0.
-		cmd_to_float = 1. if not self.cmd else 0.
+		cmd_to_float = 1. if not cmd else 0.
 		self.pub_queue.put([False, self.w_id, [0.]*18+[cmd_to_float]]) #command to pause simulation
 
 		self.r_point_last = r_p
@@ -215,12 +220,13 @@ class Controlador():
 
 
 	def get_state(self, action=None):
-		vetor_mov = np.array(self.t_pos_shd)-self.t_pos_last
+		vetor_mov_feet = np.array(self.t_pos_feet_shd)-self.t_pos_feet_last
 		self.t_pos_last = np.array(self.t_pos_shd)
 		self.t_ori_last = np.array(self.t_ori_shd)
 		self.t_acc_last = np.array(self.t_acc_shd)
 		self.t_joint_last = np.array(self.t_joint_shd)
 		self.t_force_last = np.array(self.t_force_shd)
+		self.t_pos_feet_last = np.array(self.t_pos_feet_shd)
 
 		state_a = []
 		state = []
@@ -257,7 +263,7 @@ class Controlador():
 		#print(self.t_ori_last)
 		#check if done
 		reward = 0.
-		progress = vetor_mov[0]
+		progress = vetor_mov_feet[0]+vetor_mov_feet[2] #avanço do pé esq e do dir em relação ao estado anterior
 		bad_support = 0.
 		if math.fabs(self.t_ori_last[0]) > ANGLE_FALLEN_THRESHOLD or math.fabs(self.t_ori_last[1]) > ANGLE_FALLEN_THRESHOLD:
 			self.done = True
@@ -269,14 +275,14 @@ class Controlador():
 			erro_ori = (to_target[0]/(np.sum(to_target)))*math.cos(self.t_ori_last[2])-(to_target[1]/(np.sum(to_target)))*math.sin(self.t_ori_last[2])
 
 			#localização
-			aux = np.sum(self.pos_target*vetor_mov)
-			angle_bet = 0 if aux < 1e-6 else math.acos(aux/(np.linalg.norm(self.pos_target)*np.linalg.norm(vetor_mov)))
+			aux = np.sum(self.pos_target*vetor_mov_feet)
+			angle_bet = 0 if aux < 1e-6 else math.acos(aux/(np.linalg.norm(self.pos_target)*np.linalg.norm(vetor_mov_feet)))
 			dist_no_rumo = 0.
 			if angle_bet > 90:
 				angle_bet = 180. - angle_bet
-				dist_no_rumo = -math.cos(angle_bet)*np.linalg.norm(vetor_mov)
+				dist_no_rumo = -math.cos(angle_bet)*np.linalg.norm(vetor_mov_feet)
 			else:
-				dist_no_rumo = math.cos(angle_bet)*np.linalg.norm(vetor_mov)
+				dist_no_rumo = math.cos(angle_bet)*np.linalg.norm(vetor_mov_feet)
 			
 			reward = W_ORI*math.exp(-((1-erro_ori)**2))+W_INC/2.*math.exp(-(math.fabs(self.t_ori_last[0])))+W_INC/2.*math.exp(-(math.fabs(self.t_ori_last[1])))+W_DIST*dist_no_rumo
 			'''
@@ -296,7 +302,7 @@ class Controlador():
 				bad_support -= (1 - math.exp(-erro_press_esq))
 				bad_support -= (1 - math.exp(-erro_press_dir))
 
-			progress = vetor_mov[0]
+			#progress = vetor_mov_feet[0]
 			bonus_alive = 1.
 			rewards =  [W_INC/2.*math.exp(-(math.fabs(self.t_ori_last[0]))),
 						W_INC/2.*math.exp(-(math.fabs(self.t_ori_last[1]))),
@@ -313,8 +319,8 @@ class Controlador():
 		}
 		#print(np.around(state, decimals=1))
 		#print(i, self.t_state, self.tempoPasso)
-		print(int(progress*W_DIST), int(bad_support*W_APOIO))
-		time.sleep(2)
+		#print(np.around([progress*W_DIST, bad_support*W_APOIO], decimals=1))
+		#time.sleep(4)
 		return np.array(state), self.done, reward, info
 
 #######################################################################################
@@ -344,6 +350,13 @@ class Controlador():
 		data = msg.data
 		for i in range(len(data)):
 			self.t_force_shd[i] = data[i]/(self.mass*9.8)
+
+	def t_pos_feet_last_callback (self, msg):
+		data = msg.data
+		self.t_pos_feet_shd[0] = data[0]
+		self.t_pos_feet_shd[1] = data[1]
+		self.t_pos_feet_shd[2] = data[3]
+		self.t_pos_feet_shd[3] = data[4]
 
 	###################################################################################
 

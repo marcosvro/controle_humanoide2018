@@ -9,7 +9,7 @@ import os
 import vrep
 
 class VrepEnvironment():
-	def __init__ (self, idx, pub_queue, t_ori, t_acc, t_pos, t_joint, t_force):
+	def __init__ (self, idx, pub_queue, t_ori, t_acc, t_pos, t_joint, t_force, t_pos_feet):
 		#incialize vrep simulation and wait for confirmation
 		simu_name_id = 'w%i' % idx
 
@@ -20,7 +20,7 @@ class VrepEnvironment():
 
 		if TESTING:
 			os.system(VREP_PATH+"/vrep.sh -q -g"+simu_name_id+" -gREMOTEAPISERVERSERVICE_"+str(porta)+"_FALSE_FALSE "+SCENE_FILE_PATH+"&")
-			time.sleep(5)
+			time.sleep(9)
 			#print("Devia estar iniciando agora!!")
 		else:
 			os.system('DISPLAY=:0 '+VREP_PATH+"/vrep.sh -q -g"+simu_name_id+" -gREMOTEAPISERVERSERVICE_"+str(porta)+"_FALSE_FALSE "+SCENE_FILE_PATH+"&")
@@ -47,13 +47,13 @@ class VrepEnvironment():
 		self.ack = False
 		self.cmd = False
 
-		self.sub_controller = Controlador(idx, pub_queue, pub_rate, t_ori, t_acc, t_pos, t_joint, t_force, gravity_compensation_enable=True)
+		self.sub_controller = Controlador(idx, pub_queue, pub_rate, t_ori, t_acc, t_pos, t_joint, t_force, t_pos_feet, gravity_compensation_enable=True)
 		rospy.Subscriber("/"+simu_name_id+"/"+simu_name_id+'/ack', Bool, self.ack_callback)
 		print("Ambiente inicializado!!")
 
 	def reset(self):
 		#reset robot on environment
-		self.cmd =  not self.cmd
+		self.cmd =  False
 		#self.reset_pub.publish(Bool(self.cmd))
 		init_state = self.sub_controller.reset()
 		self.pub_queue.put([True, self.w_id, self.cmd])

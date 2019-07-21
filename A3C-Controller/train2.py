@@ -109,7 +109,7 @@ class Net(nn.Module):
 
 
 class Worker(mp.Process):
-    def __init__(self, gnet, opt, global_ep, global_ep_r, stat_queue, best_ep_r, idx, pub_queue, t_ori, t_acc, t_pos, t_joint, t_force, w_state):
+    def __init__(self, gnet, opt, global_ep, global_ep_r, stat_queue, best_ep_r, idx, pub_queue, t_ori, t_acc, t_pos, t_joint, t_force, t_pos_feet, w_state):
         super(Worker, self).__init__()
         self.w_state = w_state
         self.w_state.value = 1
@@ -118,7 +118,7 @@ class Worker(mp.Process):
         self.gnet, self.opt = gnet, opt
         self.lnet = Net(N_S, N_A)           # local network
         self.lnet.load_state_dict(gnet.state_dict())
-        self.env = VrepEnvironment(idx, pub_queue, t_ori, t_acc, t_pos, t_joint, t_force)
+        self.env = VrepEnvironment(idx, pub_queue, t_ori, t_acc, t_pos, t_joint, t_force, t_pos_feet)
         self.w_state = w_state
         self.pub_queue = pub_queue
         self.exit = mp.Event()
@@ -235,8 +235,9 @@ if __name__ == "__main__":
         t_pos_last = mp.Array('d', [0]*2)
         t_joint_last = mp.Array('d', [0]*12)
         t_force_last = mp.Array('d', [0]*8)
+        t_pos_feet_last = mp.Array('d', [0]*4)
         w_state = mp.Value('i', 0)
-        states.append([t_ori_last, t_acc_last, t_pos_last, t_joint_last, t_force_last])
+        states.append([t_ori_last, t_acc_last, t_pos_last, t_joint_last, t_force_last, t_pos_feet_last])
         pubs.append([pos_pub, reset_pub])
         w_states.append(w_state)
 
@@ -256,7 +257,7 @@ if __name__ == "__main__":
     rospy.Subscriber("/finish_train", Bool, finish_train)
 
     # parallel training
-    workers = [Worker(gnet, opt, global_ep, global_ep_r, stat_queue, best_ep_r, i, pub_queue, states[i][0], states[i][1], states[i][2], states[i][3], states[i][4], w_states[i]) for i in range(N_WORKERS)]
+    workers = [Worker(gnet, opt, global_ep, global_ep_r, stat_queue, best_ep_r, i, pub_queue, states[i][0], states[i][1], states[i][2], states[i][3], states[i][4], states[i][5], w_states[i]) for i in range(N_WORKERS)]
     for w in workers:
         w.daemon = True
     [w.start() for w in workers]

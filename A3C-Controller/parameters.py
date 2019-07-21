@@ -59,16 +59,16 @@ TARGET_BOUND_RANGE = 5.
 
 #task rewards weight
 W_ORI = 0.2
-W_DIST = 60.
+W_DIST = 10.
 W_INC = 1.
 W_ALIVE = 1.
-W_APOIO = 1.
+W_APOIO = 1.5
 
 #network
 OUTPUT_GRAPH = True         # safe logs
 RENDER=True                 # render one worker
 LOG_DIR = './log/weigths'   # savelocation for logs
-N_WORKERS = 1  	# number of workers
+N_WORKERS = 20  	# number of workers
 MAX_EP_STEP = 150           # maxumum number of steps per episode
 MAX_EP = 1000000            # maximum number of episodes
 MAX_GLOBAL_EP = MAX_EP      # idem MAX_EP, but to tensorflow A3C implementation.
