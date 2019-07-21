@@ -95,7 +95,7 @@ class Controlador():
 				 time_id=17,
 				 robo_id=0,
 				 altura_inicial=17.,
-				 tempo_passo=0.3,
+				 tempo_passo=2.0,
 				 deslocamento_ypelves=1.4,
 				 deslocamento_zpes=2.,
 				 deslocamento_xpes=1.5,
@@ -215,7 +215,8 @@ class Controlador():
 
 		self.last_looseness_control_multipliers = [0] * 18
 
-		self.JOINT_ANGLES_MIN_MAX = [[-1000, 1000]] * 18
+		self.JOINT_TORQUES_MIN_MAX = [[0,0]] * 18
+		self.JOINT_ANGLES_MIN_MAX = [[None, None]] * 18
 
 		self.DEFAULT_JOINT_LOOSENESS_CONTROL_ANGLES = [0] * 18
 
@@ -979,22 +980,25 @@ class Controlador():
 
 		self.last_sent_angles[:18] = data
 
+		joint_torques = self.body.get_joint_torques(self.perna)
+
 		# os multiplicadores de correção são inicializados em 0.
 		for idx, name in enumerate(PARAM_NAMES, 0):
 			curr_angle = self.last_sent_angles[idx]
-			curr_angle_mult = self.last_looseness_control_multipliers[idx]
-			# Se a última movimentação aumentou o ângulo na junta:
-			if (curr_angle_mult >= 0):
-				# E a movimentação anterior foi na direção oposta:
-				if (curr_angle > self.last_sent_angles[idx]):
-					# O multiplicador do ângulo de correção da junta se torna 1
-					self.last_looseness_control_multipliers[idx] = 1
-			# Se a última movimentação reduziu o ângulo na junta:
-			if (curr_angle_mult <= 0):
-				# E a movimentação anterior foi na direção oposta:
-				if (curr_angle < self.last_sent_angles[idx]):
-					# O multiplicador do ângulo de correção da junta se torna -1
-					self.last_looseness_control_multipliers[idx] = -1
+			
+			curr_body_joint = self.map_joints(idx)
+
+			curr_joint_torque = 0 if curr_body_joint == None else joint_torques[curr_body_joint]
+
+			min_torque, max_torque = self.JOINT_TORQUES_MIN_MAX[idx]
+
+			if(curr_joint_torque < min_torque):
+				curr_angle += rospy.get_param(PARAM_SERVER_PREFIX + PARAM_NAMES[idx], self.DEFAULT_JOINT_LOOSENESS_CONTROL_ANGLES[idx])
+			elif(curr_joint_torque > max_torque):
+				curr_angle <= rospy.get_param(PARAM_SERVER_PREFIX + PARAM_NAMES[idx], self.DEFAULT_JOINT_LOOSENESS_CONTROL_ANGLES[idx])
+			
+			if(self.last_sent_angles[idx] != curr_angle):
+				print(name, self.last_sent_angles[idx], curr_angle)
 
 			# Para cada parâmetro de correção de folga de junta:
 			# Novo ângulo =
@@ -1003,28 +1007,65 @@ class Controlador():
 			# rospy.get_param: pega parâmetro do servidor de parâmetros.
 			# (param_name, default_value)
 			# Após calibrar corretamente os ângulos, os mesmos podem ser aplicados diretamente no código(setar DEFAULT_JOINT_LOOSENESS_CONTROL e remover o get_param), em vez de tentar pegar
-			new_joint_angle = \
-				curr_angle + \
-				self.last_looseness_control_multipliers[idx] * rospy.get_param(PARAM_SERVER_PREFIX + PARAM_NAMES[idx],
-																			self.DEFAULT_JOINT_LOOSENESS_CONTROL_ANGLES[
-																				idx])
 
 			# Verifica se os ângulos das juntas não ultrapassam os limites de ângulo possíveis para ser executados nas juntas
 			# Caso sejam ultrapassados, utiliza os valores máximos ou mímino definidos
 			# Tuplas (min,max) definidas na lista self.JOINT_ANGLES_MIN_MAX
 			min_angle, max_angle = self.JOINT_ANGLES_MIN_MAX[idx]
-			if (min_angle is not None and new_joint_angle < min_angle):
+			if (min_angle is not None and curr_angle < min_angle):
 				self.msg_to_micro[idx] = min_angle
-			elif (max_angle is not None and new_joint_angle > max_angle):
+				self.last_sent_angles[idx] = min_angle
+			elif (max_angle is not None and curr_angle > max_angle):
 				self.msg_to_micro[idx] = max_angle
+				self.last_sent_angles[idx] = max_angle
 			else:
-				self.msg_to_micro[idx] = new_joint_angle
+				self.msg_to_micro[idx] = curr_angle
 
 			# for idx, label in enumerate(PARAM_NAMES):
 			    # print(label, "| msg_to_micro: ", self.msg_to_micro[idx], " | old_angle: ", self.last_sent_angles[idx])
 
 		if (self.simulador_ativado):
 			rospy.sleep(self.simTransRate)
+	
+	def map_joints(self, joint_index):
+		if joint_index == LEFT_ANKLE_ROLL:
+			# return self.body.LEFT_ANKLE_ROLL
+			return 0
+		elif joint_index == LEFT_ANKLE_PITCH:
+			# return self.body.LEFT_ANKLE_PITCH
+			return 1
+		elif joint_index == LEFT_KNEE:
+			# return self.body.LEFT_KNEE_PITCH
+			return 2
+		elif joint_index == LEFT_HIP_PITCH:
+			# return self.body.LEFT_HIP_PITCH
+			return 3
+		elif joint_index == LEFT_HIP_ROLL:
+			# return self.body.LEFT_HIP_ROLL
+			return 4
+		elif joint_index == LEFT_HIP_YALL:
+			# return self.body.LEFT_HIP_YALL
+			return 5
+		elif joint_index == RIGHT_HIP_YALL:
+			# return self.body.RIGHT_HIP_YALL
+			return 6
+		elif joint_index == RIGHT_HIP_ROLL:
+			# return self.body.RIGHT_HIP_ROLL
+			return 7
+		elif joint_index == RIGHT_HIP_PITCH:
+			# return self.body.RIGHT_HIP_PITCH
+			return 8
+		elif joint_index == RIGHT_KNEE:
+			# return self.body.RIGHT_KNEE_PITCH
+			return 9
+		elif joint_index == RIGHT_ANKLE_PITCH:
+			# return self.body.RIGHT_ANKLE_PITCH
+			return 10
+		elif joint_index == RIGHT_ANKLE_ROLL:
+			# return self.body.RIGHT_ANKLE_ROLL
+			return 11
+		else:
+			return None
 
 
 # '''

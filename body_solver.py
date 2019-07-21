@@ -6,6 +6,7 @@ from k_solver.core import Actuator
 GRAVITY_AC = 9.8
 
 
+
 class Body():
     def __init__(self, angulos_braco=None):
 
@@ -132,8 +133,25 @@ class Body():
             t.append(coms_pos[12 - (i + 1)] - joints_pos[12 - i])
         self.perna_esq_para_dir = Actuator(v, center_of_mass_shitfts=t, mass_parts=links_mass)
 
+        
+        # self.LEFT_ANKLE_ROLL = 1
+        # self.LEFT_ANKLE_PITCH = 2
+        # self.LEFT_KNEE_PITCH = 3
+        # self.LEFT_HIP_PITCH = 4
+        # self.LEFT_HIP_ROLL = 5
+        # self.LEFT_HIP_YALL = 6
+        # self.RIGHT_HIP_YALL = 7
+        # self.RIGHT_HIP_ROLL = 8
+        # self.RIGHT_HIP_PITCH = 9
+        # self.RIGHT_KNEE_PITCH = 10
+        # self.RIGHT_ANKLE_PITCH = 11
+        # self.RIGHT_ANKLE_ROLL = 12
+
     # print (self.perna_esq_para_dir.com())
     # print (self.perna_dir_para_esq.com())
+
+    def get_joint_torques(self, perna_base):
+        return self.get_torque_in_joint(perna_base, range(1,13,1))
 
     # perna direita = 1, perna esquerda = 0
     # vec_bk é o vetor que indica a partir de qual junta o CoM está sendo calculado
@@ -175,8 +193,6 @@ class Body():
 
 if __name__ == "__main__":
     a = Body()
-    t = a.get_torque_in_joint(1, [5])
-    print(t)
 
 # '''
 # ##COM PARTS POSITION
