@@ -17,7 +17,7 @@ USING_MARCOS_CONTROLLER = False #If true, the action are composed by variables s
 
 #state init values
 HEIGHT_INIT = 17.
-TIME_STEP_INIT = 0.5
+TIME_STEP_INIT = 1.8
 DISTANCE_FOOT_INIT = 2.8
 SHIFT_X_FOOT_INIT = 0.
 SHIFT_Y_HIP_INIT = 0
@@ -68,7 +68,7 @@ W_APOIO = 1.
 OUTPUT_GRAPH = True         # safe logs
 RENDER=True                 # render one worker
 LOG_DIR = './log/weigths'   # savelocation for logs
-N_WORKERS = 20  	# number of workers
+N_WORKERS = 1  	# number of workers
 MAX_EP_STEP = 150           # maxumum number of steps per episode
 MAX_EP = 1000000            # maximum number of episodes
 MAX_GLOBAL_EP = MAX_EP      # idem MAX_EP, but to tensorflow A3C implementation.
@@ -90,19 +90,19 @@ S_P = 4
 N_PS = 0
 N_PA = 0
 if COM_IN_STATE:
-	N_PA += 6
+	N_PS += 6
 if TARGETS_POS_IN_STATE:
-	N_PA += 8
+	N_PS += 8
 if TORSO_ACCELERATION_IN_STATE:
-	N_PA += 3
+	N_PS += 3
 if TORSO_ORIENTATION_IN_STATE:
-	N_PA += 3
+	N_PS += 3
 if LAST_ACTION_IN_STATE:
-	N_PA += N_A
+	N_PS += N_A
 if USING_MARCOS_CONTROLLER:
-	N_PA += 2
+	N_PS += 2
 if PRESSURE_FEET_IN_STATE:
-	N_PA += 8
+	N_PS += 8
 if LEG_JOINT_POSITION_IN_STATE:
 	N_PS += 12
 N_S = N_PS*S_P + N_PA

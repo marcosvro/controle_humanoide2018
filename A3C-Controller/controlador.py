@@ -122,22 +122,22 @@ class Controlador():
 			self.body.set_angles(self.body_angles[:6], self.body_angles[6:12])
 			com_relative_dir = self.body.get_com(1) # right leg are support leg
 			com_relative_esq = self.body.get_com(0) # left leg are support leg
-			state_a += (com_relative_dir.tolist()+com_relative_esq.tolist())
+			state += (com_relative_dir.tolist()+com_relative_esq.tolist())
 		if USING_MARCOS_CONTROLLER:
-			state_a += [self.perna, self.t_state/self.tempoPasso]
+			state += [self.perna, self.t_state/self.tempoPasso]
 		if TORSO_ACCELERATION_IN_STATE:
-			state_a += (self.t_acc_last/11.).tolist()
+			state += (self.t_acc_last/11.).tolist()
 		if TORSO_ORIENTATION_IN_STATE:
-			state_a += (self.t_ori_last/math.pi).tolist()
+			state += (self.t_ori_last/math.pi).tolist()
 		if LAST_ACTION_IN_STATE:
-			state_a += self.action_last.tolist()
+			state += self.action_last.tolist()
 		if PRESSURE_FEET_IN_STATE:
-			state_a += self.t_force_last.tolist()
+			state += self.t_force_last.tolist()
 		if LEG_JOINT_POSITION_IN_STATE:
 			state += (np.array(self.body_angles[:12])/math.pi).tolist()
 
 		state = state+([0.]*N_PS*(S_P-1))
-		state += state_a
+		#state += state_a
 		return np.array(state)
 
 
@@ -200,7 +200,7 @@ class Controlador():
 			self.pub_queue.put([False, self.w_id, self.body_angles])
 			self.pub_rate.sleep()
 
-		self.t_state += timer
+		self.t_state += TIME_STEP_ACTION
 		if (self.t_state > self.tempoPasso):
 			self.t_state = 0.
 		cmd_to_float = 1. if not self.cmd else 0.
@@ -230,19 +230,19 @@ class Controlador():
 			self.body.set_angles(self.t_joint_last[:6], self.t_joint_last[6:12])
 			com_relative_dir = self.body.get_com(1) # right leg are support leg
 			com_relative_esq = self.body.get_com(0) # left leg are support leg
-			state_a += (com_relative_dir.tolist()+com_relative_esq.tolist())
+			state += (com_relative_dir.tolist()+com_relative_esq.tolist())
 		if USING_MARCOS_CONTROLLER:
-			state_a += [self.perna, self.t_state/self.tempoPasso]
+			state += [self.perna, self.t_state/self.tempoPasso]
 		if TORSO_ACCELERATION_IN_STATE:
-			state_a += (self.t_acc_last/11.).tolist()
+			state += (self.t_acc_last/11.).tolist()
 		if TORSO_ORIENTATION_IN_STATE:
-			state_a += (self.t_ori_last/math.pi).tolist()
+			state += (self.t_ori_last/math.pi).tolist()
 		if LAST_ACTION_IN_STATE:
-			state_a += self.action_last.tolist()
+			state += self.action_last.tolist()
 			if (action is not None):
 				self.action_last = np.array(action)
 		if PRESSURE_FEET_IN_STATE:
-			state_a += self.t_force_last.tolist()
+			state += self.t_force_last.tolist()
 		if LEG_JOINT_POSITION_IN_STATE:
 			state += (self.t_joint_last/math.pi).tolist()
 
@@ -252,7 +252,7 @@ class Controlador():
 		else:
 			state = ([0.]*N_PS*i)+state+([0.]*N_PS*(S_P-(i+1)))
 	
-		state += state_a
+		#state += state_a
 
 		#print(self.t_ori_last)
 		#check if done
@@ -311,6 +311,10 @@ class Controlador():
 			'progress': progress,
 			'bad_support': bad_support
 		}
+		#print(np.around(state, decimals=1))
+		#print(i, self.t_state, self.tempoPasso)
+		print(int(progress*W_DIST), int(bad_support*W_APOIO))
+		time.sleep(2)
 		return np.array(state), self.done, reward, info
 
 #######################################################################################
