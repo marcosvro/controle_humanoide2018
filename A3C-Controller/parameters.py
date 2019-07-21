@@ -81,7 +81,7 @@ LR_C = 0.001                # learning rate for critic
 A_BOUND = [ACTION_BOUND_LOW, ACTION_BOUND_HIGH] # action bounds
 
 # number of actions
-N_A = 8
+N_A = 6
 
 # number of state parts
 S_P = 4

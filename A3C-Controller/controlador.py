@@ -150,7 +150,7 @@ class Controlador():
 		#print(cmd)
 		r_v = np.array(action[0:3])*16
 		l_v = np.array(action[3:6])*16
-		t_v = np.array(action[6:8])*2
+		#t_v = np.array(action[6:8])*2
 		#lz_v = np.array(action[8:10])*10
 
 		r_p = self.r_point_last
@@ -168,7 +168,7 @@ class Controlador():
 			
 			att_r_p = r_v*dt + r_p
 			att_l_p = l_v*dt + l_p
-			att_t_a = t_v*dt + t_a
+			#att_t_a = t_v*dt + t_a
 			#att_lz_a = lz_v*dt + lz_a
 
 			#constrants
@@ -180,6 +180,7 @@ class Controlador():
 			if modulo_att_l_p >= limite:
 				att_l_p = (att_l_p/modulo_att_l_p)*(limite-0.01)
 
+			'''
 			if att_t_a[0] > TORSO_COMPENSATION_MAX:
 				att_t_a[0] = TORSO_COMPENSATION_MAX
 			elif att_t_a[0] < -TORSO_COMPENSATION_MAX:
@@ -189,17 +190,18 @@ class Controlador():
 				att_t_a[1] = TORSO_COMPENSATION_MAX
 			elif att_t_a[1] < -TORSO_COMPENSATION_MAX:
 				att_t_a[1] = -TORSO_COMPENSATION_MAX
+			'''
 
 			#print(att_r_p, att_l_p)
 			#inverse kinematics
 			try:
-				angles = self.cinematica_inversa(att_r_p, att_l_p, att_t_a, cmd)
+				angles = self.cinematica_inversa(att_r_p, att_l_p, [0., 0.], cmd)
 			except Exception as e:
 				pass
 			else:
 				r_p = att_r_p
 				l_p = att_l_p
-				t_a = att_t_a
+				#t_a = att_t_a
 				#lz_a = att_lz_a
 				self.body_angles = angles
 			self.pub_queue.put([False, self.w_id, self.body_angles])
@@ -213,7 +215,7 @@ class Controlador():
 
 		self.r_point_last = r_p
 		self.l_point_last = l_p
-		self.t_angles_last = t_a
+		#self.t_angles_last = t_a
 		#self.lz_angles_last = lz_a
 
 		return self.get_state(action)
