@@ -215,11 +215,93 @@ class Controlador():
 
 		self.last_looseness_control_multipliers = [0] * 18
 
-		self.JOINT_TORQUES_NO_CORRECTION_MIN_MAX = [[0,0]] * 18
-		self.JOINT_ANGLES_MIN_MAX = [[None, None]] * 18
-		self.JOINT_MIN_MAX_SUPPORTED_JOINT_TORQUES = [[None,None]] * 18
+		# intervalo sem correção de torque(intervalo em que o torque é considerado insignificante)
+		self.JOINT_TORQUES_NO_CORRECTION_MIN_MAX = [
+			[0,0],		# RIGHT_ANKLE_ROLL
+			[0,0],		# RIGHT_ANKLE_PITCH
+			[0,0],		# RIGHT_KNEE
+			[0,0],		# RIGHT_HIP_PITCH
+			[0,0],		# RIGHT_HIP_ROLL
+			[0,0],		# RIGHT_HIP_YALL
+			[0,0],		# LEFT_ANKLE_ROLL
+			[0,0],		# LEFT_ANKLE_PITCH
+			[0,0],		# LEFT_KNEE
+			[0,0],		# LEFT_HIP_PITCH
+			[0,0],		# LEFT_HIP_ROLL 
+			[0,0],		# LEFT_HIP_YALL 
+			[0,0],		# LEFT_ARM_PITCH 
+			[0,0],		# LEFT_ARM_YALL 
+			[0,0],		# LEFT_ARM_ROLL 
+			[0,0],		# RIGHT_ARM_PITCH 
+			[0,0],		# RIGHT_ARM_YALL 
+			[0,0]		# RIGHT_ARM_ROLL 
+		]
+		# angulos mínimo e máximo que as juntas conseguem suportar
+		# np.pi (/ 180.0 / 10) * angulo
+		self.JOINT_ANGLES_MIN_MAX = [
+			[None, None],	# RIGHT_ANKLE_ROLL
+			[None, None],	# RIGHT_ANKLE_PITCH
+			[None, None],	# RIGHT_KNEE
+			[None, None],	# RIGHT_HIP_PITCH
+			[None, None],	# RIGHT_HIP_ROLL
+			[None, None],	# RIGHT_HIP_YALL
+			[None, None],	# LEFT_ANKLE_ROLL
+			[None, None],	# LEFT_ANKLE_PITCH
+			[None, None],	# LEFT_KNEE
+			[None, None],	# LEFT_HIP_PITCH
+			[None, None],	# LEFT_HIP_ROLL 
+			[None, None],	# LEFT_HIP_YALL 
+			[None, None],	# LEFT_ARM_PITCH 
+			[None, None],	# LEFT_ARM_YALL 
+			[None, None],	# LEFT_ARM_ROLL 
+			[None, None],	# RIGHT_ARM_PITCH 
+			[None, None],	# RIGHT_ARM_YALL 
+			[None, None]	# RIGHT_ARM_ROLL 
+		]
 
-		self.DEFAULT_JOINT_LOOSENESS_CONTROL_ANGLES = [0] * 18
+		# torques mínimo e máximo que a junta consegue vencer
+		self.JOINT_MIN_MAX_SUPPORTED_JOINT_TORQUES = [
+			[None, None],	# RIGHT_ANKLE_ROLL
+			[None, None],	# RIGHT_ANKLE_PITCH
+			[None, None],	# RIGHT_KNEE
+			[None, None],	# RIGHT_HIP_PITCH
+			[None, None],	# RIGHT_HIP_ROLL
+			[None, None],	# RIGHT_HIP_YALL
+			[None, None],	# LEFT_ANKLE_ROLL
+			[None, None],	# LEFT_ANKLE_PITCH
+			[None, None],	# LEFT_KNEE
+			[None, None],	# LEFT_HIP_PITCH
+			[None, None],	# LEFT_HIP_ROLL 
+			[None, None],	# LEFT_HIP_YALL 
+			[None, None],	# LEFT_ARM_PITCH 
+			[None, None],	# LEFT_ARM_YALL 
+			[None, None],	# LEFT_ARM_ROLL 
+			[None, None],	# RIGHT_ARM_PITCH 
+			[None, None],	# RIGHT_ARM_YALL 
+			[None, None]	# RIGHT_ARM_ROLL 
+		]
+
+		# angulos máximos somados/subtraídos ao ângulo atual para tentar corrigir a folga 
+		self.DEFAULT_JOINT_LOOSENESS_CONTROL_ANGLES = [
+			0,	# RIGHT_ANKLE_ROLL
+			0,	# RIGHT_ANKLE_PITCH
+			0,	# RIGHT_KNEE
+			0,	# RIGHT_HIP_PITCH
+			0,	# RIGHT_HIP_ROLL
+			0,	# RIGHT_HIP_YALL
+			0,	# LEFT_ANKLE_ROLL
+			0,	# LEFT_ANKLE_PITCH
+			0,	# LEFT_KNEE
+			0,	# LEFT_HIP_PITCH
+			0,	# LEFT_HIP_ROLL 
+			0,	# LEFT_HIP_YALL 
+			0,	# LEFT_ARM_PITCH 
+			0,	# LEFT_ARM_YALL 
+			0,	# LEFT_ARM_ROLL 
+			0,	# RIGHT_ARM_PITCH 
+			0,	# RIGHT_ARM_YALL 
+			0	# RIGHT_ARM_ROLL 
+		]
 
 		self.RST_IMU_PIN = 18
 
