@@ -999,11 +999,17 @@ class Controlador():
 
 			joint_correction_param = rospy.get_param(PARAM_SERVER_PREFIX + PARAM_NAMES[idx], self.DEFAULT_JOINT_LOOSENESS_CONTROL_ANGLES[idx])
 
+			normalized_value = 0
+
 			if(min_correction_torque != None and max_correction_torque != None):
 				if(curr_joint_torque < min_correction_torque):
-					curr_angle += (1-normalize_interval(curr_joint_torque, min_supported_torque, min_correction_torque)) * joint_correction_param
+					normalized_value = normalize_interval(curr_joint_torque, min_supported_torque, min_correction_torque)
+					normalized_value = 0 if normalized_value is None else (1 - normalized_value)
+					curr_angle += normalized_value * joint_correction_param
 				elif(curr_joint_torque > max_correction_torque):
-					curr_angle -=    normalize_interval(curr_joint_torque, max_correction_torque, max_supported_torque)  * joint_correction_param
+					normalized_value = normalize_interval(curr_joint_torque, max_correction_torque, max_supported_torque)
+					normalized_value = 0 if normalized_value is None else normalized_value
+					curr_angle -= normalized_value * joint_correction_param
 			
 			# print(name, curr_joint_torque)
 			# if(self.last_sent_angles[idx] != curr_angle):
@@ -1078,7 +1084,7 @@ class Controlador():
 
 def normalize_interval(value, min_val, max_val):
 	if(min_val is None or max_val is None):
-		return 0
+		return None
 	elif(value <= min_val):
 		return 0
 	elif(value >= max_val):
