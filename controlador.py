@@ -215,8 +215,9 @@ class Controlador():
 
 		self.last_looseness_control_multipliers = [0] * 18
 
-		self.JOINT_TORQUES_MIN_MAX = [[0,0]] * 18
+		self.JOINT_TORQUES_NO_CORRECTION_MIN_MAX = [[0,0]] * 18
 		self.JOINT_ANGLES_MIN_MAX = [[None, None]] * 18
+		self.JOINT_MIN_MAX_SUPPORTED_JOINT_TORQUES = [[None,None]] * 18
 
 		self.DEFAULT_JOINT_LOOSENESS_CONTROL_ANGLES = [0] * 18
 
@@ -983,22 +984,30 @@ class Controlador():
 		joint_torques = self.body.get_joint_torques(self.perna)
 
 		# os multiplicadores de correção são inicializados em 0.
+		# os.system("clear")
+		# print("junta", "torque")
 		for idx, name in enumerate(PARAM_NAMES, 0):
 			curr_angle = self.last_sent_angles[idx]
 			
 			curr_body_joint = self.map_joints(idx)
 
-			curr_joint_torque = 0 if curr_body_joint == None else joint_torques[curr_body_joint]
+			curr_joint_torque = (0 if curr_body_joint == None else joint_torques[curr_body_joint])
 
-			min_torque, max_torque = self.JOINT_TORQUES_MIN_MAX[idx]
+			min_correction_torque, max_correction_torque = self.JOINT_TORQUES_NO_CORRECTION_MIN_MAX[idx]
 
-			if(curr_joint_torque < min_torque):
-				curr_angle += rospy.get_param(PARAM_SERVER_PREFIX + PARAM_NAMES[idx], self.DEFAULT_JOINT_LOOSENESS_CONTROL_ANGLES[idx])
-			elif(curr_joint_torque > max_torque):
-				curr_angle <= rospy.get_param(PARAM_SERVER_PREFIX + PARAM_NAMES[idx], self.DEFAULT_JOINT_LOOSENESS_CONTROL_ANGLES[idx])
+			min_supported_torque, max_supported_torque = self.JOINT_MIN_MAX_SUPPORTED_JOINT_TORQUES[idx]
+
+			joint_correction_param = rospy.get_param(PARAM_SERVER_PREFIX + PARAM_NAMES[idx], self.DEFAULT_JOINT_LOOSENESS_CONTROL_ANGLES[idx])
+
+			if(min_correction_torque != None and max_correction_torque != None):
+				if(curr_joint_torque < min_correction_torque):
+					curr_angle += (1-normalize_interval(curr_joint_torque, min_supported_torque, min_correction_torque)) * joint_correction_param
+				elif(curr_joint_torque > max_correction_torque):
+					curr_angle -=    normalize_interval(curr_joint_torque, max_correction_torque, max_supported_torque)  * joint_correction_param
 			
-			if(self.last_sent_angles[idx] != curr_angle):
-				print(name, self.last_sent_angles[idx], curr_angle)
+			# print(name, curr_joint_torque)
+			# if(self.last_sent_angles[idx] != curr_angle):
+				# print(name, self.last_sent_angles[idx], curr_angle)
 
 			# Para cada parâmetro de correção de folga de junta:
 			# Novo ângulo =
@@ -1006,7 +1015,7 @@ class Controlador():
 			# Multiplicador de correção de folga * ângulo de correção de folga
 			# rospy.get_param: pega parâmetro do servidor de parâmetros.
 			# (param_name, default_value)
-			# Após calibrar corretamente os ângulos, os mesmos podem ser aplicados diretamente no código(setar DEFAULT_JOINT_LOOSENESS_CONTROL e remover o get_param), em vez de tentar pegar
+			# Após calibrar corretamente os ângulos, os mesmos podem ser aplicados diretamente no código(setar DEFAULT_JOINT_LOOSENESS_CONTROL e remover o get_param)
 
 			# Verifica se os ângulos das juntas não ultrapassam os limites de ângulo possíveis para ser executados nas juntas
 			# Caso sejam ultrapassados, utiliza os valores máximos ou mímino definidos
@@ -1067,17 +1076,16 @@ class Controlador():
 		else:
 			return None
 
+def normalize_interval(value, min_val, max_val):
+	if(min_val is None or max_val is None):
+		return 0
+	elif(value <= min_val):
+		return 0
+	elif(value >= max_val):
+		return 1
+	val_range = max_val - min_val
+	return (value - min_val)/val_range
 
-# '''
-# 	- descrição: Calcula posição do centro de massa em relação ao pé que está em contato com o chão
-#
-# def centro_de_massa(self, ith_joint=0):
-# 	if (ith_joint != 0): #calcula centro de massa a partir da junta ith_joint
-# 		if self.perna: #pé direito no chão e será a perna de referência
-#
-# 		else:
-#
-# '''
 
 
 if __name__ == '__main__':
