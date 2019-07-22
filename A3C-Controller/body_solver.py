@@ -2,6 +2,7 @@
 import numpy as np
 from k_solver.core import Actuator
 GRAVITY_AC=9.8
+from parameters import *
 
 class Body():
 	def __init__ (self, angulos_braco=None):
@@ -122,6 +123,19 @@ class Body():
 
 		#print (self.perna_esq_para_dir.com())
 		#print (self.perna_dir_para_esq.com())
+
+		self.foot_to_hip = Actuator([
+			[0., 0., 0.],
+			"x",
+			[0., 0., 0.],
+			"y",
+			[0., 0., LOWER_LEG_LENGHT],
+			"y",
+			[0., 0., UPPER_LEG_LENGHT],
+			"y",
+			[0., 0., 0.],
+			"x",
+			[0., 0., 0.]])
 
 
 	def get_com(self, perna_base):

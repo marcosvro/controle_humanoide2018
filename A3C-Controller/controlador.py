@@ -12,13 +12,13 @@ from body_solver import Body
 from parameters import *
 import threading as mt
 import os
+from scipy.interpolate import interp1d
 
 
 def sigmoid_deslocada(x, periodo):
 	return 1./(1.+math.exp(-(12./periodo)*(x-(periodo/2.))))
 
 class Controlador():
-
 	def __init__(self,
 				idx,
 				pub,
@@ -117,7 +117,7 @@ class Controlador():
 		self.cmd = False
 
 		#pega estado inicial
-		self.body_angles = self.cinematica_inversa(self.r_point_last, self.l_point_last, self.t_angles_last, self.cmd)
+		self.body_angles = self.cinematica_inversa(0. ,self.r_point_last, self.l_point_last, self.cmd)
 
 		state_a = []
 		state = []
@@ -148,37 +148,53 @@ class Controlador():
 
 	def step(self, action, cmd):
 		#print(cmd)
-		r_v = np.array(action[0:3])*16
-		l_v = np.array(action[3:6])*16
-		#t_v = np.array(action[6:8])*2
-		#lz_v = np.array(action[8:10])*10
+		r_v = np.array(action[0:3]) # hip
+		l_v = np.array(action[3:6]) # foot
+
+		# X axis - forward
+		r_v[0] *= SHIFT_X_FOOT_MAX
+		l_v[0] *= SHIFT_X_FOOT_MAX
+
+		# Y axis - Side
+		r_v[1] = ((r_v[1]+1)/2.) * (-SHIFT_Y_HIP_MAX)
+		l_v[1] = ((l_v[1]+1)/2.) * (SHIFT_Y_HIP_MAX)
+		
+		# Z axis - height
+		limite_height = self.a+self.c
+		r_v[2] = r_v[2]*(limite_height-HEIGHT_INIT) + HEIGHT_INIT
+		l_v[2] = l_v[2]*(limite_height-HEIGHT_INIT) + HEIGHT_INIT
+
+		#r_v, l_v = self.get_reference_tragectory_point(self.t_state+TIME_STEP_ACTION) #test para ver se o controle euristico funciona
+		#print (np.around(l_v, decimals=1), np.around(r_v, decimals=1), self.t_state)
 
 		r_p = self.r_point_last
 		l_p = self.l_point_last
-		t_a = self.t_angles_last
+		#t_a = self.t_angles_last
 		#lz_a = self.lz_angles_last
+
+
+		# create interpolators
+		interp_lin_r = interp1d([0, TIME_STEP_ACTION], np.vstack([r_p, r_v]), axis=0)
+		interp_lin_l = interp1d([0, TIME_STEP_ACTION], np.vstack([l_p, l_v]), axis=0)
 
 		ant_t = time.time()
 		timer = 0.
 		while(timer < TIME_STEP_ACTION):
-			atual_t = time.time()
-			dt = (atual_t - ant_t)
-			timer += dt
-			ant_t = atual_t
-			
-			att_r_p = r_v*dt + r_p
-			att_l_p = l_v*dt + l_p
+
+			att_r_p = interp_lin_r(timer)
+			att_l_p = interp_lin_l(timer)
+
 			#att_t_a = t_v*dt + t_a
 			#att_lz_a = lz_v*dt + lz_a
 
 			#constrants
 			modulo_att_r_p = np.linalg.norm(att_r_p)
 			modulo_att_l_p = np.linalg.norm(att_l_p)
-			limite = self.a+self.c
-			if modulo_att_r_p >= limite:
-				att_r_p = (att_r_p/modulo_att_r_p)*(limite-0.01)
-			if modulo_att_l_p >= limite:
-				att_l_p = (att_l_p/modulo_att_l_p)*(limite-0.01)
+			
+			if modulo_att_r_p >= limite_height:
+				att_r_p = (att_r_p/modulo_att_r_p)*(limite_height-0.01)
+			if modulo_att_l_p >= limite_height:
+				att_l_p = (att_l_p/modulo_att_l_p)*(limite_height-0.01)
 
 			'''
 			if att_t_a[0] > TORSO_COMPENSATION_MAX:
@@ -195,7 +211,8 @@ class Controlador():
 			#print(att_r_p, att_l_p)
 			#inverse kinematics
 			try:
-				angles = self.cinematica_inversa(att_r_p, att_l_p, [0., 0.], cmd)
+				angles = self.cinematica_inversa(timer, att_r_p, att_l_p, cmd)
+				#print(np.around(angles[:12], decimals=1), self.t_state+timer)
 			except Exception as e:
 				pass
 			else:
@@ -206,15 +223,20 @@ class Controlador():
 				self.body_angles = angles
 			self.pub_queue.put([False, self.w_id, self.body_angles])
 			self.pub_rate.sleep()
+			atual_t = time.time()
+			dt = (atual_t - ant_t)
+			timer += dt
+			ant_t = atual_t
 
 		self.t_state += TIME_STEP_ACTION
-		if (self.t_state > self.tempoPasso):
-			self.t_state = 0.
-		cmd_to_float = 1. if not cmd else 0.
-		self.pub_queue.put([False, self.w_id, [0.]*18+[cmd_to_float]]) #command to pause simulation
 
 		self.r_point_last = r_p
 		self.l_point_last = l_p
+
+		cmd_to_float = 1. if not cmd else 0.
+		self.pub_queue.put([False, self.w_id, [0.]*18+[cmd_to_float]]) #command to pause simulation
+
+		
 		#self.t_angles_last = t_a
 		#self.lz_angles_last = lz_a
 
@@ -267,6 +289,8 @@ class Controlador():
 		reward = 0.
 		progress = vetor_mov_feet[0]+vetor_mov_feet[2] #avanço do pé esq e do dir em relação ao estado anterior
 		bad_support = 0.
+		r_pose = 0.
+		r_inc = 0.
 		if math.fabs(self.t_ori_last[0]) > ANGLE_FALLEN_THRESHOLD or math.fabs(self.t_ori_last[1]) > ANGLE_FALLEN_THRESHOLD:
 			self.done = True
 			reward = W_ALIVE*-1
@@ -289,6 +313,7 @@ class Controlador():
 			reward = W_ORI*math.exp(-((1-erro_ori)**2))+W_INC/2.*math.exp(-(math.fabs(self.t_ori_last[0])))+W_INC/2.*math.exp(-(math.fabs(self.t_ori_last[1])))+W_DIST*dist_no_rumo
 			'''
 			
+			'''
 			pessao_pe_esq = np.sum(self.t_force_last[:4])
 			pessao_pe_dir = np.sum(self.t_force_last[4:])
 			if i == 1: # pé direito no chão
@@ -303,21 +328,54 @@ class Controlador():
 				erro_press_dir = math.fabs(pessao_ideal_pe_dir-pessao_pe_dir)
 				bad_support -= (1 - math.exp(-erro_press_esq))
 				bad_support -= (1 - math.exp(-erro_press_dir))
+			'''
 
-			#progress = vetor_mov_feet[0]
+			self.body.foot_to_hip.angles = self.t_joint_last[:5]
+			pos_atual_dir = self.body.foot_to_hip.ee #posição real do quadril dir em relação ao pé dir
+			
+			angulos_perna_esq = self.t_joint_last[6:11]
+			angulos_perna_esq[0] *= -1
+			angulos_perna_esq[4] *= -1
+			self.body.foot_to_hip.angles = angulos_perna_esq
+			pos_atual_esq = self.body.foot_to_hip.ee #posição real do quadril esq em relação ao pé esq
+
+			#pos_atual_dir = self.r_point_last
+			#pos_atual_esq = self.l_point_last
+
+			pos_ref_dir, pos_ref_esq  = self.get_reference_tragectory_point(self.t_state)
+			#print (np.around(pos_atual_esq, decimals=1), np.around(pos_ref_esq, decimals=1), np.around(pos_ref_esq-pos_atual_esq, decimals=1), self.t_state)
+
+			erro_pose_dir = np.linalg.norm(pos_ref_dir-pos_atual_dir)
+			erro_pose_esq = np.linalg.norm(pos_ref_esq-pos_atual_esq)
+
+			erro_pose = erro_pose_dir+erro_pose_esq	
+			r_pose = math.exp(-(math.fabs(erro_pose)))
+			#print (pos_atual_dir, erro_pose)
+
+			r_inclinacao_x = math.exp(-(math.fabs(self.t_ori_last[0])))
+			r_inclinacao_y = math.exp(-(math.fabs(self.t_ori_last[1])))
+			r_inc = r_inclinacao_x+r_inclinacao_y
+
 			bonus_alive = 1.
-			rewards =  [W_INC/2.*math.exp(-(math.fabs(self.t_ori_last[0]))),
-						W_INC/2.*math.exp(-(math.fabs(self.t_ori_last[1]))),
+			rewards =  [W_INC*r_inc,
 						W_DIST*progress,
 						W_ALIVE*bonus_alive,
-						W_APOIO*bad_support]
+						W_APOIO*bad_support,
+						W_POSE*r_pose]
 			reward = np.sum(rewards)
 
 
-		#print(self.done)
+		if self.t_state > self.tempoPasso/2 and self.perna == 0:
+			self.perna = 1
+		if self.t_state + 1e-3 >= self.tempoPasso:
+			self.t_state = 0.
+			self.perna = 0
+
 		info = {
-			'progress': progress,
-			'bad_support': bad_support
+			'progress': W_DIST*progress,
+			'bad_support': W_APOIO*bad_support,
+			'pose_reward': W_POSE*r_pose,
+			'inc_reward' : W_INC*r_inc
 		}
 		#print(np.around(state, decimals=1))
 		#print(i, self.t_state, self.tempoPasso)
@@ -364,17 +422,19 @@ class Controlador():
 
 	############################ FUNÇÕES DE CINEMÁTICA ################################
 
-	def cinematica_inversa(self, r_point, l_point, t_angles, cmd):
+	def cinematica_inversa(self, x, r_point, l_point, cmd):
 		data_r = self.footToHip(r_point)
 		data_l = self.footToHip(l_point)
 		data_r[0] *= -1
 		data_r[4] *= -1
 
 		#torso angles gain
+		'''
 		data_r[3] += t_angles[0]
 		data_r[4] += t_angles[1]
 		data_l[3] += t_angles[0]
 		data_l[4] += t_angles[1]
+		'''
 
 		#rotate leg at z axis
 		#data_r[5] += lz_angles[0]
@@ -417,5 +477,35 @@ class Controlador():
 		angulos.append(0)
 
 		return angulos
+
+	def get_reference_tragectory_point(self, x):
+		primeira_parte = True
+		if x > self.tempoPasso/2.:
+			x -= self.tempoPasso/2.
+			primeira_parte = False
+
+		pos_pelves = np.array(self.pos_inicial_pelves[:])
+
+		dif_estado = (x-(self.tempoPasso/2.)/2.)
+
+		aux = (2*dif_estado)/((self.tempoPasso/2.)*0.4)
+		aux2 = ((math.exp(aux) - math.exp(-aux))/(math.exp(aux)+math.exp(-aux)))
+
+		p1 = (self.deslocamentoXpes/2)*aux2
+		pos_pelves[0] = p1
+		pos_pelves[1] += -self.deslocamentoYpelves*math.sin(x*math.pi/(self.tempoPasso/2.))
+
+		pos_foot = np.array(self.pos_inicial_foot[:])
+		p2 = (-self.deslocamentoXpes/2)*aux2
+		pos_foot[0] = p2
+		pos_foot[1] += self.deslocamentoYpelves*math.sin(x*math.pi/(self.tempoPasso/2.))
+		pos_foot[2] = self.altura - self.deslocamentoZpes*math.exp(-(dif_estado**2)/(0.04))
+
+		#print (np.around(pos_pelves, decimals=1), np.around(pos_foot, decimals=1), x)
+		if primeira_parte:
+			return pos_pelves, pos_foot
+		else:
+			return pos_foot, pos_pelves
+
 
 	###################################################################################

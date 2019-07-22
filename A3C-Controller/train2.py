@@ -67,13 +67,13 @@ class Net(nn.Module):
         super(Net, self).__init__()
         self.s_dim = s_dim
         self.a_dim = a_dim
-        self.a1 = nn.Linear(s_dim, 512)
-        self.a2 = nn.Linear(512, 256)
-        self.mu = nn.Linear(256, a_dim)
-        self.sigma = nn.Linear(256, a_dim)
-        self.c1 = nn.Linear(s_dim, 512)
-        self.c2 = nn.Linear(512, 256)
-        self.v = nn.Linear(256, 1)
+        self.a1 = nn.Linear(s_dim, 128)
+        self.a2 = nn.Linear(128, 128)
+        self.mu = nn.Linear(128, a_dim)
+        self.sigma = nn.Linear(128, a_dim)
+        self.c1 = nn.Linear(s_dim, 128)
+        self.c2 = nn.Linear(128, 128)
+        self.v = nn.Linear(128, 1)
         set_init([self.a1, self.a2, self.mu, self.sigma, self.c1, self.c2, self.v])
         self.distribution = torch.distributions.Normal
 
@@ -139,6 +139,9 @@ class Worker(mp.Process):
             c_ep_loss_total = 0.
             a_ep_loss_total = 0.
             adv_ep_loss_total = 0.
+            r_progress = 0.
+            r_pose = 0.
+            r_inc = 0.
 
             for t in range(MAX_EP_STEP):
                 if self.exit.is_set():
@@ -149,6 +152,10 @@ class Worker(mp.Process):
                 a = self.lnet.choose_action(v_wrap(s[None, :]))
                 s_, r, done, info = self.env.step(a.clip(-1, 1))
                 
+                r_progress += info['progress']
+                r_pose += info['pose_reward']
+                r_inc += info['inc_reward']
+
                 #print(info['progress'])
                 self.w_state.value = 4
                 if math.isnan(r):
@@ -178,7 +185,7 @@ class Worker(mp.Process):
 
                     # print information
                     #record(self.g_ep, self.g_ep_r, ep_r, self.best_ep_r, self.name, self.lnet.state_dict())
-                    if done:  # done
+                    if done or t == MAX_EP_STEP-1:  # done
                         stats = {
                             'TimeEpisodeDuration' : time_ep_total,
                             'reward' : ep_r,
@@ -186,7 +193,10 @@ class Worker(mp.Process):
                             'MeanLoss' : loss_ep_total/num_updates,
                             'MeanValueLoss' : c_ep_loss_total/num_updates,
                             'MeanPolicyLoss' : a_ep_loss_total/num_updates,
-                            'MeanAdvantage' :adv_ep_loss_total /num_updates 
+                            'MeanAdvantage' :adv_ep_loss_total /num_updates,
+                            'ProgressReward' : r_progress,
+                            'PoseReward' : r_pose,
+                            'IncReward' : r_inc
                         }
                         ep_num = record(self.g_ep, self.g_ep_r, stats, self.best_ep_r, self.name, self.lnet.state_dict())
                         stats['Episode'] = ep_num
@@ -288,6 +298,12 @@ if __name__ == "__main__":
                     stat_writer.add_scalar('MeanPolicyLoss/Episode', msg['MeanPolicyLoss'], episode)
                 if msg['MeanAdvantage']:
                     stat_writer.add_scalar('MeanAdvantage/Episode', msg['MeanAdvantage'], episode)
+                if msg['ProgressReward']:
+                    stat_writer.add_scalar('ProgressReward/Episode', msg['ProgressReward'], episode)
+                if msg['IncReward']:
+                    stat_writer.add_scalar('IncReward/Episode', msg['IncReward'], episode)
+                if msg['PoseReward']:
+                    stat_writer.add_scalar('PoseReward/Episode', msg['PoseReward'], episode)
         except Exception:
             pass
 
