@@ -101,8 +101,9 @@ class Net(nn.Module):
 
         m = self.distribution(mu, sigma)
         log_prob = m.log_prob(a)
-        entropy = 0.5 + 0.5 * math.log(2 * math.pi) + torch.log(m.scale)  # exploration
-        exp_v = log_prob * td.detach() + 0.005 * entropy
+        #entropy = 0.5 + 0.5 * math.log(2 * math.pi) + torch.log(m.scale)  # exploration
+        #exp_v = log_prob * td.detach() + 0.005 * entropy
+        exp_v = log_prob * td.detach()
         a_loss = -exp_v
         total_loss = (a_loss + c_loss).mean()
         return total_loss, c_loss.detach().mean(), a_loss.detach().mean(), td.detach().mean()
@@ -172,7 +173,7 @@ class Worker(mp.Process):
 
                 if total_step%UPDATE_GLOBAL_ITER == 0 or done:  # update global and assign to local net
                     self.w_state.value = 5
-
+                    #self.env.pause_simulation_dynamics()
                     # sync
                     loss, c_loss, a_loss, adv = push_and_pull(self.opt, self.lnet, self.gnet, done, s_, buffer_s, buffer_a, buffer_r, GAMMA)
                     buffer_s, buffer_a, buffer_r = [], [], []

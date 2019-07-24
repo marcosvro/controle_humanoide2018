@@ -164,7 +164,7 @@ class Controlador():
 		r_v[2] = r_v[2]*(limite_height-HEIGHT_INIT) + HEIGHT_INIT
 		l_v[2] = l_v[2]*(limite_height-HEIGHT_INIT) + HEIGHT_INIT
 
-		#r_v, l_v = self.get_reference_tragectory_point(self.t_state+TIME_STEP_ACTION) #test para ver se o controle euristico funciona
+		r_v, l_v = self.get_reference_tragectory_point(self.t_state+TIME_STEP_ACTION) #test para ver se o controle euristico funciona
 		#print (np.around(l_v, decimals=1), np.around(r_v, decimals=1), self.t_state)
 
 		r_p = self.r_point_last
@@ -179,6 +179,7 @@ class Controlador():
 
 		ant_t = time.time()
 		timer = 0.
+		cont_msgs = 0
 		while(timer < TIME_STEP_ACTION):
 
 			att_r_p = interp_lin_r(timer)
@@ -222,14 +223,14 @@ class Controlador():
 				#lz_a = att_lz_a
 				self.body_angles = angles
 			self.pub_queue.put([False, self.w_id, self.body_angles])
-			self.pub_rate.sleep()
+			#self.pub_rate.sleep()
+			cont_msgs += 1
 			atual_t = time.time()
 			dt = (atual_t - ant_t)
 			timer += dt
 			ant_t = atual_t
 
 		self.t_state += TIME_STEP_ACTION
-
 		self.r_point_last = r_p
 		self.l_point_last = l_p
 
@@ -239,6 +240,8 @@ class Controlador():
 		
 		#self.t_angles_last = t_a
 		#self.lz_angles_last = lz_a
+
+		#print(cont_msgs)
 
 		return self.get_state(action)
 
@@ -276,15 +279,10 @@ class Controlador():
 		if LEG_JOINT_POSITION_IN_STATE:
 			state += (self.t_joint_last/math.pi).tolist()
 
-		i = int((self.t_state/self.tempoPasso)*S_P)
-		if i == 0:
-			state = state+([0.]*N_PS*(S_P-1))
-		else:
-			state = ([0.]*N_PS*i)+state+([0.]*N_PS*(S_P-(i+1)))
-	
-		#state += state_a
+		
 
-		#print(self.t_ori_last)
+		#state += state_a
+		
 		#check if done
 		reward = 0.
 		progress = vetor_mov_feet[0]+vetor_mov_feet[2] #avanço do pé esq e do dir em relação ao estado anterior
@@ -362,7 +360,7 @@ class Controlador():
 						W_ALIVE*bonus_alive,
 						W_APOIO*bad_support,
 						W_POSE*r_pose]
-			reward = np.sum(rewards)
+			reward = np.sum(rewards)/15.
 
 
 		if self.t_state > self.tempoPasso/2 and self.perna == 0:
@@ -370,6 +368,14 @@ class Controlador():
 		if self.t_state + 1e-3 >= self.tempoPasso:
 			self.t_state = 0.
 			self.perna = 0
+
+		i = int((self.t_state/self.tempoPasso)*S_P)
+		if i == 0:
+			state = state+([0.]*N_PS*(S_P-1))
+		else:
+			state = ([0.]*N_PS*i)+state+([0.]*N_PS*(S_P-(i+1)))
+	
+		#print(i)
 
 		info = {
 			'progress': W_DIST*progress,
@@ -499,7 +505,7 @@ class Controlador():
 		p2 = (-self.deslocamentoXpes/2)*aux2
 		pos_foot[0] = p2
 		pos_foot[1] += self.deslocamentoYpelves*math.sin(x*math.pi/(self.tempoPasso/2.))
-		pos_foot[2] = self.altura - self.deslocamentoZpes*math.exp(-(dif_estado**2)/(0.04))
+		pos_foot[2] = self.altura - self.deslocamentoZpes*math.exp(-(dif_estado**2)/(0.9))
 
 		#print (np.around(pos_pelves, decimals=1), np.around(pos_foot, decimals=1), x)
 		if primeira_parte:

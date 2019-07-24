@@ -20,7 +20,7 @@ class VrepEnvironment():
 
 		if TESTING:
 			os.system(VREP_PATH+"/vrep.sh -q -g"+simu_name_id+" -gREMOTEAPISERVERSERVICE_"+str(porta)+"_FALSE_FALSE "+SCENE_FILE_PATH+"&")
-			time.sleep(9)
+			time.sleep(15)
 			#print("Devia estar iniciando agora!!")
 		else:
 			os.system('DISPLAY=:0 '+VREP_PATH+"/vrep.sh -q -g"+simu_name_id+" -gREMOTEAPISERVERSERVICE_"+str(porta)+"_FALSE_FALSE "+SCENE_FILE_PATH+"&")
@@ -67,6 +67,11 @@ class VrepEnvironment():
 
 	def ack_callback(self, msg):
 		self.ack = True
+
+	def pause_simulation_dynamics(self):
+		self.cmd = not self.cmd
+		cmd_to_float = 1. if self.cmd else 0.
+		self.pub_queue.put([False, self.w_id, [0.]*18+[cmd_to_float]]) #command to pause simulation
 
 	def wait_ack(self):
 		#wait for vrep reset simulation

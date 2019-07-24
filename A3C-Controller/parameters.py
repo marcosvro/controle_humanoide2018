@@ -17,7 +17,7 @@ USING_MARCOS_CONTROLLER = False #If true, the action are composed by variables s
 
 #state init values
 HEIGHT_INIT = 17.
-TIME_STEP_INIT = 1.8
+TIME_STEP_INIT = 1.8*5
 DISTANCE_FOOT_INIT = 2.8
 SHIFT_X_FOOT_INIT = 2.
 SHIFT_Y_HIP_INIT = 3.6
@@ -70,15 +70,15 @@ OUTPUT_GRAPH = True         # safe logs
 RENDER=True                 # render one worker
 LOG_DIR = './log/weigths'   # savelocation for logs
 N_WORKERS = 20  	# number of workers
-MAX_EP_STEP = 150           # maxumum number of steps per episode
+MAX_EP_STEP = 1000          # maxumum number of steps per episode
 MAX_EP = 1000000            # maximum number of episodes
 MAX_GLOBAL_EP = MAX_EP      # idem MAX_EP, but to tensorflow A3C implementation.
 GLOBAL_NET_SCOPE = 'Global_Net'
 UPDATE_GLOBAL_ITER = 5      # sets how often the global net is updated
 GAMMA = 0.90                # discount factor
 ENTROPY_BETA = 0.01         # entropy factor
-LR_A = 0.0001               # learning rate for actor
-LR_C = 0.001                # learning rate for critic
+LR_A = 0.001               # learning rate for actor
+LR_C = 0.01                # learning rate for critic
 A_BOUND = [ACTION_BOUND_LOW, ACTION_BOUND_HIGH] # action bounds
 
 # number of actions
