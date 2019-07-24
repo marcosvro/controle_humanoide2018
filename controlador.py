@@ -934,12 +934,12 @@ class Controlador():
 	# 		- Pega o proximo "estado" da função de trajetória, a função de trajetória muda
 	#         de acordo com as variaveis que definem o deslocamento e rotação do robô
 
-	#
+	#		Entrada: tempo float/int t
 	# 		Saída: 2 vetores de 3 posições (x,y,z). O primeiro indica a posição da pelves
 	#              considerando o pé em contato com o chão como base,
 	# 			   o segundo vetor indica a posição do pé de balanço considerando a pelves do pé de balanço como base.
 	# 	'''
-	def getTragectoryPoint(self):
+	def getTragectoryPoint(self, x):
 		pos_pelves = self.pos_inicial_pelves[:]
 
 		# aux_estados = (x-self.N_ESTADOS/2)
@@ -991,7 +991,7 @@ class Controlador():
 		x = (self.t_state * self.nEstados) / self.tempoPasso
 		self.dif_estado = x - self.nEstados / 2
 		self.tanh = (np.exp((2 * self.dif_estado) / 50) - np.exp((2 * self.dif_estado) / -50)) / (np.exp((2 * self.dif_estado) / 50) + np.exp((2 * self.dif_estado) / -50)) # de onde vem o 50?
-		pelv_point, foot_point = self.getTragectoryPoint()
+		pelv_point, foot_point = self.getTragectoryPoint(x)
 		angulo_vira_2 = self.angulo_vira / 2.
 		tanh_x_angulo_vira = angulo_vira_2 * self.tanh
 		angulo_plus_tanh = angulo_vira_2 + tanh_x_angulo_vira
