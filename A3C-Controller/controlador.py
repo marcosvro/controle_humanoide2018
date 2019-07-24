@@ -223,7 +223,7 @@ class Controlador():
 				#lz_a = att_lz_a
 				self.body_angles = angles
 			self.pub_queue.put([False, self.w_id, self.body_angles])
-			#self.pub_rate.sleep()
+			self.pub_rate.sleep()
 			cont_msgs += 1
 			atual_t = time.time()
 			dt = (atual_t - ant_t)
