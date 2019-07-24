@@ -164,7 +164,7 @@ class Controlador():
 		r_v[2] = r_v[2]*(limite_height-HEIGHT_INIT) + HEIGHT_INIT
 		l_v[2] = l_v[2]*(limite_height-HEIGHT_INIT) + HEIGHT_INIT
 
-		r_v, l_v = self.get_reference_tragectory_point(self.t_state+TIME_STEP_ACTION) #test para ver se o controle euristico funciona
+		#r_v, l_v = self.get_reference_tragectory_point(self.t_state+TIME_STEP_ACTION) #test para ver se o controle euristico funciona
 		#print (np.around(l_v, decimals=1), np.around(r_v, decimals=1), self.t_state)
 
 		r_p = self.r_point_last
@@ -360,7 +360,7 @@ class Controlador():
 						W_ALIVE*bonus_alive,
 						W_APOIO*bad_support,
 						W_POSE*r_pose]
-			reward = np.sum(rewards)/15.
+			reward = np.sum(rewards)
 
 
 		if self.t_state > self.tempoPasso/2 and self.perna == 0:
