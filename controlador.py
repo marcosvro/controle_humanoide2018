@@ -102,7 +102,9 @@ class Controlador():
 				 deslocamento_zpelves=30.,
 				 inertial_foot_enable=False,
 				 gravity_compensation_enable=False,
-				 step_mode=False):
+				 step_mode=False,
+				 torque_correction = False,
+				 limit_enforcement = False):
 		if (robo_id == -1):
 			print("ERRO: ID do robo inválido")
 			exit()
@@ -211,10 +213,6 @@ class Controlador():
 
 		self.body = Body()
 
-		self.last_sent_angles = [0] * 18
-
-		self.last_looseness_control_multipliers = [0] * 18
-
 		# intervalo sem correção de torque(intervalo em que o torque é considerado insignificante)
 		self.JOINT_TORQUES_NO_CORRECTION_MIN_MAX = [
 			[0,0],		# RIGHT_ANKLE_ROLL
@@ -259,7 +257,7 @@ class Controlador():
 			[None, None]	# RIGHT_ARM_ROLL 
 		]
 
-		# torques mínimo e máximo que a junta consegue vencer
+		# torques mínimo e máximo que a junta consegue vencer com a correção
 		self.JOINT_MIN_MAX_SUPPORTED_JOINT_TORQUES = [
 			[None, None],	# RIGHT_ANKLE_ROLL
 			[None, None],	# RIGHT_ANKLE_PITCH
@@ -303,6 +301,15 @@ class Controlador():
 			0	# RIGHT_ARM_ROLL 
 		]
 
+		# (tempo_estado * nEstados) / tempo_passo
+		# atualizado a cada iteração
+		self.dif_estado = 0
+
+		# variavel auxiliar utilizada para evitar efetuar calculos repetidos durante um mesmo loop do controle
+		self.tanh = 0
+
+		self.torque_correction_enabled = torque_correction
+		self.limit_enforcement_enabled = limit_enforcement
 		self.RST_IMU_PIN = 18
 
 		try:
@@ -521,18 +528,30 @@ class Controlador():
 				1 - self.time_ignore_GC)) or self.deslocamentoYpelves != self.deslocamentoYpelvesMAX or self.state is "IDDLE":
 			return
 
-		torques = self.body.get_torque_in_joint(self.perna, [3, 5])
+		# torques = self.body.get_torque_in_joint(self.perna, [3, 5])
+		# if perna: [RIGHT_KNEE, RIGHT_HIP_ROLL]
+		# else: [LEFT_KNEE, LEFT_HIP_ROLL]
+		knee_multiplier = 1
+		if self.perna:
+			hip_multiplier = -1
+			knee, hip = RIGHT_KNEE, RIGHT_HIP_ROLL
+		else:
+			hip_multiplier = 1
+			knee, hip = LEFT_KNEE, LEFT_HIP_ROLL
 
+		torques = self.torques[self.map_joints(knee)], self.torques[self.map_joints(hip)]
+
+		# 3 = LEFT_KNEE
+		# 5 = LEFT_HIP_ROLL
+		# 8 = RIGHT_HIP_ROLL
+		# 10 = RIGHT_KNEE
 		dQ = (np.array(torques) / KP_CONST) / 15
 		# print(dQ[1], self.perna)
 
 		dQ *= math.sin(self.t_state * math.pi / self.tempoPasso)
-		if self.perna:
-			self.msg_to_micro[RIGHT_KNEE] += dQ[0]
-			self.msg_to_micro[RIGHT_HIP_ROLL] -= dQ[1]
-		else:
-			self.msg_to_micro[LEFT_KNEE] += dQ[0]
-			self.msg_to_micro[LEFT_HIP_ROLL] += dQ[1]
+
+		self.msg_to_micro[knee] += dQ[0] * knee_multiplier
+		self.msg_to_micro[hip] += dQ[1] * hip_multiplier
 
 	def posiciona_robo(self):
 		if self.robo_yall > self.gimbal_yall:
@@ -642,7 +661,12 @@ class Controlador():
 				self.atualiza_fps()
 				self.chage_state()
 				self.atualiza_cinematica()
-				self.gravity_compensation()
+				if(self.torque_correction_enabled or self.gravity_compensation_enable or self.limit_enforcement_enabled):
+					self.torques = self.body.get_joint_torques(self.perna)
+					self.gravity_compensation()
+					self.torque_correction()
+					self.limit_enforcement()
+
 				# self.posiciona_gimbal()
 				self.posiciona_robo()
 				timer_main_loop += self.deltaTime
@@ -910,24 +934,23 @@ class Controlador():
 	# 		- Pega o proximo "estado" da função de trajetória, a função de trajetória muda
 	#         de acordo com as variaveis que definem o deslocamento e rotação do robô
 
-	# 		Entrada: tempo float/int t
+	#
 	# 		Saída: 2 vetores de 3 posições (x,y,z). O primeiro indica a posição da pelves
 	#              considerando o pé em contato com o chão como base,
 	# 			   o segundo vetor indica a posição do pé de balanço considerando a pelves do pé de balanço como base.
 	# 	'''
-	def getTragectoryPoint(self, x):
+	def getTragectoryPoint(self):
 		pos_pelves = self.pos_inicial_pelves[:]
 
-		# nEstados * [-0.5,0.5]
 		# aux_estados = (x-self.N_ESTADOS/2)
 
 		# deslocamentoXpes/2 * tgh(x)
 
-		dif_estado = (x - self.nEstados / 2)
+		# dif_estado = (x - self.nEstados / 2)
 
-		aux = (2 * dif_estado) / 50
-		aux2 = ((math.exp(aux) - math.exp(- aux)) / (math.exp(aux) + math.exp(-aux)))
-
+		# aux = (2 * self.dif_estado) / 50
+		# aux2 = ((math.exp(aux) - math.exp(- aux)) / (math.exp(aux) + math.exp(-aux))) # tanh(aux)
+		aux2 = self.tanh
 		pos1_aux = self.deslocamentoYpelves * math.sin(x * math.pi / self.nEstados)
 
 		p1 = (self.deslocamentoXpes / 2) * aux2
@@ -935,10 +958,10 @@ class Controlador():
 		pos_pelves[1] += -pos1_aux
 
 		pos_foot = self.pos_inicial_pelves[:]
-		p2 = (-self.deslocamentoXpes / 2) * aux2
+		p2 = -p1
 		pos_foot[0] = p2
 		pos_foot[1] += pos1_aux
-		pos_foot[2] = self.altura - self.deslocamentoZpes * math.exp(-(dif_estado ** 2) / 600)
+		pos_foot[2] = self.altura - self.deslocamentoZpes * math.exp(-(self.dif_estado ** 2) / 600) # de onde vem o 600?
 		return pos_pelves, pos_foot
 
 	# interpolação simples entre estados
@@ -963,8 +986,15 @@ class Controlador():
 		self.interpolando = False
 
 	def atualiza_cinematica(self):
-		x = (self.t_state * 125) / self.tempoPasso
-		pelv_point, foot_point = self.getTragectoryPoint(x)
+		# tempo_estado * self.nEstados / self.tempoPasso -> resultado ideal = 1
+		# x = (self.t_state * 125) / self.tempoPasso
+		x = (self.t_state * self.nEstados) / self.tempoPasso
+		self.dif_estado = x - self.nEstados / 2
+		self.tanh = (np.exp((2 * self.dif_estado) / 50) - np.exp((2 * self.dif_estado) / -50)) / (np.exp((2 * self.dif_estado) / 50) + np.exp((2 * self.dif_estado) / -50)) # de onde vem o 50?
+		pelv_point, foot_point = self.getTragectoryPoint()
+		angulo_vira_2 = self.angulo_vira / 2.
+		tanh_x_angulo_vira = angulo_vira_2 * self.tanh
+		angulo_plus_tanh = angulo_vira_2 + tanh_x_angulo_vira
 		if self.perna:
 			# CINEMÁTICA INVERSA
 			data_pelv = self.footToHip(pelv_point)
@@ -977,34 +1007,23 @@ class Controlador():
 					influencia = 0
 				else:
 					influencia = np.sum(self.Lfoot_press) / self.total_press
-				data_foot[:2] = np.array(data_foot[:2]) + np.array(self.Lfoot_orientation[:2]) * (np.pi / 180.) * (
-							1 - influencia)
+				data_foot[:2] = np.array(data_foot[:2]) + np.array(self.Lfoot_orientation[:2]) * DEG_TO_RAD * (1 - influencia)
 
 			# ROTINHA PARA VIRAR/PARAR DE VIRAR PARA A ESQUERDA
+
 			if self.rota_dir == 1:
-				data_pelv[5] = self.angulo_vira / 2. + self.angulo_vira / 2. * ((np.exp(
-					(2 * (x - self.nEstados / 2)) / 50) - np.exp((2 * (x - self.nEstados / 2)) / -50)) / (np.exp(
-					(2 * (x - self.nEstados / 2)) / 50) + np.exp((2 * (x - self.nEstados / 2)) / -50)))
-				data_pelv[5] = data_pelv[5] * math.pi / 180.
+				data_pelv[5] = angulo_plus_tanh * DEG_TO_RAD
 			elif self.rota_dir == -1:
-				data_pelv[5] = -self.angulo_vira / 2. - self.angulo_vira / 2. * ((np.exp(
-					(2 * (x - self.nEstados / 2)) / 50) - np.exp((2 * (x - self.nEstados / 2)) / -50)) / (np.exp(
-					(2 * (x - self.nEstados / 2)) / 50) + np.exp((2 * (x - self.nEstados / 2)) / -50)))
-				data_pelv[5] = data_pelv[5] * math.pi / 180.
+				data_pelv[5] = -angulo_plus_tanh * DEG_TO_RAD
 			else:
 				data_pelv[5] = 0
 
 			# ROTINHA PARA VIRAR/PARAR DE VIRAR PARA A DIREITA
 			if self.rota_esq == 2:
-				data_foot[5] = self.angulo_vira - (self.angulo_vira / 2. + self.angulo_vira / 2. * ((np.exp(
-					(2 * (x - self.nEstados / 2)) / 50) - np.exp((2 * (x - self.nEstados / 2)) / -50)) / (np.exp(
-					(2 * (x - self.nEstados / 2)) / 50) + np.exp((2 * (x - self.nEstados / 2)) / -50))))
-				data_foot[5] = data_foot[5] * math.pi / 180.
+				data_foot[5] = (self.angulo_vira - angulo_plus_tanh) * DEG_TO_RAD
 			elif self.rota_esq == -2:
-				data_foot[5] = -self.angulo_vira - (-self.angulo_vira / 2. - self.angulo_vira / 2. * ((np.exp(
-					(2 * (x - self.nEstados / 2)) / 50) - np.exp((2 * (x - self.nEstados / 2)) / -50)) / (np.exp(
-					(2 * (x - self.nEstados / 2)) / 50) + np.exp((2 * (x - self.nEstados / 2)) / -50))))
-				data_foot[5] = data_foot[5] * math.pi / 180.
+				# data_foot[5] = (-self.angulo_vira - (-angulo_vira_2 - tanh_x_angulo_vira)) * DEG_TO_RAD
+				data_foot[5] = (-self.angulo_vira + angulo_plus_tanh) * DEG_TO_RAD
 			else:
 				data_foot[5] = 0
 
@@ -1029,29 +1048,17 @@ class Controlador():
 
 			# ROTINHA PARA VIRAR/PARAR DE VIRAR PARA A ESQUERDA
 			if self.rota_esq == 1:
-				data_pelv[5] = self.angulo_vira / 2. + self.angulo_vira / 2. * ((np.exp(
-					(2 * (x - self.nEstados / 2)) / 50) - np.exp((2 * (x - self.nEstados / 2)) / -50)) / (np.exp(
-					(2 * (x - self.nEstados / 2)) / 50) + np.exp((2 * (x - self.nEstados / 2)) / -50)))
-				data_pelv[5] = data_pelv[5] * math.pi / 180.
+				data_pelv[5] =  angulo_plus_tanh * DEG_TO_RAD
 			elif self.rota_esq == -1:
-				data_pelv[5] = -self.angulo_vira / 2. - self.angulo_vira / 2. * ((np.exp(
-					(2 * (x - self.nEstados / 2)) / 50) - np.exp((2 * (x - self.nEstados / 2)) / -50)) / (np.exp(
-					(2 * (x - self.nEstados / 2)) / 50) + np.exp((2 * (x - self.nEstados / 2)) / -50)))
-				data_pelv[5] = data_pelv[5] * math.pi / 180.
+				data_pelv[5] = -angulo_plus_tanh * DEG_TO_RAD
 			else:
 				data_pelv[5] = 0
 
 			# ROTINHA PARA VIRAR/PARAR DE VIRAR PARA A DIREITA
 			if self.rota_dir == 2:
-				data_foot[5] = self.angulo_vira - (self.angulo_vira / 2. + self.angulo_vira / 2. * ((np.exp(
-					(2 * (x - self.nEstados / 2)) / 50) - np.exp((2 * (x - self.nEstados / 2)) / -50)) / (np.exp(
-					(2 * (x - self.nEstados / 2)) / 50) + np.exp((2 * (x - self.nEstados / 2)) / -50))))
-				data_foot[5] = data_foot[5] * math.pi / 180.
+				data_foot[5] =  (self.angulo_vira - angulo_plus_tanh) * DEG_TO_RAD
 			elif self.rota_dir == -2:
-				data_foot[5] = -self.angulo_vira - (-self.angulo_vira / 2. - self.angulo_vira / 2. * ((np.exp(
-					(2 * (x - self.nEstados / 2)) / 50) - np.exp((2 * (x - self.nEstados / 2)) / -50)) / (np.exp(
-					(2 * (x - self.nEstados / 2)) / 50) + np.exp((2 * (x - self.nEstados / 2)) / -50))))
-				data_foot[5] = data_foot[5] * math.pi / 180.
+				data_foot[5] = -(self.angulo_vira + angulo_plus_tanh) * DEG_TO_RAD
 			else:
 				data_foot[5] = 0
 
@@ -1061,65 +1068,7 @@ class Controlador():
 			# CONFIGURA BODY SOLVER PARA INVOCAR FUNÇÕES DO MODELO DINÂMICO DO ROBÔ
 			self.body.set_angles(self.perna, data_foot, data_pelv)
 
-		self.last_sent_angles[:18] = data
-
-		joint_torques = self.body.get_joint_torques(self.perna)
-
-		# os multiplicadores de correção são inicializados em 0.
-		# os.system("clear")
-		# print("junta", "torque")
-		for idx, name in enumerate(PARAM_NAMES, 0):
-			curr_angle = self.last_sent_angles[idx]
-			
-			curr_body_joint = self.map_joints(idx)
-
-			curr_joint_torque = (0 if curr_body_joint == None else joint_torques[curr_body_joint])
-
-			min_correction_torque, max_correction_torque = self.JOINT_TORQUES_NO_CORRECTION_MIN_MAX[idx]
-
-			min_supported_torque, max_supported_torque = self.JOINT_MIN_MAX_SUPPORTED_JOINT_TORQUES[idx]
-
-			joint_correction_param = rospy.get_param(PARAM_SERVER_PREFIX + PARAM_NAMES[idx], self.DEFAULT_JOINT_LOOSENESS_CONTROL_ANGLES[idx])
-
-			normalized_value = 0
-
-			if(min_correction_torque != None and max_correction_torque != None):
-				if(curr_joint_torque < min_correction_torque):
-					normalized_value = normalize_interval(curr_joint_torque, min_supported_torque, min_correction_torque)
-					normalized_value = 0 if normalized_value is None else (1 - normalized_value)
-					curr_angle += normalized_value * joint_correction_param
-				elif(curr_joint_torque > max_correction_torque):
-					normalized_value = normalize_interval(curr_joint_torque, max_correction_torque, max_supported_torque)
-					normalized_value = 0 if normalized_value is None else normalized_value
-					curr_angle -= normalized_value * joint_correction_param
-			
-			# print(name, curr_joint_torque)
-			# if(self.last_sent_angles[idx] != curr_angle):
-				# print(name, self.last_sent_angles[idx], curr_angle)
-
-			# Para cada parâmetro de correção de folga de junta:
-			# Novo ângulo =
-			# Ângulo calculado pelo controlador +
-			# Multiplicador de correção de folga * ângulo de correção de folga
-			# rospy.get_param: pega parâmetro do servidor de parâmetros.
-			# (param_name, default_value)
-			# Após calibrar corretamente os ângulos, os mesmos podem ser aplicados diretamente no código(setar DEFAULT_JOINT_LOOSENESS_CONTROL e remover o get_param)
-
-			# Verifica se os ângulos das juntas não ultrapassam os limites de ângulo possíveis para ser executados nas juntas
-			# Caso sejam ultrapassados, utiliza os valores máximos ou mímino definidos
-			# Tuplas (min,max) definidas na lista self.JOINT_ANGLES_MIN_MAX
-			min_angle, max_angle = self.JOINT_ANGLES_MIN_MAX[idx]
-			if (min_angle is not None and curr_angle < min_angle):
-				self.msg_to_micro[idx] = min_angle
-				self.last_sent_angles[idx] = min_angle
-			elif (max_angle is not None and curr_angle > max_angle):
-				self.msg_to_micro[idx] = max_angle
-				self.last_sent_angles[idx] = max_angle
-			else:
-				self.msg_to_micro[idx] = curr_angle
-
-			# for idx, label in enumerate(PARAM_NAMES):
-			    # print(label, "| msg_to_micro: ", self.msg_to_micro[idx], " | old_angle: ", self.last_sent_angles[idx])
+		self.msg_to_micro[:18] = data
 
 		if (self.simulador_ativado):
 			rospy.sleep(self.simTransRate)
@@ -1164,6 +1113,61 @@ class Controlador():
 		else:
 			return None
 
+	# Para cada parâmetro de correção de folga de junta:
+	# Novo ângulo =
+	# Ângulo calculado pelo controlador +
+	# Multiplicador de correção de folga * ângulo de correção de folga
+	# rospy.get_param: pega parâmetro do servidor de parâmetros.
+	# (param_name, default_value)
+	# Após calibrar corretamente os ângulos, os mesmos podem ser aplicados diretamente no código(setar DEFAULT_JOINT_LOOSENESS_CONTROL e remover o get_param)
+	def torque_correction(self):
+		if self.torque_correction_enabled:
+			# os.system("clear")
+			# print("junta", "torque")
+			for idx, name in enumerate(PARAM_NAMES, 0):
+				if(self.gravity_compensation_enable):
+					if(idx == RIGHT_KNEE and self.perna):
+						continue
+					elif(idx == RIGHT_HIP_ROLL and self.perna):
+						continue
+					elif(idx == LEFT_KNEE and not self.perna):
+						continue
+					elif(idx == LEFT_HIP_ROLL and not self.perna):
+						continue
+				curr_body_joint = self.map_joints(idx)
+				curr_joint_torque = (0 if curr_body_joint is None else self.torques[curr_body_joint])
+				min_correction_torque, max_correction_torque = self.JOINT_TORQUES_NO_CORRECTION_MIN_MAX[idx]
+				min_supported_torque, max_supported_torque = self.JOINT_MIN_MAX_SUPPORTED_JOINT_TORQUES[idx]
+				joint_correction_param = rospy.get_param(PARAM_SERVER_PREFIX + PARAM_NAMES[idx], self.DEFAULT_JOINT_LOOSENESS_CONTROL_ANGLES[idx])
+				normalized_value = 0
+				# aplica uma correção para o torque atualmente exercido na junta
+				if (min_correction_torque is not None and max_correction_torque is not None):
+					if (curr_joint_torque < min_correction_torque):
+						normalized_value = normalize_interval(curr_joint_torque, min_supported_torque,
+															  min_correction_torque)
+						normalized_value = 0 if normalized_value is None else (1 - normalized_value)
+						self.msg_to_micro[idx] += normalized_value * joint_correction_param
+					elif (curr_joint_torque > max_correction_torque):
+						normalized_value = normalize_interval(curr_joint_torque, max_correction_torque,
+															  max_supported_torque)
+						normalized_value = 0 if normalized_value is None else normalized_value
+						self.msg_to_micro[idx] -= normalized_value * joint_correction_param
+		# print(name, curr_joint_torque)
+		# if(self.msg_to_micro[idx] != curr_angle):
+		# print(name, self.msg_to_micro[idx], curr_angle)
+
+	def limit_enforcement(self):
+		# Verifica se os ângulos das juntas não ultrapassam os limites de ângulo possíveis para ser executados nas juntas
+		# Caso sejam ultrapassados, utiliza os valores máximos ou mímino definidos
+		# Tuplas (min,max) definidas na lista self.JOINT_ANGLES_MIN_MAX
+		if (self.limit_enforcement_enabled):
+			for idx, angles in enumerate(self.JOINT_ANGLES_MIN_MAX):
+				min_angle, max_angle = angles
+				if (min_angle is not None and self.msg_to_micro[idx] < min_angle):
+					self.msg_to_micro[idx] = min_angle
+				elif (max_angle is not None and self.msg_to_micro[idx] > max_angle):
+					self.msg_to_micro[idx] = max_angle
+
 def normalize_interval(value, min_val, max_val):
 	if(min_val is None or max_val is None):
 		return None
@@ -1181,5 +1185,7 @@ if __name__ == '__main__':
 						  robo_id=0,
 						  simulador_enable=True,
 						  inertial_foot_enable=False,
-						  gravity_compensation_enable=True)
+						  gravity_compensation_enable=True,
+						  torque_correction=True,
+						  limit_enforcement=True)
 	control.run()
