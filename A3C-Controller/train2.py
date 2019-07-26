@@ -309,7 +309,7 @@ if __name__ == "__main__":
             pass
 
     #size_res_queue = res_queue.qsize()
-    [w.shutdown() for w in workers]
+    #[w.shutdown() for w in workers]
 
     #save and close tensorboard stats
     print("Salvando estatísticas no tensorboard!")

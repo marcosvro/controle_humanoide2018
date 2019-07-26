@@ -289,15 +289,17 @@ class Controlador():
 		bad_support = 0.
 		r_pose = 0.
 		r_inc = 0.
+		r_ori = 0.
 		if math.fabs(self.t_ori_last[0]) > ANGLE_FALLEN_THRESHOLD or math.fabs(self.t_ori_last[1]) > ANGLE_FALLEN_THRESHOLD:
 			self.done = True
 			reward = W_ALIVE*-1
 		else:
-			'''
 			#orientação
-			to_target = self.pos_target
+			to_target = [1, 0, 0]
 			erro_ori = (to_target[0]/(np.sum(to_target)))*math.cos(self.t_ori_last[2])-(to_target[1]/(np.sum(to_target)))*math.sin(self.t_ori_last[2])
+			r_ori = math.exp(-((1-erro_ori)**2))
 
+			'''
 			#localização
 			aux = np.sum(self.pos_target*vetor_mov_feet)
 			angle_bet = 0 if aux < 1e-6 else math.acos(aux/(np.linalg.norm(self.pos_target)*np.linalg.norm(vetor_mov_feet)))
@@ -359,7 +361,8 @@ class Controlador():
 						W_DIST*progress,
 						W_ALIVE*bonus_alive,
 						W_APOIO*bad_support,
-						W_POSE*r_pose]
+						W_POSE*r_pose,
+						W_ORI*r_ori]
 			reward = np.sum(rewards)
 
 
@@ -381,7 +384,8 @@ class Controlador():
 			'progress': W_DIST*progress,
 			'bad_support': W_APOIO*bad_support,
 			'pose_reward': W_POSE*r_pose,
-			'inc_reward' : W_INC*r_inc
+			'inc_reward' : W_INC*r_inc,
+			'ori_reward' : W_ORI*r_ori
 		}
 		#print(np.around(state, decimals=1))
 		#print(i, self.t_state, self.tempoPasso)
