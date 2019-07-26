@@ -19,7 +19,7 @@ USING_MARCOS_CONTROLLER = False #If true, the action are composed by variables s
 HEIGHT_INIT = 17.
 TIME_STEP_INIT = 1.8*5
 DISTANCE_FOOT_INIT = 2.8
-SHIFT_X_FOOT_INIT = 2.
+SHIFT_X_FOOT_INIT = 3.
 SHIFT_Y_HIP_INIT = 3.6
 SHIFT_Z_FOOT_INIT = 3.
 ANGLE_Z_HIP_INIT = 0
@@ -58,12 +58,12 @@ ANGLE_FALLEN_THRESHOLD = 70*DEG_2_RAD
 TARGET_BOUND_RANGE = 5.
 
 #task rewards weight
-W_ORI = 0.
-W_DIST = 10.
-W_INC = 1.
-W_ALIVE = 1.
-W_APOIO = 0.
-W_POSE = 5.
+W_ORI = .1
+W_DIST = .4
+W_INC = .1
+W_ALIVE = 0
+W_APOIO = 0
+W_POSE = .4
 
 #network
 OUTPUT_GRAPH = True         # safe logs

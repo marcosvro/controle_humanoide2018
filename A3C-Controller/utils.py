@@ -62,13 +62,16 @@ def record(global_ep, global_ep_r, stats, best_ep_r, name, state_dicts):
                     saved = True
 
     saved_msg = "New ep reward record" if saved else ""
+    vetor_reward = np.around([stats['ProgressReward'],
+                    stats['PoseReward'],
+                    stats['IncReward'],
+                    stats['OriReward']], decimals=1)
     print(
         name,
         "Ep:", ep,
         "| Ep_r: %.1f" % stats['reward'],
-        "| v_loss: %.1f" % stats['MeanValueLoss'],
+	"| Ep_r: ", vetor_reward,
         "| time: %.1f" % stats['TimeEpisodeDuration'],
-        "| Adv: %.1f" % stats['MeanAdvantage'],
         "| Global Ep_r: %.1f" % global_ep_r.value,
         "| Best Global Ep_r: %.1f" % best_ep_r.value,
         saved_msg,

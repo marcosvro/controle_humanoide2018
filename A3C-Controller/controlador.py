@@ -104,7 +104,7 @@ class Controlador():
 		#self.lz_angles_last = np.array([0., 0.])
 		#self.pos_target = (np.random.rand(2)*2-np.array([1, 1]))*TARGET_BOUND_RANGE  # posição alvo definida neste episódio
 		#self.pos_target = (self.t_pos_last-self.pos_target)/np.linalg.norm(self.t_pos_last-self.pos_target)
-		self.pos_target = np.array([1.,0.])
+		self.pos_target_feet = np.array([(self.deslocamentoXpes/200)+(self.deslocamentoXpes/50)+0.015 , DISTANCE_FOOT_INIT/200, (self.deslocamentoXpes/200)+(self.deslocamentoXpes/100)+0.015, -DISTANCE_FOOT_INIT/200])
 
 		self.action_last = np.array([0.]*N_A)
 		self.done = False
@@ -145,7 +145,6 @@ class Controlador():
 		#state += state_a
 		return np.array(state)
 
-
 	def step(self, action, cmd):
 		#print(cmd)
 		r_v = np.array(action[0:3]) # hip
@@ -156,8 +155,8 @@ class Controlador():
 		l_v[0] *= SHIFT_X_FOOT_MAX
 
 		# Y axis - Side
-		r_v[1] = ((r_v[1]+1)/2.) * (-SHIFT_Y_HIP_MAX)
-		l_v[1] = ((l_v[1]+1)/2.) * (SHIFT_Y_HIP_MAX)
+		r_v[1] *= SHIFT_Y_HIP_MAX
+		l_v[1] *= SHIFT_Y_HIP_MAX
 		
 		# Z axis - height
 		limite_height = self.a+self.c
@@ -247,7 +246,7 @@ class Controlador():
 
 
 	def get_state(self, action=None):
-		vetor_mov_feet = np.array(self.t_pos_feet_shd)-self.t_pos_feet_last
+		vetor_mov_feet = np.array(self.t_pos_feet_shd)-self.pos_target_feet
 		self.t_pos_last = np.array(self.t_pos_shd)
 		self.t_ori_last = np.array(self.t_ori_shd)
 		self.t_acc_last = np.array(self.t_acc_shd)
@@ -285,7 +284,7 @@ class Controlador():
 		
 		#check if done
 		reward = 0.
-		progress = vetor_mov_feet[0]+vetor_mov_feet[2] #avanço do pé esq e do dir em relação ao estado anterior
+		progress = 0. #avanço do pé esq e do dir em relação ao estado anterior
 		bad_support = 0.
 		r_pose = 0.
 		r_inc = 0.
@@ -294,10 +293,17 @@ class Controlador():
 			self.done = True
 			reward = W_ALIVE*-1
 		else:
-			#orientação
+			#progress feet reward
+			dist_pe_esq = np.linalg.norm(vetor_mov_feet[:2])*100
+			dist_pe_dir = np.linalg.norm(vetor_mov_feet[2:])*100
+			progress = 0.5*math.exp(-(dist_pe_dir**2)/5)+0.5*math.exp(-(dist_pe_esq**2)/14)
+			#print(np.around([dist_pe_esq, dist_pe_dir, progress], decimals=2))
+			print(np.around(self.pos_target_feet[:2]-self.t_pos_feet_last[:2], decimals=2), np.around(self.pos_target_feet[2:]-self.t_pos_feet_last[2:], decimals=2), progress, dist_pe_esq, dist_pe_dir)
+
+			#orientation reward
 			to_target = [1, 0, 0]
 			erro_ori = (to_target[0]/(np.sum(to_target)))*math.cos(self.t_ori_last[2])-(to_target[1]/(np.sum(to_target)))*math.sin(self.t_ori_last[2])
-			r_ori = math.exp(-((1-erro_ori)**2))
+			r_ori = math.exp(-((1-erro_ori)**2)/0.1)
 
 			'''
 			#localização
@@ -330,6 +336,7 @@ class Controlador():
 				bad_support -= (1 - math.exp(-erro_press_dir))
 			'''
 
+			#pose reward
 			self.body.foot_to_hip.angles = self.t_joint_last[:5]
 			pos_atual_dir = self.body.foot_to_hip.ee #posição real do quadril dir em relação ao pé dir
 			
@@ -339,22 +346,18 @@ class Controlador():
 			self.body.foot_to_hip.angles = angulos_perna_esq
 			pos_atual_esq = self.body.foot_to_hip.ee #posição real do quadril esq em relação ao pé esq
 
-			#pos_atual_dir = self.r_point_last
-			#pos_atual_esq = self.l_point_last
-
 			pos_ref_dir, pos_ref_esq  = self.get_reference_tragectory_point(self.t_state)
-			#print (np.around(pos_atual_esq, decimals=1), np.around(pos_ref_esq, decimals=1), np.around(pos_ref_esq-pos_atual_esq, decimals=1), self.t_state)
 
 			erro_pose_dir = np.linalg.norm(pos_ref_dir-pos_atual_dir)
 			erro_pose_esq = np.linalg.norm(pos_ref_esq-pos_atual_esq)
 
-			erro_pose = erro_pose_dir+erro_pose_esq	
-			r_pose = math.exp(-(math.fabs(erro_pose)))
-			#print (pos_atual_dir, erro_pose)
+			erro_pose = erro_pose_dir+erro_pose_esq
+			r_pose = math.exp(-(erro_pose**2)/10)
 
-			r_inclinacao_x = math.exp(-(math.fabs(self.t_ori_last[0])))
-			r_inclinacao_y = math.exp(-(math.fabs(self.t_ori_last[1])))
-			r_inc = r_inclinacao_x+r_inclinacao_y
+			#inclination reward
+			r_inclinacao_x = math.exp(-(self.t_ori_last[0]**2)/0.4)
+			r_inclinacao_y = math.exp(-(self.t_ori_last[1]**2)/0.4)
+			r_inc = (r_inclinacao_x+r_inclinacao_y)/2.
 
 			bonus_alive = 1.
 			rewards =  [W_INC*r_inc,
@@ -371,6 +374,9 @@ class Controlador():
 		if self.t_state + 1e-3 >= self.tempoPasso:
 			self.t_state = 0.
 			self.perna = 0
+			x = self.t_pos_last[0]+0.015
+			y = self.t_pos_last[1]+0.015
+			self.pos_target_feet = [x+(self.deslocamentoXpes/50.)+(self.deslocamentoXpes/200), y+(DISTANCE_FOOT_INIT/200.),x+(self.deslocamentoXpes/100.)+(self.deslocamentoXpes/200), y-(DISTANCE_FOOT_INIT/200.)]
 
 		i = int((self.t_state/self.tempoPasso)*S_P)
 		if i == 0:
@@ -512,7 +518,7 @@ class Controlador():
 		pos_foot[2] = self.altura - self.deslocamentoZpes*math.exp(-(dif_estado**2)/(0.9))
 
 		#print (np.around(pos_pelves, decimals=1), np.around(pos_foot, decimals=1), x)
-		if primeira_parte:
+		if not primeira_parte:
 			return pos_pelves, pos_foot
 		else:
 			return pos_foot, pos_pelves

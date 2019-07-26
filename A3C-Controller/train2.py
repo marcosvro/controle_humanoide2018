@@ -143,6 +143,7 @@ class Worker(mp.Process):
             r_progress = 0.
             r_pose = 0.
             r_inc = 0.
+            r_ori = 0.
 
             for t in range(MAX_EP_STEP):
                 if self.exit.is_set():
@@ -156,6 +157,7 @@ class Worker(mp.Process):
                 r_progress += info['progress']
                 r_pose += info['pose_reward']
                 r_inc += info['inc_reward']
+                r_ori += info['ori_reward']
 
                 #print(info['progress'])
                 self.w_state.value = 4
@@ -171,7 +173,7 @@ class Worker(mp.Process):
                 buffer_s.append(s)
                 buffer_r.append(r)    # normalize
 
-                if total_step%UPDATE_GLOBAL_ITER == 0 or done:  # update global and assign to local net
+                if total_step%UPDATE_GLOBAL_ITER == 0 or done or t == MAX_EP_STEP-1:  # update global and assign to local net
                     self.w_state.value = 5
                     #self.env.pause_simulation_dynamics()
                     # sync
@@ -195,9 +197,10 @@ class Worker(mp.Process):
                             'MeanValueLoss' : c_ep_loss_total/num_updates,
                             'MeanPolicyLoss' : a_ep_loss_total/num_updates,
                             'MeanAdvantage' :adv_ep_loss_total /num_updates,
-                            'ProgressReward' : r_progress,
-                            'PoseReward' : r_pose,
-                            'IncReward' : r_inc
+                            'ProgressReward' : r_progress/(t+1),
+                            'PoseReward' : r_pose/(t+1),
+                            'IncReward' : r_inc/(t+1),
+                            'OriReward' : r_ori/(t+1)
                         }
                         ep_num = record(self.g_ep, self.g_ep_r, stats, self.best_ep_r, self.name, self.lnet.state_dict())
                         stats['Episode'] = ep_num
@@ -300,11 +303,13 @@ if __name__ == "__main__":
                 if msg['MeanAdvantage']:
                     stat_writer.add_scalar('MeanAdvantage/Episode', msg['MeanAdvantage'], episode)
                 if msg['ProgressReward']:
-                    stat_writer.add_scalar('ProgressReward/Episode', msg['ProgressReward'], episode)
+                    stat_writer.add_scalar('MeanProgressReward/Episode', msg['ProgressReward'], episode)
                 if msg['IncReward']:
-                    stat_writer.add_scalar('IncReward/Episode', msg['IncReward'], episode)
+                    stat_writer.add_scalar('MeanIncReward/Episode', msg['IncReward'], episode)
                 if msg['PoseReward']:
-                    stat_writer.add_scalar('PoseReward/Episode', msg['PoseReward'], episode)
+                    stat_writer.add_scalar('MeanPoseReward/Episode', msg['PoseReward'], episode)
+                if msg['OriReward']:
+                    stat_writer.add_scalar('MeanOriReward/Episode', msg['OriReward'], episode)
         except Exception:
             pass
 
