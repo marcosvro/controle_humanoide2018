@@ -190,7 +190,7 @@ class Worker(mp.Process):
                     #record(self.g_ep, self.g_ep_r, ep_r, self.best_ep_r, self.name, self.lnet.state_dict())
                     if done or t == MAX_EP_STEP-1:  # done
                         stats = {
-                            'TimeEpisodeDuration' : time_ep_total,
+                            'TimeEpisodeDuration' : time_ep_total/5.,
                             'reward' : ep_r,
                             'GradientUpdates' : num_updates,
                             'MeanLoss' : loss_ep_total/num_updates,

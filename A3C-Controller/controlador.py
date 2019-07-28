@@ -151,17 +151,17 @@ class Controlador():
 		l_v = np.array(action[3:6]) # foot
 
 		# X axis - forward
-		r_v[0] *= SHIFT_X_FOOT_MAX
-		l_v[0] *= SHIFT_X_FOOT_MAX
+		#r_v[0] *= SHIFT_X_FOOT_MAX
+		#l_v[0] *= SHIFT_X_FOOT_MAX
 
 		# Y axis - Side
-		r_v[1] *= SHIFT_Y_HIP_MAX
-		l_v[1] *= SHIFT_Y_HIP_MAX
-		
+		#r_v[1] *= SHIFT_Y_HIP_MAX
+		#l_v[1] *= SHIFT_Y_HIP_MAX
+
 		# Z axis - height
 		limite_height = self.a+self.c
-		r_v[2] = r_v[2]*(limite_height-HEIGHT_INIT) + HEIGHT_INIT
-		l_v[2] = l_v[2]*(limite_height-HEIGHT_INIT) + HEIGHT_INIT
+		#r_v[2] = r_v[2]*(limite_height-HEIGHT_INIT) + HEIGHT_INIT
+		#l_v[2] = l_v[2]*(limite_height-HEIGHT_INIT) + HEIGHT_INIT
 
 		#r_v, l_v = self.get_reference_tragectory_point(self.t_state+TIME_STEP_ACTION) #test para ver se o controle euristico funciona
 		#print (np.around(l_v, decimals=1), np.around(r_v, decimals=1), self.t_state)
@@ -171,6 +171,8 @@ class Controlador():
 		#t_a = self.t_angles_last
 		#lz_a = self.lz_angles_last
 
+		r_v = r_v+r_p
+		l_v = l_v+l_p
 
 		# create interpolators
 		interp_lin_r = interp1d([0, TIME_STEP_ACTION], np.vstack([r_p, r_v]), axis=0)
@@ -190,7 +192,7 @@ class Controlador():
 			#constrants
 			modulo_att_r_p = np.linalg.norm(att_r_p)
 			modulo_att_l_p = np.linalg.norm(att_l_p)
-			
+
 			if modulo_att_r_p >= limite_height:
 				att_r_p = (att_r_p/modulo_att_r_p)*(limite_height-0.01)
 			if modulo_att_l_p >= limite_height:
@@ -298,7 +300,7 @@ class Controlador():
 			dist_pe_dir = np.linalg.norm(vetor_mov_feet[2:])*100
 			progress = 0.5*math.exp(-(dist_pe_dir**2)/5)+0.5*math.exp(-(dist_pe_esq**2)/14)
 			#print(np.around([dist_pe_esq, dist_pe_dir, progress], decimals=2))
-			print(np.around(self.pos_target_feet[:2]-self.t_pos_feet_last[:2], decimals=2), np.around(self.pos_target_feet[2:]-self.t_pos_feet_last[2:], decimals=2), progress, dist_pe_esq, dist_pe_dir)
+			#print(np.around(self.pos_target_feet[:2]-self.t_pos_feet_last[:2], decimals=2), np.around(self.pos_target_feet[2:]-self.t_pos_feet_last[2:], decimals=2), progress, dist_pe_esq, dist_pe_dir)
 
 			#orientation reward
 			to_target = [1, 0, 0]
