@@ -30,6 +30,13 @@ try:
 except Exception as e:
 	RASPBERRY = False
 from body_solver import Body
+from tensorboardX import SummaryWriter
+from geometry_msgs.msg import Vector3
+import vrep
+import pandas as pd
+import matplotlib.pyplot as plt
+
+
 
 RAD_TO_DEG = 180 / np.pi
 DEG_TO_RAD = np.pi / 180.
@@ -62,7 +69,7 @@ class Controlador():
 
 		self.simulador = simulador_enable
 		self.step_mode = step_mode
-		self.state = 'IDDLE'
+		self.state = 'WALK'
 		self.time_id = time_id
 		self.robo_id = robo_id
 		self.altura = altura_inicial
@@ -202,6 +209,24 @@ class Controlador():
 			self.estados_levanta_frente = []
 			self.tempos_levanta_frente = []
 
+		self.stat_writer = SummaryWriter(comment="amostras-controle-euristico")
+		self.cont_samples = 1
+		self.amostras_ori_x = []
+		self.amostras_ori_y = []
+		self.dist_em_x = 0
+
+		porta = 19700
+		os.system("~/vrep/vrep.sh -gREMOTEAPISERVERSERVICE_"+str(porta)+"_FALSE_FALSE ~/Documentos/temp/controle_humanoide2018/teste_09_03.ttt&")
+		time.sleep(20)
+		self.clientID=vrep.simxStart('127.0.0.1',porta,True,True,5000,5) # Connect to V-REP
+
+		if self.clientID!=-1:
+			# start the simulation:
+			vrep.simxStartSimulation(self.clientID,vrep.simx_opmode_blocking)
+		else:
+			print ("Não foi possivel estabelecer conexão com o vrep")
+			exit()
+
 		if self.simulador:
 			self.inicia_modulo_simulador()
 
@@ -227,6 +252,8 @@ class Controlador():
 
 		#INICIA SUBSCRIBER PARA RECEBER COMANDOS DA VISÃO
 		rospy.Subscriber("/Bioloid/visao_cmd", Float32MultiArray, self.visao_cmd_callback)
+
+		rospy.Subscriber("/vrep_ros_interface/Bioloid/robot_position", Vector3, self.robot_position_callback)
 
 
 	def atualiza_fps(self):
@@ -333,8 +360,11 @@ class Controlador():
 		self.robo_pitch = msg.data[1]
 		self.robo_roll = msg.data[0]
 
-		if (abs(self.robo_pitch) > 45 or abs(self.robo_roll) > 45) and not self.interpolando:
+		if (abs(self.robo_pitch) > 60 or abs(self.robo_roll) > 60) and not self.interpolando:
 			self.state = 'FALLEN'
+
+		self.amostras_ori_x.append(self.robo_roll)
+		self.amostras_ori_y.append(self.robo_pitch)
 
 		# 		'''
 		# 		if self.roboYall > self.roboYall:
@@ -349,10 +379,9 @@ class Controlador():
 		# 			self.roboYallLock = -esq_angle
 		# 		'''
 
-		if self.visao_ativada:
-			#manda mensagem para a rasp da visão dizendo o estado atual, a inclinação vertical e rotação horizontal
-			self.visao_socket.send(("['"+self.state+"',"+str(self.robo_pitch)+','+str(self.robo_yall)+']').encode())
 
+	def robot_position_callback(self, vetor):
+		self.dist_em_x = vetor.x
 
 	def classifica_estado(self):
 		if self.state is 'IDDLE':
@@ -379,6 +408,7 @@ class Controlador():
 			else:
 				return -1
 		elif self.state is 'WALK':
+			return -1
 			if not self.visao_bola or abs(self.robo_yall_lock) > self.max_yall or self.robo_pitch_lock <= -45:
 				return 'MARCH'
 			else:
@@ -428,8 +458,17 @@ class Controlador():
 		#update function
 		timer_main_loop = 0
 		# perna direita (1) ou esquerda(0) no chão
+
+		duracoes = []
+		dp_ori_x = []
+		dp_ori_y = []
+		me_ori_x = []
+		me_ori_y = []
+		distancias = []
+
 		self.perna = 0
 		self.rot_desvio = 0
+		self.tempo_anterior = time.time()
 		while (True):
 			try:
 				#print ("%s GIMBAL_YALL:%.f  ROBO_YALL:%.2f  ANGULO PARA VIRAR:%.2f BOLA:%r"%(self.state, self.gimbal_yall, self.robo_yall, self.robo_yall_lock, self.visao_bola), flush=True)
@@ -445,9 +484,124 @@ class Controlador():
 					else:
 						self.activate = False
 						self.state = 'IDDLE'
+
+				if time.time() - self.tempo_anterior > 30:
+					self.state = 'FALLEN'
 				if (self.state is 'FALLEN'):
-					if not self.interpolando:
-						self.levanta()
+					if (self.cont_samples <= 40):
+						duracao = time.time()-self.tempo_anterior
+						print("salvando dados da simulação %i" % self.cont_samples)
+						duracoes.append(duracao)
+						dp_ori_x.append(np.std(self.amostras_ori_x))
+						dp_ori_y.append(np.std(self.amostras_ori_y))
+						me_ori_x.append(np.mean(self.amostras_ori_x))
+						me_ori_y.append(np.mean(self.amostras_ori_y))
+						distancias.append(self.dist_em_x)
+
+						self.stat_writer.add_scalar("Tempo de simulação/Episode", duracao, self.cont_samples)
+						self.stat_writer.add_scalar("Desvio padrão angular X/Episode", np.std(self.amostras_ori_x), self.cont_samples)
+						self.stat_writer.add_scalar("Desvio padrão angular Y/Episode", np.std(self.amostras_ori_y), self.cont_samples)
+						self.stat_writer.add_scalar("Média angular X/Episode", np.mean(self.amostras_ori_x), self.cont_samples)
+						self.stat_writer.add_scalar("Média angular Y/Episode", np.mean(self.amostras_ori_y), self.cont_samples)
+						self.stat_writer.add_scalar("Distância percorrida X/Episode", self.dist_em_x, self.cont_samples)
+					
+						# Reinicia simulação
+						vrep.simxStopSimulation(self.clientID,vrep.simx_opmode_blocking)
+						time.sleep(5)
+						vrep.simxStartSimulation(self.clientID,vrep.simx_opmode_blocking)
+
+						self.amostras_ori_x = []
+						self.amostras_ori_y = []
+						self.tempo_anterior = time.time()
+						self.state = 'WALK'
+					else:
+						print("Finalizando teste")
+						print (len(duracoes))
+						print (len(dp_ori_x))
+						print (len(dp_ori_y))
+						print (len(me_ori_x))
+						print (len(me_ori_y))
+						print (len(distancias))
+						duracoes = pd.Series(np.array(duracoes))
+						dp_ori_x = pd.Series(np.array(dp_ori_x))
+						dp_ori_y = pd.Series(np.array(dp_ori_y))
+						me_ori_x = pd.Series(np.array(me_ori_x))
+						me_ori_y = pd.Series(np.array(me_ori_y))
+						distancias = pd.Series(np.array(distancias))
+
+						num_inter = 6
+						intervalo = np.amax(duracoes)-np.amin(duracoes)
+						r_width = intervalo/num_inter
+						if intervalo > 0.5:
+							duracoes.plot.hist(grid=True, bins=10, rwidth=0.9, color='#607c8e')
+							plt.title('Duração da simulação em segundos')
+							plt.xlabel('Frequência')
+							plt.ylabel('Tempo (s)')
+							plt.grid(axis='y', alpha=0.75)
+							#plt.show()
+							plt.savefig('runs/time_duration.png')
+							plt.clf()
+
+						intervalo = np.amax(dp_ori_x)-np.amin(dp_ori_x)
+						r_width = intervalo/num_inter
+						dp_ori_x.plot.hist(grid=True, bins=10, rwidth=0.9, color='#607c8e')
+						plt.title('Desvio padrão angular do tronco (X)')
+						plt.xlabel('Frequência')
+						plt.ylabel('Desvio padrão angular (X)')
+						plt.grid(axis='y', alpha=0.75)
+						#plt.show()
+						plt.savefig('runs/dp_x.png')
+						plt.clf()
+
+						intervalo = np.amax(dp_ori_y)-np.amin(dp_ori_y)
+						r_width = intervalo/num_inter
+						dp_ori_y.plot.hist(grid=True, bins=10, rwidth=0.9, color='#607c8e')
+						plt.title('Desvio padrão angular do tronco (Y)')
+						plt.xlabel('Frequência')
+						plt.ylabel('Desvio padrão angular (Y)')
+						plt.grid(axis='y', alpha=0.75)
+						#plt.show()
+						plt.savefig('runs/dp_y.png')
+						plt.clf()
+
+						intervalo = np.amax(me_ori_x)-np.amin(me_ori_x)
+						r_width = intervalo/num_inter
+						me_ori_x.plot.hist(grid=True, bins=10, rwidth=0.9, color='#607c8e')
+						plt.title('Média angular do tronco (X)')
+						plt.xlabel('Frequência')
+						plt.ylabel('Média angular (X)')
+						plt.grid(axis='y', alpha=0.75)
+						#plt.show()
+						plt.savefig('runs/mean_x.png')
+						plt.clf()
+
+						intervalo = np.amax(me_ori_y)-np.amin(me_ori_y)
+						r_width = intervalo/num_inter
+						me_ori_y.plot.hist(grid=True, bins=10, rwidth=0.9, color='#607c8e')
+						plt.title('Média angular do tronco (Y)')
+						plt.xlabel('Frequência')
+						plt.ylabel('Média angular (Y)')
+						plt.grid(axis='y', alpha=0.75)
+						#plt.show()
+						plt.savefig('runs/mean_y.png')
+						plt.clf()
+
+						intervalo = np.amax(distancias)-np.amin(distancias)
+						r_width = intervalo/num_inter
+						distancias.plot.hist(grid=True, bins=10, rwidth=0.9, color='#607c8e')
+						plt.title('Distância percorrida em X')
+						plt.xlabel('Frequência')
+						plt.ylabel('Distância')
+						plt.grid(axis='y', alpha=0.75)
+						#plt.show()
+						plt.savefig('runs/dist.png')
+						plt.clf()
+
+						self.stat_writer.close()
+						exit()
+					self.cont_samples += 1
+					#if not self.interpolando:
+					#	self.levanta()
 				elif self.state is 'MARCH':
 					if self.deslocamentoYpelves != self.deslocamentoYpelvesMAX:
 						self.marchar()
@@ -470,6 +624,8 @@ class Controlador():
 							if novo_estado != -1:
 								self.state = novo_estado
 				elif self.state is 'WALK':
+					if self.deslocamentoYpelves != self.deslocamentoYpelvesMAX:
+						self.marchar()
 					if self.deslocamentoXpes < self.deslocamentoXpesMAX:
 						self.acelera_frente()
 					else:
@@ -796,6 +952,7 @@ class Controlador():
 
 		p1 = (self.deslocamentoXpes/2)*aux2
 		pos_pelves[0] = p1
+		#pos_pelves[0] = x*(self.deslocamentoXpes/self.nEstados)
 		pos_pelves[1] += -self.deslocamentoYpelves*math.sin(x*math.pi/self.nEstados)
 
 		pos_foot = self.pos_inicial_pelves[:]
