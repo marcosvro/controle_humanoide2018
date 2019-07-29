@@ -8,7 +8,7 @@ from functools import reduce
 import struct
 import csv
 try:
-	from std_msgs.msg import Float32MultiArray
+	from std_msgs.msg import Float32MultiArray, Int16MultiArray
 except Exception as e:
 	pass
 try:
@@ -202,25 +202,29 @@ class Controlador():
 			self.estados_levanta_frente = []
 			self.tempos_levanta_frente = []
 
-		if self.simulador:
-			self.inicia_modulo_simulador()
+		#if self.simulador:
+		self.inicia_modulo_simulador()
 
 
 	def inicia_modulo_simulador(self):
 		#INICIA PUBLISHER PARA ENVIAR POSIÇÕES DOS MOTORES
 		print("Iniciando ROS node para execucao do simulador..")
+		if self.simulador:
+			self.pub = rospy.Publisher('Bioloid/joint_pos', Float32MultiArray, queue_size=1)
+		else:
+			self.pub = rospy.Publisher('Bioloid/joint_pos', Int16MultiArray, queue_size=1)
 		rospy.init_node('controller', anonymous=True)
-		self.pub = rospy.Publisher('Bioloid/joint_pos', Float32MultiArray, queue_size=1)
 		self.rate = rospy.Rate(self.tempoPasso/self.nEstados)
 		t = threading.Thread(target=self.envia_para_simulador)
 		t.daemon = True
 		t.start()
 
-		#INICIA SUBSCRIBER PARA RECEBER DADOS DOS SENSORES INERCIAIS DOS PÉS
-		rospy.Subscriber("/vrep_ros_interface/Bioloid/foot_inertial_sensor", Float32MultiArray, self.foot_inertial_callback)
+		if self.simulador:
+			#INICIA SUBSCRIBER PARA RECEBER DADOS DOS SENSORES INERCIAIS DOS PÉS
+			rospy.Subscriber("/vrep_ros_interface/Bioloid/foot_inertial_sensor", Float32MultiArray, self.foot_inertial_callback)
 
-		#INICIA SUBSCRIBER PARA RECEBER DADOS DOS SENSORES DE PRESSÃO DOS PÉS
-		rospy.Subscriber("/vrep_ros_interface/Bioloid/foot_pressure_sensor", Float32MultiArray, self.foot_pressure_callback)
+			#INICIA SUBSCRIBER PARA RECEBER DADOS DOS SENSORES DE PRESSÃO DOS PÉS
+			rospy.Subscriber("/vrep_ros_interface/Bioloid/foot_pressure_sensor", Float32MultiArray, self.foot_pressure_callback)
 
 		#INICIA SUBSCRIBER PARA RECEBER DADOS DO SENSOR IMU DO ROBÔ
 		rospy.Subscriber("/vrep_ros_interface/Bioloid/robot_inertial_sensor", Float32MultiArray, self.robot_inertial_callback)
@@ -348,10 +352,6 @@ class Controlador():
 		# 		else:
 		# 			self.roboYallLock = -esq_angle
 		# 		'''
-
-		if self.visao_ativada:
-			#manda mensagem para a rasp da visão dizendo o estado atual, a inclinação vertical e rotação horizontal
-			self.visao_socket.send(("['"+self.state+"',"+str(self.robo_pitch)+','+str(self.robo_yall)+']').encode())
 
 
 	def classifica_estado(self):
