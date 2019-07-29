@@ -215,7 +215,10 @@ class Controlador():
 			self.pub = rospy.Publisher('Bioloid/joint_pos', Int16MultiArray, queue_size=1)
 		rospy.init_node('controller', anonymous=True)
 		self.rate = rospy.Rate(self.tempoPasso/self.nEstados)
-		t = threading.Thread(target=self.envia_para_simulador)
+		if self.simulador:
+			t = threading.Thread(target=self.envia_para_simulador)
+		else:
+			t = threading.Thread(target=self.envia_para_micro)
 		t.daemon = True
 		t.start()
 
@@ -283,6 +286,28 @@ class Controlador():
 					rospy.sleep(self.simTransRate)
 		except Exception as e:
 			pass
+
+	def envia_para_micro(self):
+		try:
+			print("Publicando no topico para o micro!!")
+			mat = Int16MultiArray()
+			self.simulador_ativado = True
+			while not rospy.is_shutdown():
+				data = (np.array(self.msg_to_micro[:19])*(1800/np.pi)).astype(np.int16)
+				data[18] = self.state_encoder[self.state]
+				mat.data = data
+
+				mat.data[10] = -mat.data[10] # quadril esquerdo ROLL
+				mat.data[0] = -mat.data[0] #calcanhar direito ROLL
+
+				mat.data[4] = -mat.data[4]
+				mat.data[10] = -mat.data[10]
+
+				self.pub.publish(mat)
+				rospy.sleep(self.simTransRate)
+		except Exception as e:
+			pass
+
 	# '''
 	# 	- descrição: função que recebe informações de onde está a bola,
 	#     atualizando as variaveis globais referêntes ao gimbal
