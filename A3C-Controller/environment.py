@@ -55,8 +55,13 @@ class VrepEnvironment():
 		#reset robot on environment
 		self.cmd =  False
 		#self.reset_pub.publish(Bool(self.cmd))
-		init_state = self.sub_controller.reset()
-		self.pub_queue.put([True, self.w_id, self.cmd])
+
+		angles_noise = (np.random.rand(12)*2 -1)*ANGLE_NOISE
+		orientation_noise = (np.random.rand(2)*2 -1)*ORIENTATION_NOISE
+		msg = [1. if self.cmd else 0.]+angles_noise.tolist()+orientation_noise.tolist()
+
+		init_state = self.sub_controller.reset(msg)
+		self.pub_queue.put([True, self.w_id, msg])
 		self.wait_ack() #wait for sim confirmation
 		return init_state
 

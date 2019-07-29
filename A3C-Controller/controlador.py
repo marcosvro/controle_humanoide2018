@@ -58,7 +58,7 @@ class Controlador():
 		self.t_force_shd = t_force
 		self.t_pos_feet_shd = t_pos_feet
 		
-		self.reset()
+		self.reset([0]*15)
 		
 		time.sleep(TIME_WAIT_INIT_PUBS)
 		#define subscribers para os dados do state
@@ -79,11 +79,12 @@ class Controlador():
 
 	#################################### FUNÇÕES DO EVIROMENT #############################
 
-	def reset(self):
+	def reset(self, noise):
 		#dados que vem do simulador
 		self.t_acc_last = np.array([0.]*3)
 		self.t_ori_last = np.array([0.]*3)
-		self.t_pos_last = np.array([0.]*2)
+		self.t_ori_last[:2] += noise[13:]
+		self.t_pos_last = np.array([0.]*3)
 		self.t_force_last = np.array([0.125]*8)
 		self.t_pos_feet_last = np.array([0., DISTANCE_FOOT_INIT/2, 0., -DISTANCE_FOOT_INIT/2])
 
@@ -109,7 +110,7 @@ class Controlador():
 		self.action_last = np.array([0.]*N_A)
 		self.done = False
 		self.perna = 0
-		self.t_state = 0
+		self.t_state = np.random.randint(0, int(TIME_STEP_INIT/TIME_STEP_ACTION))*TIME_STEP_ACTION
 		self.rot_desvio = 0
 		self.rota_dir = 0
 		self.rota_esq = 0
@@ -118,8 +119,22 @@ class Controlador():
 
 		#pega estado inicial
 		self.body_angles = self.cinematica_inversa(0. ,self.r_point_last, self.l_point_last, self.cmd)
+		noise[6] = 0
+		noise[12] = 0
+		self.body_angles[:12] += noise[1:13]
 
-		state_a = []
+		self.body.foot_to_hip.angles = self.body_angles[:5]
+		pos_atual_dir = self.body.foot_to_hip.ee #posição real do quadril dir em relação ao pé dir
+		
+		angulos_perna_esq = self.body_angles[6:11]
+		angulos_perna_esq[0] *= -1
+		angulos_perna_esq[4] *= -1
+		self.body.foot_to_hip.angles = angulos_perna_esq
+		pos_atual_esq = self.body.foot_to_hip.ee #posição real do quadril esq em relação ao pé esq
+		self.r_point_last = pos_atual_dir
+		self.l_point_last = pos_atual_esq
+
+
 		state = []
 		#state = self.pos_target.tolist()
 		#state += [np.linalg.norm(self.t_pos_last-self.pos_target)/TARGET_BOUND_RANGE]
@@ -140,9 +155,16 @@ class Controlador():
 			state += self.t_force_last.tolist()
 		if LEG_JOINT_POSITION_IN_STATE:
 			state += (np.array(self.body_angles[:12])/math.pi).tolist()
+		if TORSO_HEIGHT_IN_STATE:
+			state += [0.6]
 
-		state = state+([0.]*N_PS*(S_P-1))
-		#state += state_a
+
+		i = int((self.t_state/self.tempoPasso)*S_P)
+		if i == 0:
+			state = state+([0.]*N_PS*(S_P-1))
+		else:
+			state = ([0.]*N_PS*i)+state+([0.]*N_PS*(S_P-(i+1)))
+
 		return np.array(state)
 
 	def step(self, action, cmd):
@@ -256,7 +278,6 @@ class Controlador():
 		self.t_force_last = np.array(self.t_force_shd)
 		self.t_pos_feet_last = np.array(self.t_pos_feet_shd)
 
-		state_a = []
 		state = []
 		#state = self.pos_target.tolist()
 		#state = ((self.t_pos_last-self.pos_target)/np.linalg.norm(self.t_pos_last-self.pos_target)).tolist()
@@ -279,7 +300,8 @@ class Controlador():
 			state += self.t_force_last.tolist()
 		if LEG_JOINT_POSITION_IN_STATE:
 			state += (self.t_joint_last/math.pi).tolist()
-
+		if TORSO_HEIGHT_IN_STATE:
+			state += [self.t_pos_last[2]*2]
 		
 
 		#state += state_a
@@ -418,6 +440,7 @@ class Controlador():
 	def t_pos_last_callback (self, vetor):
 		self.t_pos_shd[0] = vetor.x
 		self.t_pos_shd[1] = vetor.y
+		self.t_pos_shd[2] = vetor.z
 
 	def t_joint_last_callback (self, msg):
 		data = msg.data

@@ -11,6 +11,7 @@ TORSO_ORIENTATION_IN_STATE = True #If true, torso orientation(IMU response) are 
 LAST_ACTION_IN_STATE = False #If true, last action are embbeded in state
 LEG_JOINT_POSITION_IN_STATE = True #If true, real joint position of robot simulation are embbede in state
 PRESSURE_FEET_IN_STATE = False
+TORSO_HEIGHT_IN_STATE = True
 
 #action mode
 USING_MARCOS_CONTROLLER = False #If true, the action are composed by variables set of Marcos controller. If false, the action is composed by 3 arrays (2 3D, 1 2D) indicating the position of swing foot, hip of support leg and torso angles velocity
@@ -56,6 +57,8 @@ TIME_WAIT_ACK_MAX = 4
 TIME_WAIT_INIT_PUBS = 5
 ANGLE_FALLEN_THRESHOLD = 70*DEG_2_RAD
 TARGET_BOUND_RANGE = 5.
+ANGLE_NOISE = 15*DEG_2_RAD
+ORIENTATION_NOISE = 15*DEG_2_RAD
 
 #task rewards weight
 W_ORI = .1
@@ -69,7 +72,7 @@ W_POSE = .4
 OUTPUT_GRAPH = True         # safe logs
 RENDER=True                 # render one worker
 LOG_DIR = './log/weigths'   # savelocation for logs
-N_WORKERS = 1	  	# number of workers
+N_WORKERS = 20	  	# number of workers
 MAX_EP_STEP = 1000          # maxumum number of steps per episode
 MAX_EP = 1000000            # maximum number of episodes
 MAX_GLOBAL_EP = MAX_EP      # idem MAX_EP, but to tensorflow A3C implementation.
@@ -106,4 +109,6 @@ if PRESSURE_FEET_IN_STATE:
 	N_PS += 8
 if LEG_JOINT_POSITION_IN_STATE:
 	N_PS += 12
+if TORSO_HEIGHT_IN_STATE:
+	N_PS += 1
 N_S = N_PS*S_P + N_PA

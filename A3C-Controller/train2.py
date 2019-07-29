@@ -51,7 +51,7 @@ def get_pub_msgs ():
                 trueReset_falseJointPos = msg[0]
                 i = msg[1]
                 if (trueReset_falseJointPos): # reset msg
-                    to_send = Bool()
+                    to_send = Float32MultiArray()
                     to_send.data = msg[2]
                     pubs[i][1].publish(to_send)
                 else: # joint position msg
@@ -224,7 +224,7 @@ if __name__ == "__main__":
 
     gnet = Net(N_S, N_A)        # global network
     gnet.share_memory()         # share the global parameters in multiprocessing
-    opt = SharedAdam(gnet.parameters(), lr=0.0001)  # global optimizer
+    opt = SharedAdam(gnet.parameters(), lr=0.001)  # global optimizer
     global_ep, global_ep_r, stat_queue, pub_queue, best_ep_r = mp.Value('i', 0), mp.Value('d', 0.), mp.Queue(), mp.Queue(), mp.Value('d', 0.)
     runing = True
 
@@ -246,11 +246,11 @@ if __name__ == "__main__":
     w_states = []
     for i in range(N_WORKERS):
         name = 'w%i' % i
-        reset_pub = rospy.Publisher(name+'/reset', Bool, queue_size=1) # define publisher para resetar simulação
+        reset_pub = rospy.Publisher(name+'/reset', Float32MultiArray, queue_size=1) # define publisher para resetar simulação
         pos_pub = rospy.Publisher(name+'/joint_pos', Float32MultiArray, queue_size=1) #define publisher para as posições
         t_ori_last = mp.Array('d', [0]*3)
         t_acc_last = mp.Array('d', [0]*3)
-        t_pos_last = mp.Array('d', [0]*2)
+        t_pos_last = mp.Array('d', [0]*3)
         t_joint_last = mp.Array('d', [0]*12)
         t_force_last = mp.Array('d', [0]*8)
         t_pos_feet_last = mp.Array('d', [0]*4)
