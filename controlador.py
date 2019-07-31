@@ -467,7 +467,7 @@ class Controlador():
 		# perna direita (1) ou esquerda(0) no chão
 		self.perna = 0
 		self.rot_desvio = 0
-		while (True):
+		while not rospy.is_shutdown():
 			try:
 				#print ("%s GIMBAL_YALL:%.f  ROBO_YALL:%.2f  ANGULO PARA VIRAR:%.2f BOLA:%r"%(self.state, self.gimbal_yall, self.robo_yall, self.robo_yall_lock, self.visao_bola), flush=True)
 				#print (np.array(self.Rfoot_orientation).astype(np.int), np.array(self.Lfoot_orientation).astype(np.int))
