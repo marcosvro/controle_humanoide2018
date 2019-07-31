@@ -24,15 +24,12 @@ def startController():
 	control.run()
 
 
-parent = ROSLaunchParent('roscore',[],True)
+parent = ROSLaunchParent('roscore',[],is_core=True)
 parent.start()
 
 while rospy.is_shutdown():
 	sleep(0.5)
-try:
-	system("rosrun rosserial_python serial_node.py _port:=/dev/{port} _baud:={baud} &")
-except Exception as e:
-	pass
+system(f"rosrun rosserial_python serial_node.py _port:=/dev/{port} _baud:={baud} &")
 t = threading.Thread(target=startController)
 t.daemon = True
 t.start()
