@@ -34,7 +34,7 @@ from body_solver import Body
 RAD_TO_DEG = 180 / np.pi
 DEG_TO_RAD = np.pi / 180.
 
-KP_CONST = 0.6
+KP_CONST = 0.3
 
 
 def sigmoid_deslocada(x, periodo):
@@ -48,8 +48,8 @@ class Controlador():
 				robo_id=0,
 				altura_inicial=17.,
 				tempo_passo = 0.3,
-				deslocamento_ypelves = 1.4,
-				deslocamento_zpes = 2.,
+				deslocamento_ypelves = 2.,
+				deslocamento_zpes = 3.,
 				deslocamento_xpes= 1.5,
 				deslocamento_zpelves = 30.,
 				inertial_foot_enable = False,
@@ -184,6 +184,17 @@ class Controlador():
 
 		self.RST_IMU_PIN = 18
 
+		self.state_encoder = {
+			"IDDLE" : 1,
+			"MARCH" : 2,
+			"WALK"  : 3,
+			"TURN"  : 4,
+			"FALLEN": 5,
+			"UP"    : 6,
+			"PENALIZED": 7,
+			"TURN90": 8
+		}
+
 		try:
 			with open ('estados_levanta_frente.csv', newline='') as csvfile:
 				tabela = list(csv.reader(csvfile, delimiter=','))
@@ -297,16 +308,17 @@ class Controlador():
 				data[18] = self.state_encoder[self.state]
 				mat.data = data
 
-				mat.data[10] = -mat.data[10] # quadril esquerdo ROLL
 				mat.data[0] = -mat.data[0] #calcanhar direito ROLL
 
 				mat.data[4] = -mat.data[4]
-				mat.data[10] = -mat.data[10]
+
+				mat.data[self.RIGHT_HIP_PITCH] += 150
+				mat.data[self.LEFT_HIP_PITCH] += 150
 
 				self.pub.publish(mat)
 				rospy.sleep(self.simTransRate)
 		except Exception as e:
-			pass
+			raise e
 
 	# '''
 	# 	- descrição: função que recebe informações de onde está a bola,
@@ -954,7 +966,7 @@ class Controlador():
 if __name__ == '__main__':
 	control = Controlador(time_id = 17,
 						robo_id = 0,
-						simulador_enable=True,
+						simulador_enable=False,
 						inertial_foot_enable=False,
 						gravity_compensation_enable=True)
 	control.run()
