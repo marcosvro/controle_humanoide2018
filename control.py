@@ -1,27 +1,19 @@
-
+from subprocess import Popen
 import threading
 import rospy
-from controlador import Controlador
 from communication import Visao
-from os import system
+from os import system, getpid
 from time import sleep
+import sys
 from roslaunch.parent import ROSLaunchParent
 
-OBJECTS = {}
 
-rosserial_node = "rosserial_node"
+rosserial_process = "rosserial_process"
 port = "ttyACM0"
 baud = 500000
 
-
-
-def startController():
-	control = Controlador(time_id = 17,
-						robo_id = 0,
-						simulador_enable=False,
-						inertial_foot_enable=False,
-						gravity_compensation_enable=True)
-	control.run()
+py3_env = "humanoid"
+py2_env = ""
 
 
 parent = ROSLaunchParent('roscore',[],is_core=True)
@@ -29,15 +21,20 @@ parent.start()
 
 while rospy.is_shutdown():
 	sleep(0.5)
-system(f"rosrun rosserial_python serial_node.py _port:=/dev/{port} _baud:={baud} &")
-t = threading.Thread(target=startController)
-t.daemon = True
-t.start()
+p = Popen("bash -i ./start.sh " + str(py3_env) + " " + str(port) + " " + str(baud), shell=True)
+
+c = Popen("bash -i .start_controlador.sh " + str(py3_env))
 
 visao = Visao()
+
 try:
 	visao.wait_for_cmd()
+	from signal import SIGINT, SIGKILL
+	c.send_signal(SIGKILL)
 except Exception as e:
-	parent.shutdown()
+	pass
+while not rospy.is_shutdown():
+	sleep(0.5)
 
+p.send_signal(SIGINT)
 	

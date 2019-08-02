@@ -31,6 +31,7 @@ except Exception as e:
 	RASPBERRY = False
 from body_solver import Body
 
+
 RAD_TO_DEG = 180 / np.pi
 DEG_TO_RAD = np.pi / 180.
 
@@ -181,6 +182,8 @@ class Controlador():
 		self.RIGHT_ARM_PITCH = 15
 		self.RIGHT_ARM_YALL = 16
 		self.RIGHT_ARM_ROLL = 17
+
+		self.stop = False
 
 		self.RST_IMU_PIN = 18
 
@@ -467,7 +470,7 @@ class Controlador():
 		# perna direita (1) ou esquerda(0) no chão
 		self.perna = 0
 		self.rot_desvio = 0
-		while not rospy.is_shutdown():
+		while not rospy.get_param('stop',False) and not rospy.is_shutdown():
 			try:
 				#print ("%s GIMBAL_YALL:%.f  ROBO_YALL:%.2f  ANGULO PARA VIRAR:%.2f BOLA:%r"%(self.state, self.gimbal_yall, self.robo_yall, self.robo_yall_lock, self.visao_bola), flush=True)
 				#print (np.array(self.Rfoot_orientation).astype(np.int), np.array(self.Lfoot_orientation).astype(np.int))
@@ -568,6 +571,7 @@ class Controlador():
 				break
 			except Exception as e:
 				raise e
+
 
 	# Anda de lado para alinhar com o gol
 	def posiciona(self):
