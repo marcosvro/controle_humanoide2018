@@ -15,14 +15,10 @@ class Visao():
 		self.rosserial_process = None
 
 	def wait_for_cmd(self):
-		first = True
 		while not rospy.is_shutdown():
 			try:
 				info = [0]*3
-				if not first:
-					os.system("clear")
-				else:
-					first = False
+				
 				angulo = input("Informe o angulo vertical (-180, 180)!")
 				info[0] = angulo
 				angulo = input("Informe o angulo horizontal (-180, 180)!")
@@ -37,6 +33,8 @@ class Visao():
 				break
 			except Exception as e:
 				continue
+		rospy.set_param('shutdown', True)
+		print("Parando roscore...")
 
 if "__main__" == __name__:
 	visao = Visao()
