@@ -34,13 +34,172 @@ from body_solver import Body
 RAD_TO_DEG = 180 / np.pi
 DEG_TO_RAD = np.pi / 180.
 
-KP_CONST = 0.3
+RIGHT_ANKLE_ROLL = 0
+RIGHT_ANKLE_PITCH = 1
+RIGHT_KNEE = 2
+RIGHT_HIP_PITCH = 3
+RIGHT_HIP_ROLL = 4
+RIGHT_HIP_YALL = 5
+LEFT_ANKLE_ROLL = 6
+LEFT_ANKLE_PITCH = 7
+LEFT_KNEE = 8
+LEFT_HIP_PITCH = 9
+LEFT_HIP_ROLL = 10
+LEFT_HIP_YALL = 11
+LEFT_ARM_PITCH = 12
+LEFT_ARM_YALL = 13
+LEFT_ARM_ROLL = 14
+RIGHT_ARM_PITCH = 15
+RIGHT_ARM_YALL = 16
+RIGHT_ARM_ROLL = 17
 
+PARAM_SERVER_PREFIX = "/Bioloid/params/angles/calibration/"
+
+NO_CORRECTION_PATH = "noCorrection/"
+
+ANGLE_LIMIT_PATH = "angleLimit/"
+
+ANGLE_MIN_MAX_CORRECTION_PATH = "torque_limit/"
+
+STEP_TIME = "step_time"
+
+NUM_STATES = "num_states"
+
+GRAVITY_COMPENSATION_ENABLE = "gravity_compensation_enable"
+
+JOINT_TORQUE_CORRECTION_ENABLE = "torque_joint_correction_enable"
+
+IGNORE_JOINT_CORRECTION_TIME = "ignore_joint_correction"
+
+JOINTS_KP = "joints_kp"
+
+DISPLACEMENT_PATH = "displacement/"
+
+INERTIAL_FOOT_ENABLE = "inertial_foot_enable"
+
+JOINT_LIMIT_ENFORCEMENT_ENABLED = "limit_enforcement_enabled"
+
+JOINT_DIRECTION_MULTIPLIER = "joint_direction_multiplier"
+
+PELVES_Z_MAX_DISPLACEMENT = "pelves_z_max"
+
+PELVES_Y_MAX_DISPLACEMENT = "pelves_y_max"
+
+FOOT_Z_MAX_DISPLACEMENT = "foot_z_max"
+
+FOOT_X_MAX_DISPLACEMENT = "foot_x_max"
+
+MIN = "min"
+MAX = "max"
+
+PARAM_NAMES = [
+	'RIGHT_ANKLE_ROLL',
+	'RIGHT_ANKLE_PITCH',
+	'RIGHT_KNEE',
+	'RIGHT_HIP_PITCH',
+	'RIGHT_HIP_ROLL',
+	'RIGHT_HIP_YALL',
+	'LEFT_ANKLE_ROLL',
+	'LEFT_ANKLE_PITCH',
+	'LEFT_KNEE',
+	'LEFT_HIP_PITCH',
+	'LEFT_HIP_ROLL',
+	'LEFT_HIP_YALL',
+	'LEFT_ARM_PITCH',
+	'LEFT_ARM_YALL',
+	'LEFT_ARM_ROLL',
+	'RIGHT_ARM_PITCH',
+	'RIGHT_ARM_YALL',
+	'RIGHT_ARM_ROLL'
+]
 
 def sigmoid_deslocada(x, periodo):
 	return 1./(1.+math.exp(-(12./periodo)*(x-(periodo/2.))))
 
 class Controlador():
+
+	def update_params(self):
+		# atualiza os parâmetros a cada passo
+			# PARAMS_DICT = {
+				# joint: {
+				# 	NO_CORRECTION_PATH:{
+				# 		MIN: None,
+				# 		MAX: None
+				# 	},
+				# 	ANGLE_MIN_MAX_CORRECTION_PATH:{
+				#	 	MIN: None,
+				# 		MAX: None
+				# 	},
+				# 	ANGLE_LIMIT_PATH:{
+				# 		MIN: None,
+				# 		MAX: None
+				# 	},
+				#	JOINTS_KP: 0.3
+				# },
+				# DISPLACEMENT_PATH:{
+				#	FOOT_X_MAX_DISPLACEMENT,
+				#	FOOT_Z_MAX_DISPLACEMENT,
+				#	PELVES_Y_MAX_DISPLACEMENT,
+				#	PELVES_Z_MAX_DISPLACEMENT
+				# },
+				# JOINT_DIRECTION_MULTIPLIER: 1,
+				# STEP_TIME: 1.5,
+				# NUM_STATES: 125,
+				# GRAVITY_COMPENSATION_ENABLE: False,
+				# IGNORE_JOINT_CORRECTION_TIME: 0.1
+			# }
+		if self.t_state == 0 and not self.state == 'IDDLE':
+			readParams = rospy.get_param(PARAM_SERVER_PREFIX, None)
+			if readParams is not None:
+				#states
+				self.tempoPasso = readParams[STEP_TIME] if STEP_TIME in readParams else self.tempoPasso
+				self.nEstados = readParams[NUM_STATES] if NUM_STATES in readParams else self.tempoPasso
+				self.simTransRate = 1 / self.nEstados * self.tempoPasso
+				# displacement
+				if(DISPLACEMENT_PATH in readParams):
+					self.deslocamentoXpesMAX = readParams[DISPLACEMENT_PATH][FOOT_X_MAX_DISPLACEMENT] if FOOT_X_MAX_DISPLACEMENT in readParams[DISPLACEMENT_PATH] else self.deslocamentoXpesMAX
+					self.deslocamentoZpesMAX = readParams[DISPLACEMENT_PATH][FOOT_Z_MAX_DISPLACEMENT] if FOOT_Z_MAX_DISPLACEMENT in readParams[DISPLACEMENT_PATH] else self.deslocamentoZpesMAX
+					self.deslocamentoYpelvesMAX = readParams[DISPLACEMENT_PATH][PELVES_Y_MAX_DISPLACEMENT] if PELVES_Y_MAX_DISPLACEMENT in readParams[DISPLACEMENT_PATH] else self.deslocamentoYpelvesMAX
+					self.deslocamentoZpelvesMAX = readParams[DISPLACEMENT_PATH][PELVES_Z_MAX_DISPLACEMENT] if PELVES_Z_MAX_DISPLACEMENT in readParams[DISPLACEMENT_PATH] else self.deslocamentoZpelvesMAX
+				# gravity compensation
+				self.gravity_compensation_enable = readParams[GRAVITY_COMPENSATION_ENABLE] if GRAVITY_COMPENSATION_ENABLE in readParams else self.gravity_compensation_enable
+				self.time_ignore_GC = readParams[IGNORE_JOINT_CORRECTION_TIME] if IGNORE_JOINT_CORRECTION_TIME in readParams else self.time_ignore_GC
+				# limit enforcement flag
+				self.limit_enforcement_enabled = readParams[JOINT_LIMIT_ENFORCEMENT_ENABLED] if JOINT_LIMIT_ENFORCEMENT_ENABLED in readParams else self.limit_enforcement_enabled
+				# torque correction flag
+				self.torque_correction_enabled = readParams[JOINT_TORQUE_CORRECTION_ENABLE] if JOINT_TORQUE_CORRECTION_ENABLE in readParams else self.torque_correction_enabled
+				# inertial foot flag
+				self.inertial_foot_enable = readParams[INERTIAL_FOOT_ENABLE] if INERTIAL_FOOT_ENABLE in readParams else self.inertial_foot_enable
+				# joints params
+				if self.limit_enforcement_enabled:
+					for joint in PARAM_NAMES:
+						if joint in readParams:
+							aux = readParams[joint]
+							# limit enforcement
+							if ANGLE_LIMIT_PATH in aux:
+								self.JOINT_ANGLES_MIN_MAX = [
+									aux[ANGLE_LIMIT_PATH][MIN] if MIN in aux[ANGLE_LIMIT_PATH] else self.JOINT_ANGLES_MIN_MAX[joint][0],
+									aux[ANGLE_LIMIT_PATH][MAX] if MAX in aux[ANGLE_LIMIT_PATH] else self.JOINT_ANGLES_MIN_MAX[joint][1]
+								]
+							# joints kp
+							if JOINTS_KP in aux:
+								self.JOINTS_KP = aux[JOINTS_KP] if JOINTS_KP in aux else self.JOINTS_KP
+							# torque correction
+							if self.torque_correction_enabled and ANGLE_MIN_MAX_CORRECTION_PATH in aux:
+								self.JOINT_MIN_MAX_SUPPORTED_JOINT_TORQUES[joint] = [
+									aux[ANGLE_MIN_MAX_CORRECTION_PATH][MIN] if MIN in aux[ANGLE_MIN_MAX_CORRECTION_PATH] else self.JOINT_MIN_MAX_SUPPORTED_JOINT_TORQUES[joint][0],
+									aux[ANGLE_MIN_MAX_CORRECTION_PATH][MAX] if MAX in aux[ANGLE_MIN_MAX_CORRECTION_PATH] else self.JOINT_MIN_MAX_SUPPORTED_JOINT_TORQUES[joint][1]
+								]
+							# no correction
+							if NO_CORRECTION_PATH in aux:
+								self.JOINT_TORQUES_NO_CORRECTION_MIN_MAX = [
+									aux[NO_CORRECTION_PATH][MIN] if MIN in aux[NO_CORRECTION_PATH] else self.JOINT_TORQUES_NO_CORRECTION_MIN_MAX[joint][0],
+									aux[NO_CORRECTION_PATH][MAX] if MAX in aux[NO_CORRECTION_PATH] else self.JOINT_TORQUES_NO_CORRECTION_MIN_MAX[joint][1]
+								]
+							# joint direction correction
+							self.JOINT_DIRECTION_MULTIPLIERS[joint] = aux[JOINT_DIRECTION_MULTIPLIER] if JOINT_DIRECTION_MULTIPLIER in aux else self.JOINT_DIRECTION_MULTIPLIERS[joint]
+
+
 
 	def __init__(self,
 				simulador_enable=False,
@@ -54,14 +213,13 @@ class Controlador():
 				deslocamento_zpelves = 30.,
 				inertial_foot_enable = False,
 				gravity_compensation_enable = False,
-				step_mode=False):
+				torque_correction=False,
+				limit_enforcement=False):
 		if (robo_id == -1):
 			print("ERRO: ID do robo inválido")
 			exit()
 
-
 		self.simulador = simulador_enable
-		self.step_mode = step_mode
 		self.state = 'IDDLE'
 		self.time_id = time_id
 		self.robo_id = robo_id
@@ -163,25 +321,49 @@ class Controlador():
 		self.rst_imu_pin = 18
 
 		self.body = Body()
-		self.RIGHT_ANKLE_ROLL = 0
-		self.RIGHT_ANKLE_PITCH = 1
-		self.RIGHT_KNEE = 2
-		self.RIGHT_HIP_PITCH = 3
-		self.RIGHT_HIP_ROLL = 4
-		self.RIGHT_HIP_YALL = 5
-		self.LEFT_ANKLE_ROLL = 6
-		self.LEFT_ANKLE_PITCH = 7
-		self.LEFT_KNEE = 8
-		self.LEFT_HIP_PITCH = 9
-		self.LEFT_HIP_ROLL = 10
-		self.LEFT_HIP_YALL = 11
-		self.LEFT_ARM_PITCH = 12
-		self.LEFT_ARM_YALL = 13
-		self.LEFT_ARM_ROLL = 14
-		self.RIGHT_ARM_PITCH = 15
-		self.RIGHT_ARM_YALL = 16
-		self.RIGHT_ARM_ROLL = 17
 
+		self.JOINTS_KP = [1]*18
+		self.JOINT_DIRECTION_MULTIPLIERS = [1]* 18
+
+		# intervalo sem correção de torque(intervalo em que o torque é considerado insignificante)
+		self.JOINT_TORQUES_NO_CORRECTION_MIN_MAX = [[None, None]] * 18
+		# angulos mínimo e máximo que as juntas conseguem suportar
+		# np.pi (/ 180.0 / 10) * angulo
+		self.JOINT_ANGLES_MIN_MAX = [[None, None]] * 18
+		# torques mínimo e máximo que a junta consegue vencer com a correção
+		self.JOINT_MIN_MAX_SUPPORTED_JOINT_TORQUES = [[None, None]] * 18
+
+		# angulos máximos somados/subtraídos ao ângulo atual para tentar corrigir a folga
+		self.DEFAULT_JOINT_LOOSENESS_CONTROL_ANGLES = [
+			0,	# RIGHT_ANKLE_ROLL
+			0,	# RIGHT_ANKLE_PITCH
+			0,	# RIGHT_KNEE
+			0,	# RIGHT_HIP_PITCH
+			0,	# RIGHT_HIP_ROLL
+			0,	# RIGHT_HIP_YALL
+			0,	# LEFT_ANKLE_ROLL
+			0,	# LEFT_ANKLE_PITCH
+			0,	# LEFT_KNEE
+			0,	# LEFT_HIP_PITCH
+			0,	# LEFT_HIP_ROLL
+			0,	# LEFT_HIP_YALL
+			0,	# LEFT_ARM_PITCH
+			0,	# LEFT_ARM_YALL
+			0,	# LEFT_ARM_ROLL
+			0,	# RIGHT_ARM_PITCH
+			0,	# RIGHT_ARM_YALL
+			0	# RIGHT_ARM_ROLL
+		]
+
+		# (tempo_estado * nEstados) / tempo_passo
+		# atualizado a cada iteração
+		self.dif_estado = 0
+
+		# variavel auxiliar utilizada para evitar efetuar calculos repetidos durante um mesmo loop do controle
+		self.tanh = 0
+
+		self.torque_correction_enabled = torque_correction
+		self.limit_enforcement_enabled = limit_enforcement
 		self.RST_IMU_PIN = 18
 
 		self.state_encoder = {
@@ -294,6 +476,9 @@ class Controlador():
 					# mat.data[10] = -mat.data[10]
 
 					self.pub.publish(mat)
+					os.system("clear")
+					for idx, name in enumerate(PARAM_NAMES):
+						print(name, mat.data[idx])
 					rospy.sleep(self.simTransRate)
 		except Exception as e:
 			pass
@@ -434,18 +619,28 @@ class Controlador():
 		if not self.gravity_compensation_enable or (self.t_state < self.tempoPasso/2 and self.t_state < self.tempoPasso*self.time_ignore_GC) or (self.t_state >= self.tempoPasso/2 and self.t_state > self.tempoPasso*(1-self.time_ignore_GC)) or self.deslocamentoYpelves != self.deslocamentoYpelvesMAX or self.state is "IDDLE":
 			return
 
-		torques = self.body.get_torque_in_joint(self.perna,[3,5])
-
-		dQ = (np.array(torques)/KP_CONST)/15
-		#print(dQ[1], self.perna)
-
-		dQ *= math.sin(self.t_state*math.pi/self.tempoPasso)
+		# torques = self.body.get_torque_in_joint(self.perna, [3, 5])
+		# if perna: [RIGHT_KNEE, RIGHT_HIP_ROLL]
+		# else: [LEFT_KNEE, LEFT_HIP_ROLL]
 		if self.perna:
-			self.msg_to_micro[self.RIGHT_ANKLE_PITCH] += dQ[0]
-			self.msg_to_micro[self.RIGHT_HIP_ROLL] += (dQ[1]*-1)
+			knee, hip = RIGHT_KNEE, RIGHT_HIP_ROLL
 		else:
-			self.msg_to_micro[self.LEFT_KNEE] += dQ[0]
-			self.msg_to_micro[self.LEFT_HIP_ROLL] += dQ[1]
+			knee, hip = LEFT_KNEE, LEFT_HIP_ROLL
+
+		torques = self.torques[self.map_joints(knee)], self.torques[self.map_joints(hip)]
+
+		# 3 = LEFT_KNEE
+		# 5 = LEFT_HIP_ROLL
+		# 8 = RIGHT_HIP_ROLL
+		# 10 = RIGHT_KNEE
+		dKnee = torques[0] / self.JOINTS_KP[knee] * self.JOINT_DIRECTION_MULTIPLIERS[knee] * 10
+		dHip = torques[1] / self.JOINTS_KP[hip] * self.JOINT_DIRECTION_MULTIPLIERS[hip] * 10 * (1 - 2 * self.perna)
+		# print(dQ[1], self.perna)
+
+		dt = math.sin(self.t_state * math.pi / self.tempoPasso)
+
+		self.msg_to_micro[knee] += dKnee * dt
+		self.msg_to_micro[hip] += dHip * dt
 
 	def posiciona_robo(self):
 		if self.robo_yall > self.gimbal_yall:
@@ -467,10 +662,11 @@ class Controlador():
 		# perna direita (1) ou esquerda(0) no chão
 		self.perna = 0
 		self.rot_desvio = 0
-		while (True):
+		while not rospy.is_shutdown():
 			try:
-				#print ("%s GIMBAL_YALL:%.f  ROBO_YALL:%.2f  ANGULO PARA VIRAR:%.2f BOLA:%r"%(self.state, self.gimbal_yall, self.robo_yall, self.robo_yall_lock, self.visao_bola), flush=True)
-				#print (np.array(self.Rfoot_orientation).astype(np.int), np.array(self.Lfoot_orientation).astype(np.int))
+				self.update_params()
+				# print ("%s GIMBAL_YALL:%.f  ROBO_YALL:%.2f  ANGULO PARA VIRAR:%.2f BOLA:%r"%(self.state, self.gimbal_yall, self.robo_yall, self.robo_yall_lock, self.visao_bola), flush=True)
+				# print (np.array(self.Rfoot_orientation).astype(np.int), np.array(self.Lfoot_orientation).astype(np.int))
 				if RASPBERRY:
 					# só executa se o dispositivo que estiver rodando for a raspberry
 					if GPIO.input(self.ON_PIN):
@@ -556,8 +752,14 @@ class Controlador():
 				self.atualiza_fps()
 				self.chage_state()
 				self.atualiza_cinematica()
-				self.gravity_compensation()
-				#self.posiciona_gimbal()
+				if not self.state == 'IDDLE' and (self.torque_correction_enabled or self.gravity_compensation_enable or self.limit_enforcement_enabled):
+					self.torques = self.body.get_joint_torques(self.perna)
+					self.gravity_compensation()
+					self.torque_correction()
+					self.limit_enforcement()
+
+
+				# self.posiciona_gimbal()
 				self.posiciona_robo()
 				timer_main_loop += self.deltaTime
 				time.sleep(self.simTransRate)
@@ -865,7 +1067,7 @@ class Controlador():
 
 
 	def atualiza_cinematica(self):
-		x = (self.t_state*125)/self.tempoPasso
+		x = (self.t_state * self.nEstados)/self.tempoPasso
 		pelv_point, foot_point = self.getTragectoryPoint(x)
 		if self.perna:
 			#CINEMÁTICA INVERSA
@@ -966,7 +1168,9 @@ class Controlador():
 if __name__ == '__main__':
 	control = Controlador(time_id = 17,
 						robo_id = 0,
-						simulador_enable=False,
+						simulador_enable=True,
 						inertial_foot_enable=False,
-						gravity_compensation_enable=True)
+						gravity_compensation_enable=True,
+					    torque_correction=True,
+						limit_enforcement=True)
 	control.run()
