@@ -11,7 +11,7 @@ PARAM_SERVER_PREFIX = "/Bioloid/params/angles/calibration/"
 
 # NO_CORRECTION_PATH = "noCorrection/"
 
-ANGLE_LIMIT_PATH = "angleLimit/"
+ANGLE_LIMIT_PATH = "angleLimit"
 
 # ANGLE_MIN_MAX_CORRECTION_PATH = "torque_limit/"
 
@@ -27,7 +27,7 @@ GRAVITY_COMPENSATION_ENABLE = "gravity_compensation_enable"
 
 JOINTS_KP = "joints_kp"
 
-DISPLACEMENT_PATH = "displacement/"
+DISPLACEMENT_PATH = "displacement"
 
 INERTIAL_FOOT_ENABLE = "inertial_foot_enable"
 
@@ -72,61 +72,78 @@ STRIPPED_PARAM_NAMES = map(lambda x: x.strip(), PARAM_NAMES)
 PARAMS_DICT = {
     DISPLACEMENT_PATH:{
         FOOT_X_MAX_DISPLACEMENT: 1.5,
-        FOOT_Z_MAX_DISPLACEMENT: 2.0,
-        PELVES_Y_MAX_DISPLACEMENT: 1.4,
+        FOOT_Z_MAX_DISPLACEMENT: 3.0,
+        PELVES_Y_MAX_DISPLACEMENT: 2.,
         PELVES_Z_MAX_DISPLACEMENT: 30.
     },
-    JOINT_DIRECTION_MULTIPLIER: 1,
-    STEP_TIME: 1.5,
+    # JOINT_DIRECTION_MULTIPLIER: 1,
+    STEP_TIME: .3,
     NUM_STATES: 125,
     GRAVITY_COMPENSATION_ENABLE: False,
-    IGNORE_JOINT_CORRECTION_TIME: 0.1
+    # IGNORE_JOINT_CORRECTION_TIME: 0.1
 }
 
 for joint in STRIPPED_PARAM_NAMES:
     PARAMS_DICT[joint] = {
-        NO_CORRECTION_PATH:{
-            MIN: 0.,
-            MAX: 0.
-        },
-        ANGLE_MIN_MAX_CORRECTION_PATH:{
-            MIN: 0.,
-            MAX: 0.
-        },
+        # NO_CORRECTION_PATH:{
+        #     MIN: 0.,
+        #     MAX: 0.
+        # },
+        # ANGLE_MIN_MAX_CORRECTION_PATH:{
+        #     MIN: 0.,
+        #     MAX: 0.
+        # },
         ANGLE_LIMIT_PATH:{
             MIN: 0.,
             MAX: 0.
         },
-        JOINT_DIRECTION_MULTIPLIER: 1,
+        # JOINT_DIRECTION_MULTIPLIER: 1,
         JOINTS_KP: 0.3
     }
 
+PARAMS_LIST = []
+
+PARAM_TYPES = {}
+
 PARAMS_LIST = list()
 
-def param_helper(prepend_str, _dict):
+def param_helper(prepend_str, _dict, append=False):
     if type(_dict) is not dict:
-        value = rospy.get_param(prepend_str, _dict)
-        PARAMS_LIST.append([prepend_str, value, type(_dict)])
+        _type = type(_dict)
+        ex = False
+        try:
+            value = rospy.get_param(PARAM_SERVER_PREFIX + prepend_str)
+        except KeyError as e:
+            value = _dict
+            ex = True
+        if prepend_str not in PARAM_TYPES:
+            PARAM_TYPES[prepend_str] = _type if value is None else type(value)
+            PARAMS_LIST.append([prepend_str, value])
+        if ex:
+            rospy.set_param(PARAM_SERVER_PREFIX + "/" + prepend_str, PARAM_TYPES[prepend_str](value))
+        else:
+            if(prepend_str in PARAMS_LIST):
+                PARAMS_LIST[PARAMS_LIST.index(prepend_str)] = value
     else:
         for x, y in _dict.items():
-            param_helper(prepend_str + x + ('/' if not x.endswith('/') else ''), y)
+            param_helper(prepend_str + x + ('/' if type(y) is dict else ''), y, append=append)
     # print(json.dumps(_dict, indent=4, separators=(',',':')))
 
-param_helper('', PARAMS_DICT)
-
+param_helper('', PARAMS_DICT, append=True)
 class LoosenessCalibrator():
     def __init__(self):
         rospy.init_node("param_setter",anonymous=True)
         self.loop = True
         while (self.loop and not rospy.is_shutdown()):
-            readParams = rospy.get_param(PARAM_SERVER_PREFIX, None)
+            param_helper('', PARAMS_DICT)
+                
             os.system("clear")
             os.system("rm -f ./temp_params")
-            print("idx | PARÂMETRO                         | angulo atual")
+            print("idx | PARÂMETRO                         | valor atual")
             for x in enumerate(PARAMS_LIST):
                 idx, param_data = x
-                name, value, _type = param_data
-                os.system("echo \"" + name + " | " + str(value) + " | " + str(_type) + "\" >> ./temp_params")
+                name, value = param_data
+                os.system("echo \"" + name + " | " + str(value) + " | " + str(PARAM_TYPES[name]) + "\" >> ./temp_params")
                 print(idx, name, value)
             print("informe o indice e o valor desejado. exemplos: '0 0', '5 20.5'")
             print("digite q para sair")
@@ -140,12 +157,13 @@ class LoosenessCalibrator():
                     self.loop = False
                     break
                 index, value = read_data.split(" ",1)
-                value = PARAMS_LIST[idx][2](value)
-                PARAMS_LIST[idx][1] = value
                 index = int(index)
-                print(index, value)
-                rospy.set_param(PARAMS_LIST[idx][0], value)
+                value = PARAM_TYPES[PARAMS_LIST[index][0]](value)
+                PARAMS_LIST[index][1] = value
+                index = int(index)
+                rospy.set_param(PARAM_SERVER_PREFIX + PARAMS_LIST[index][0], value)
             except Exception as e:
+                print(e)
                 pass
             
 

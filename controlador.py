@@ -53,11 +53,11 @@ RIGHT_ARM_PITCH = 15
 RIGHT_ARM_YALL = 16
 RIGHT_ARM_ROLL = 17
 
-PARAM_SERVER_PREFIX = "/Bioloid/params/angles/calibration/"
+PARAM_SERVER_PREFIX = "/Bioloid/params/angles/calibration"
 
 # NO_CORRECTION_PATH = "noCorrection/"
 
-ANGLE_LIMIT_PATH = "angleLimit/"
+ANGLE_LIMIT_PATH = "angleLimit"
 
 # ANGLE_MIN_MAX_CORRECTION_PATH = "torque_limit/"
 
@@ -69,7 +69,7 @@ GRAVITY_COMPENSATION_ENABLE = "gravity_compensation_enable"
 
 # JOINT_TORQUE_CORRECTION_ENABLE = "torque_joint_correction_enable"
 
-# IGNORE_JOINT_CORRECTION_TIME = "ignore_joint_correction"
+IGNORE_JOINT_CORRECTION_TIME = "ignore_joint_correction"
 
 JOINTS_KP = "joints_kp"
 
@@ -152,24 +152,36 @@ class Controlador():
 			readParams = rospy.get_param(PARAM_SERVER_PREFIX, None)
 			if readParams is not None:
 				#states
-				self.tempoPasso = readParams[STEP_TIME] if STEP_TIME in readParams else self.tempoPasso
-				self.nEstados = readParams[NUM_STATES] if NUM_STATES in readParams else self.tempoPasso
+				if STEP_TIME in readParams:
+					self.tempoPasso = readParams[STEP_TIME]
+				if NUM_STATES in readParams:
+					self.nEstados = readParams[NUM_STATES]
 				self.simTransRate = 1 / self.nEstados * self.tempoPasso
 				# displacement
 				if(DISPLACEMENT_PATH in readParams):
-					self.deslocamentoXpesMAX = readParams[DISPLACEMENT_PATH][FOOT_X_MAX_DISPLACEMENT] if FOOT_X_MAX_DISPLACEMENT in readParams[DISPLACEMENT_PATH] else self.deslocamentoXpesMAX
-					self.deslocamentoZpesMAX = readParams[DISPLACEMENT_PATH][FOOT_Z_MAX_DISPLACEMENT] if FOOT_Z_MAX_DISPLACEMENT in readParams[DISPLACEMENT_PATH] else self.deslocamentoZpesMAX
-					self.deslocamentoYpelvesMAX = readParams[DISPLACEMENT_PATH][PELVES_Y_MAX_DISPLACEMENT] if PELVES_Y_MAX_DISPLACEMENT in readParams[DISPLACEMENT_PATH] else self.deslocamentoYpelvesMAX
-					self.deslocamentoZpelvesMAX = readParams[DISPLACEMENT_PATH][PELVES_Z_MAX_DISPLACEMENT] if PELVES_Z_MAX_DISPLACEMENT in readParams[DISPLACEMENT_PATH] else self.deslocamentoZpelvesMAX
+					aux = readParams[DISPLACEMENT_PATH]
+					if FOOT_X_MAX_DISPLACEMENT in aux:
+						self.deslocamentoXpesMAX = aux[FOOT_X_MAX_DISPLACEMENT] 
+					if FOOT_Z_MAX_DISPLACEMENT in aux:
+						self.deslocamentoZpesMAX = aux[FOOT_Z_MAX_DISPLACEMENT] 
+					if PELVES_Y_MAX_DISPLACEMENT in aux:
+						self.deslocamentoYpelvesMAX = aux[PELVES_Y_MAX_DISPLACEMENT] 
+					if PELVES_Z_MAX_DISPLACEMENT in aux:
+						self.deslocamentoZpelvesMAX = aux[PELVES_Z_MAX_DISPLACEMENT] 
 				# gravity compensation
-				self.gravity_compensation_enable = readParams[GRAVITY_COMPENSATION_ENABLE] if GRAVITY_COMPENSATION_ENABLE in readParams else self.gravity_compensation_enable
-				self.time_ignore_GC = readParams[IGNORE_JOINT_CORRECTION_TIME] if IGNORE_JOINT_CORRECTION_TIME in readParams else self.time_ignore_GC
+				if GRAVITY_COMPENSATION_ENABLE in readParams:
+					self.gravity_compensation_enable = readParams[GRAVITY_COMPENSATION_ENABLE]
+				if IGNORE_JOINT_CORRECTION_TIME in readParams:
+					self.time_ignore_GC = readParams[IGNORE_JOINT_CORRECTION_TIME] 
 				# limit enforcement flag
-				self.limit_enforcement_enabled = readParams[JOINT_LIMIT_ENFORCEMENT_ENABLED] if JOINT_LIMIT_ENFORCEMENT_ENABLED in readParams else self.limit_enforcement_enabled
+				if JOINT_LIMIT_ENFORCEMENT_ENABLED in readParams:
+					self.limit_enforcement_enabled = readParams[JOINT_LIMIT_ENFORCEMENT_ENABLED] 
 				# torque correction flag
-				self.torque_correction_enabled = readParams[JOINT_TORQUE_CORRECTION_ENABLE] if JOINT_TORQUE_CORRECTION_ENABLE in readParams else self.torque_correction_enabled
+				# if JOINT_TORQUE_CORRECTION_ENABLE in readParams:
+					# self.torque_correction_enabled = readParams[JOINT_TORQUE_CORRECTION_ENABLE] 
 				# inertial foot flag
-				self.inertial_foot_enable = readParams[INERTIAL_FOOT_ENABLE] if INERTIAL_FOOT_ENABLE in readParams else self.inertial_foot_enable
+				if INERTIAL_FOOT_ENABLE in readParams:
+					self.inertial_foot_enable = readParams[INERTIAL_FOOT_ENABLE]
 				# joints params
 				if self.limit_enforcement_enabled:
 					for joint in PARAM_NAMES:
@@ -185,19 +197,19 @@ class Controlador():
 							if JOINTS_KP in aux:
 								self.JOINTS_KP = aux[JOINTS_KP] if JOINTS_KP in aux else self.JOINTS_KP
 							# torque correction
-							if self.torque_correction_enabled and ANGLE_MIN_MAX_CORRECTION_PATH in aux:
-								self.JOINT_MIN_MAX_SUPPORTED_JOINT_TORQUES[joint] = [
-									aux[ANGLE_MIN_MAX_CORRECTION_PATH][MIN] if MIN in aux[ANGLE_MIN_MAX_CORRECTION_PATH] else self.JOINT_MIN_MAX_SUPPORTED_JOINT_TORQUES[joint][0],
-									aux[ANGLE_MIN_MAX_CORRECTION_PATH][MAX] if MAX in aux[ANGLE_MIN_MAX_CORRECTION_PATH] else self.JOINT_MIN_MAX_SUPPORTED_JOINT_TORQUES[joint][1]
-								]
+							# if self.torque_correction_enabled and ANGLE_MIN_MAX_CORRECTION_PATH in aux:
+							# 	self.JOINT_MIN_MAX_SUPPORTED_JOINT_TORQUES[joint] = [
+							# 		aux[ANGLE_MIN_MAX_CORRECTION_PATH][MIN] if MIN in aux[ANGLE_MIN_MAX_CORRECTION_PATH] else self.JOINT_MIN_MAX_SUPPORTED_JOINT_TORQUES[joint][0],
+							# 		aux[ANGLE_MIN_MAX_CORRECTION_PATH][MAX] if MAX in aux[ANGLE_MIN_MAX_CORRECTION_PATH] else self.JOINT_MIN_MAX_SUPPORTED_JOINT_TORQUES[joint][1]
+							# 	]
 							# no correction
-							if NO_CORRECTION_PATH in aux:
-								self.JOINT_TORQUES_NO_CORRECTION_MIN_MAX = [
-									aux[NO_CORRECTION_PATH][MIN] if MIN in aux[NO_CORRECTION_PATH] else self.JOINT_TORQUES_NO_CORRECTION_MIN_MAX[joint][0],
-									aux[NO_CORRECTION_PATH][MAX] if MAX in aux[NO_CORRECTION_PATH] else self.JOINT_TORQUES_NO_CORRECTION_MIN_MAX[joint][1]
-								]
+							# if NO_CORRECTION_PATH in aux:
+							# 	self.JOINT_TORQUES_NO_CORRECTION_MIN_MAX = [
+							# 		aux[NO_CORRECTION_PATH][MIN] if MIN in aux[NO_CORRECTION_PATH] else self.JOINT_TORQUES_NO_CORRECTION_MIN_MAX[joint][0],
+							# 		aux[NO_CORRECTION_PATH][MAX] if MAX in aux[NO_CORRECTION_PATH] else self.JOINT_TORQUES_NO_CORRECTION_MIN_MAX[joint][1]
+							# 	]
 							# joint direction correction
-							self.JOINT_DIRECTION_MULTIPLIERS[joint] = aux[JOINT_DIRECTION_MULTIPLIER] if JOINT_DIRECTION_MULTIPLIER in aux else self.JOINT_DIRECTION_MULTIPLIERS[joint]
+							# self.JOINT_DIRECTION_MULTIPLIERS[joint] = aux[JOINT_DIRECTION_MULTIPLIER] if JOINT_DIRECTION_MULTIPLIER in aux else self.JOINT_DIRECTION_MULTIPLIERS[joint]
 
 
 
@@ -620,17 +632,22 @@ class Controlador():
 			return
 
 		torques = self.body.get_torque_in_joint(self.perna,[3,5])
-
-		dQ = (np.array(torques)/KP_CONST)/15
+		# if perna: [RIGHT_KNEE, RIGHT_HIP_ROLL]
+		# else: [LEFT_KNEE, LEFT_HIP_ROLL]
+		
 		#print(dQ[1], self.perna)
 
-		dQ *= math.sin(self.t_state*math.pi/self.tempoPasso)
+		dT = math.sin(self.t_state*math.pi/self.tempoPasso)/15
 		if self.perna:
-			self.msg_to_micro[RIGHT_ANKLE_PITCH] += dQ[0]
-			self.msg_to_micro[RIGHT_HIP_ROLL] += (dQ[1]*-1)
+			dQK = torques[0] * dT * self.JOINTS_KP[RIGHT_KNEE]
+			dQH = torques[1] * dT * self.JOINTS_KP[RIGHT_HIP_ROLL]
+			self.msg_to_micro[RIGHT_ANKLE_PITCH] += dQK
+			self.msg_to_micro[RIGHT_HIP_ROLL] -= dQH
 		else:
-			self.msg_to_micro[LEFT_KNEE] += dQ[0]
-			self.msg_to_micro[LEFT_HIP_ROLL] += dQ[1]
+			dQK = torques[0] * dT * self.JOINTS_KP[LEFT_KNEE]
+			dQH = torques[1] * dT * self.JOINTS_KP[LEFT_HIP_ROLL]
+			self.msg_to_micro[LEFT_KNEE] += dQK
+			self.msg_to_micro[LEFT_HIP_ROLL] += dQH
 
 	def posiciona_robo(self):
 		if self.robo_yall > self.gimbal_yall:
@@ -759,6 +776,7 @@ class Controlador():
 				print("Main loop finalizado!!")
 				break
 			except Exception as e:
+				print(e)
 				raise e
 
 	# Anda de lado para alinhar com o gol
