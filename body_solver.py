@@ -135,6 +135,9 @@ class Body():
     # print (self.perna_esq_para_dir.com())
     # print (self.perna_dir_para_esq.com())
 
+    def get_joint_torques(self, perna_base):
+        return self.get_torque_in_joint(perna_base, range(1,13,1))
+
     # perna direita = 1, perna esquerda = 0
     # vec_bk é o vetor que indica a partir de qual junta o CoM está sendo calculado
     def get_torque_in_joint(self, perna_base, vec_bk=None):
