@@ -1149,9 +1149,117 @@ class Controlador():
 
 		self.msg_to_micro[:18] = data
 
+		if (self.simulador_ativado):
+			rospy.sleep(self.simTransRate)
 
+	def map_joints(self, joint_index):
+		if joint_index == LEFT_ANKLE_ROLL:
+			# return self.body.LEFT_ANKLE_ROLL
+			return 0
+		elif joint_index == LEFT_ANKLE_PITCH:
+			# return self.body.LEFT_ANKLE_PITCH
+			return 1
+		elif joint_index == LEFT_KNEE:
+			# return self.body.LEFT_KNEE_PITCH
+			return 2
+		elif joint_index == LEFT_HIP_PITCH:
+			# return self.body.LEFT_HIP_PITCH
+			return 3
+		elif joint_index == LEFT_HIP_ROLL:
+			# return self.body.LEFT_HIP_ROLL
+			return 4
+		elif joint_index == LEFT_HIP_YALL:
+			# return self.body.LEFT_HIP_YALL
+			return 5
+		elif joint_index == RIGHT_HIP_YALL:
+			# return self.body.RIGHT_HIP_YALL
+			return 6
+		elif joint_index == RIGHT_HIP_ROLL:
+			# return self.body.RIGHT_HIP_ROLL
+			return 7
+		elif joint_index == RIGHT_HIP_PITCH:
+			# return self.body.RIGHT_HIP_PITCH
+			return 8
+		elif joint_index == RIGHT_KNEE:
+			# return self.body.RIGHT_KNEE_PITCH
+			return 9
+		elif joint_index == RIGHT_ANKLE_PITCH:
+			# return self.body.RIGHT_ANKLE_PITCH
+			return 10
+		elif joint_index == RIGHT_ANKLE_ROLL:
+			# return self.body.RIGHT_ANKLE_ROLL
+			return 11
+		else:
+			return None
 
+	# Para cada parâmetro de correção de folga de junta:
+	# Novo ângulo =
+	# Ângulo calculado pelo controlador +
+	# Multiplicador de correção de folga * ângulo de correção de folga
+	# rospy.get_param: pega parâmetro do servidor de parâmetros.
+	# (param_name, default_value)
+	# Após calibrar corretamente os ângulos, os mesmos podem ser aplicados diretamente no código(setar DEFAULT_JOINT_LOOSENESS_CONTROL e remover o get_param)
+	def torque_correction(self):
+		if self.torque_correction_enabled:
+			# os.system("clear")
+			# print("junta", "torque")
+			for idx, name in enumerate(PARAM_NAMES, 0):
+				if(idx in [RIGHT_ANKLE_ROLL, RIGHT_HIP_ROLL, LEFT_ANKLE_ROLL, LEFT_HIP_ROLL]) and (self.t_state < self.tempoPasso / 2 and self.t_state < self.tempoPasso * self.time_ignore_GC) or (
+				self.t_state >= self.tempoPasso / 2 and self.t_state > self.tempoPasso * (
+				1 - self.time_ignore_GC)) or self.deslocamentoYpelves != self.deslocamentoYpelvesMAX or self.state is "IDDLE":
+					continue
+				if(self.gravity_compensation_enable):
+					if(idx == RIGHT_KNEE and self.perna):
+						continue
+					elif(idx == RIGHT_HIP_ROLL and self.perna):
+						continue
+					elif(idx == LEFT_KNEE and not self.perna):
+						continue
+					elif(idx == LEFT_HIP_ROLL and not self.perna):
+						continue
+				curr_body_joint = self.map_joints(idx)
+				curr_joint_torque = (0 if curr_body_joint is None else self.torques[curr_body_joint])
+				min_correction_torque, max_correction_torque = self.JOINT_TORQUES_NO_CORRECTION_MIN_MAX[idx]
+				min_supported_torque, max_supported_torque = self.JOINT_MIN_MAX_SUPPORTED_JOINT_TORQUES[idx]
+				joint_correction_param = rospy.get_param(PARAM_SERVER_PREFIX + PARAM_NAMES[idx], self.DEFAULT_JOINT_LOOSENESS_CONTROL_ANGLES[idx])
+				normalized_value = 0
+				# aplica uma correção para o torque atualmente exercido na junta
+				if (min_correction_torque is not None and max_correction_torque is not None):
+					if (curr_joint_torque < min_correction_torque):
+						normalized_value = normalize_interval(curr_joint_torque, min_supported_torque,
+															  min_correction_torque)
+						normalized_value = 0 if normalized_value is None else (1 - normalized_value)
+						self.msg_to_micro[idx] += normalized_value * joint_correction_param * self.JOINT_DIRECTION_MULTIPLIERS[idx]
+					elif (curr_joint_torque > max_correction_torque):
+						normalized_value = normalize_interval(curr_joint_torque, max_correction_torque,
+															  max_supported_torque)
+						normalized_value = 0 if normalized_value is None else normalized_value
+						self.msg_to_micro[idx] += normalized_value * joint_correction_param * self.JOINT_DIRECTION_MULTIPLIERS[idx]
+		# print(name, curr_joint_torque)
+		# if(self.msg_to_micro[idx] != curr_angle):
+		# print(name, self.msg_to_micro[idx], curr_angle)
 
+	def limit_enforcement(self):
+		# Verifica se os ângulos das juntas não ultrapassam os limites de ângulo possíveis para ser executados nas juntas
+		# Caso sejam ultrapassados, utiliza os valores máximos ou mímino definidos
+		# Tuplas (min,max) definidas na lista self.JOINT_ANGLES_MIN_MAX
+		if (self.limit_enforcement_enabled):
+			for idx, angles in enumerate(self.JOINT_ANGLES_MIN_MAX):
+				min_angle, max_angle = angles
+				if (min_angle is not None and self.msg_to_micro[idx] * self.JOINT_DIRECTION_MULTIPLIERS[idx] < min_angle):
+					self.msg_to_micro[idx] = min_angle
+				elif (max_angle is not None and self.msg_to_micro[idx] * self.JOINT_DIRECTION_MULTIPLIERS[idx] > max_angle):
+					self.msg_to_micro[idx] = max_angle
+
+def normalize_interval(value, min_val, max_val):
+	if(min_val is None or max_val is None):
+		return None
+	elif(value <= min_val):
+		return 0
+	elif(value >= max_val):
+		return 1
+	val_range = max_val - min_val
+	return (value - min_val)/val_range
 
 # '''
 # 	- descrição: Calcula posição do centro de massa em relação ao pé que está em contato com o chão
