@@ -9,11 +9,11 @@ RAD_TO_DEG_10 = 10.0* RAD_TO_DEG
 
 PARAM_SERVER_PREFIX = "/Bioloid/params/angles/calibration/"
 
-NO_CORRECTION_PATH = "noCorrection/"
+# NO_CORRECTION_PATH = "noCorrection/"
 
 ANGLE_LIMIT_PATH = "angleLimit/"
 
-ANGLE_MIN_MAX_CORRECTION_PATH = "torque_limit/"
+# ANGLE_MIN_MAX_CORRECTION_PATH = "torque_limit/"
 
 STEP_TIME = "step_time"
 
@@ -21,9 +21,9 @@ NUM_STATES = "num_states"
 
 GRAVITY_COMPENSATION_ENABLE = "gravity_compensation_enable"
 
-JOINT_TORQUE_CORRECTION_ENABLE = "torque_joint_correction_enable"
+# JOINT_TORQUE_CORRECTION_ENABLE = "torque_joint_correction_enable"
 
-IGNORE_JOINT_CORRECTION_TIME = "ignore_joint_correction"
+# IGNORE_JOINT_CORRECTION_TIME = "ignore_joint_correction"
 
 JOINTS_KP = "joints_kp"
 
@@ -33,7 +33,7 @@ INERTIAL_FOOT_ENABLE = "inertial_foot_enable"
 
 JOINT_LIMIT_ENFORCEMENT_ENABLED = "limit_enforcement_enabled"
 
-JOINT_DIRECTION_MULTIPLIER = "joint_direction_multiplier"
+# JOINT_DIRECTION_MULTIPLIER = "joint_direction_multiplier"
 
 PELVES_Z_MAX_DISPLACEMENT = "pelves_z_max"
 
@@ -100,7 +100,6 @@ for joint in STRIPPED_PARAM_NAMES:
         JOINT_DIRECTION_MULTIPLIER: 1,
         JOINTS_KP: 0.3
     }
-PARAMS_DICT['RIGHT_HIP_ROLL'][JOINT_DIRECTION_MULTIPLIER] = -1
 
 PARAMS_LIST = list()
 

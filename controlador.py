@@ -476,9 +476,9 @@ class Controlador():
 					# mat.data[10] = -mat.data[10]
 
 					self.pub.publish(mat)
-					os.system("clear")
-					for idx, name in enumerate(PARAM_NAMES):
-						print(name, mat.data[idx])
+					# os.system("clear")
+					# for idx, name in enumerate(PARAM_NAMES):
+						# print(name, mat.data[idx])
 					rospy.sleep(self.simTransRate)
 		except Exception as e:
 			pass
@@ -497,8 +497,8 @@ class Controlador():
 
 				mat.data[4] = -mat.data[4]
 
-				mat.data[self.RIGHT_HIP_PITCH] += 150
-				mat.data[self.LEFT_HIP_PITCH] += 150
+				mat.data[RIGHT_HIP_PITCH] += 150
+				mat.data[LEFT_HIP_PITCH] += 150
 
 				self.pub.publish(mat)
 				rospy.sleep(self.simTransRate)
@@ -1218,23 +1218,25 @@ class Controlador():
 					elif(idx == LEFT_HIP_ROLL and not self.perna):
 						continue
 				curr_body_joint = self.map_joints(idx)
-				curr_joint_torque = (0 if curr_body_joint is None else self.torques[curr_body_joint])
+				if(curr_body_joint is None):
+					continue
+				curr_joint_torque =  self.torques[curr_body_joint]
 				min_correction_torque, max_correction_torque = self.JOINT_TORQUES_NO_CORRECTION_MIN_MAX[idx]
 				min_supported_torque, max_supported_torque = self.JOINT_MIN_MAX_SUPPORTED_JOINT_TORQUES[idx]
 				joint_correction_param = rospy.get_param(PARAM_SERVER_PREFIX + PARAM_NAMES[idx], self.DEFAULT_JOINT_LOOSENESS_CONTROL_ANGLES[idx])
-				normalized_value = 0
+				normalized_value = 0.
 				# aplica uma correção para o torque atualmente exercido na junta
-				if (min_correction_torque is not None and max_correction_torque is not None):
+				if (min_correction_torque is not None and max_correction_torque is not None and min_supported_torque is not None and max_supported_torque is not None):
 					if (curr_joint_torque < min_correction_torque):
 						normalized_value = normalize_interval(curr_joint_torque, min_supported_torque,
-															  min_correction_torque)
-						normalized_value = 0 if normalized_value is None else (1 - normalized_value)
+															min_correction_torque)
+						normalized_value = 0. if normalized_value is None else (1. - normalized_value)
 						self.msg_to_micro[idx] += normalized_value * joint_correction_param * self.JOINT_DIRECTION_MULTIPLIERS[idx]
 					elif (curr_joint_torque > max_correction_torque):
 						normalized_value = normalize_interval(curr_joint_torque, max_correction_torque,
-															  max_supported_torque)
-						normalized_value = 0 if normalized_value is None else normalized_value
-						self.msg_to_micro[idx] += normalized_value * joint_correction_param * self.JOINT_DIRECTION_MULTIPLIERS[idx]
+															max_supported_torque)
+						normalized_value = 0. if normalized_value is None else normalized_value
+						self.msg_to_micro[idx] -= normalized_value * joint_correction_param * self.JOINT_DIRECTION_MULTIPLIERS[idx]
 		# print(name, curr_joint_torque)
 		# if(self.msg_to_micro[idx] != curr_angle):
 		# print(name, self.msg_to_micro[idx], curr_angle)
@@ -1279,6 +1281,6 @@ if __name__ == '__main__':
 						simulador_enable=True,
 						inertial_foot_enable=False,
 						gravity_compensation_enable=True,
-					    torque_correction=True,
-						limit_enforcement=True)
+						torque_correction=False,
+						limit_enforcement=False)
 	control.run()
