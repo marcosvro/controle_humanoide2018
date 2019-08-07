@@ -55,11 +55,11 @@ RIGHT_ARM_ROLL = 17
 
 PARAM_SERVER_PREFIX = "/Bioloid/params/angles/calibration/"
 
-NO_CORRECTION_PATH = "noCorrection/"
+# NO_CORRECTION_PATH = "noCorrection/"
 
 ANGLE_LIMIT_PATH = "angleLimit/"
 
-ANGLE_MIN_MAX_CORRECTION_PATH = "torque_limit/"
+# ANGLE_MIN_MAX_CORRECTION_PATH = "torque_limit/"
 
 STEP_TIME = "step_time"
 
@@ -67,9 +67,9 @@ NUM_STATES = "num_states"
 
 GRAVITY_COMPENSATION_ENABLE = "gravity_compensation_enable"
 
-JOINT_TORQUE_CORRECTION_ENABLE = "torque_joint_correction_enable"
+# JOINT_TORQUE_CORRECTION_ENABLE = "torque_joint_correction_enable"
 
-IGNORE_JOINT_CORRECTION_TIME = "ignore_joint_correction"
+# IGNORE_JOINT_CORRECTION_TIME = "ignore_joint_correction"
 
 JOINTS_KP = "joints_kp"
 
@@ -79,7 +79,7 @@ INERTIAL_FOOT_ENABLE = "inertial_foot_enable"
 
 JOINT_LIMIT_ENFORCEMENT_ENABLED = "limit_enforcement_enabled"
 
-JOINT_DIRECTION_MULTIPLIER = "joint_direction_multiplier"
+# JOINT_DIRECTION_MULTIPLIER = "joint_direction_multiplier"
 
 PELVES_Z_MAX_DISPLACEMENT = "pelves_z_max"
 
@@ -619,28 +619,18 @@ class Controlador():
 		if not self.gravity_compensation_enable or (self.t_state < self.tempoPasso/2 and self.t_state < self.tempoPasso*self.time_ignore_GC) or (self.t_state >= self.tempoPasso/2 and self.t_state > self.tempoPasso*(1-self.time_ignore_GC)) or self.deslocamentoYpelves != self.deslocamentoYpelvesMAX or self.state is "IDDLE":
 			return
 
-		# torques = self.body.get_torque_in_joint(self.perna, [3, 5])
-		# if perna: [RIGHT_KNEE, RIGHT_HIP_ROLL]
-		# else: [LEFT_KNEE, LEFT_HIP_ROLL]
+		torques = self.body.get_torque_in_joint(self.perna,[3,5])
+
+		dQ = (np.array(torques)/KP_CONST)/15
+		#print(dQ[1], self.perna)
+
+		dQ *= math.sin(self.t_state*math.pi/self.tempoPasso)
 		if self.perna:
-			knee, hip = RIGHT_KNEE, RIGHT_HIP_ROLL
+			self.msg_to_micro[RIGHT_ANKLE_PITCH] += dQ[0]
+			self.msg_to_micro[RIGHT_HIP_ROLL] += (dQ[1]*-1)
 		else:
-			knee, hip = LEFT_KNEE, LEFT_HIP_ROLL
-
-		torques = self.torques[self.map_joints(knee)], self.torques[self.map_joints(hip)]
-
-		# 3 = LEFT_KNEE
-		# 5 = LEFT_HIP_ROLL
-		# 8 = RIGHT_HIP_ROLL
-		# 10 = RIGHT_KNEE
-		dKnee = torques[0] / self.JOINTS_KP[knee] * self.JOINT_DIRECTION_MULTIPLIERS[knee] * 10
-		dHip = torques[1] / self.JOINTS_KP[hip] * self.JOINT_DIRECTION_MULTIPLIERS[hip] * 10 * (1 - 2 * self.perna)
-		# print(dQ[1], self.perna)
-
-		dt = math.sin(self.t_state * math.pi / self.tempoPasso)
-
-		self.msg_to_micro[knee] += dKnee * dt
-		self.msg_to_micro[hip] += dHip * dt
+			self.msg_to_micro[LEFT_KNEE] += dQ[0]
+			self.msg_to_micro[LEFT_HIP_ROLL] += dQ[1]
 
 	def posiciona_robo(self):
 		if self.robo_yall > self.gimbal_yall:
@@ -755,7 +745,7 @@ class Controlador():
 				if not self.state == 'IDDLE' and (self.torque_correction_enabled or self.gravity_compensation_enable or self.limit_enforcement_enabled):
 					self.torques = self.body.get_joint_torques(self.perna)
 					self.gravity_compensation()
-					self.torque_correction()
+					# self.torque_correction()
 					self.limit_enforcement()
 
 
