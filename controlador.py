@@ -67,13 +67,15 @@ NUM_STATES = "num_states"
 
 GRAVITY_COMPENSATION_ENABLE = "gravity_compensation_enable"
 
+INCLINATION_OFFSET = "inclination_offset"
+
 # JOINT_TORQUE_CORRECTION_ENABLE = "torque_joint_correction_enable"
 
 IGNORE_JOINT_CORRECTION_TIME = "ignore_joint_correction"
 
 JOINTS_KP = "joints_kp"
 
-DISPLACEMENT_PATH = "displacement/"
+DISPLACEMENT_PATH = "displacement"
 
 INERTIAL_FOOT_ENABLE = "inertial_foot_enable"
 
@@ -148,40 +150,59 @@ class Controlador():
 				# GRAVITY_COMPENSATION_ENABLE: False,
 				# IGNORE_JOINT_CORRECTION_TIME: 0.1
 			# }
+
 		if self.t_state == 0 and not self.state == 'IDDLE':
 			readParams = rospy.get_param(PARAM_SERVER_PREFIX, None)
 			if readParams is not None:
 				#states
+				aux = False
 				if STEP_TIME in readParams:
+					aux = True
 					self.tempoPasso = readParams[STEP_TIME]
+					# os.system("echo \"" + str(("Tempo_Passo", self.tempoPasso)) + "\" >> ./read_params")
 				if NUM_STATES in readParams:
+					aux = True
 					self.nEstados = readParams[NUM_STATES]
-				self.simTransRate = 1 / self.nEstados * self.tempoPasso
+					# os.system("echo \"" + str(("nEstados", self.nEstados)) + "\" >> ./read_params")
+				if aux: 
+					self.simTransRate = 1 / self.nEstados * self.tempoPasso
+					# os.system("echo \"" + str(("simTransRate", self.simTransRate)) + "\" >> ./read_params")
 				# displacement
 				if(DISPLACEMENT_PATH in readParams):
 					aux = readParams[DISPLACEMENT_PATH]
 					if FOOT_X_MAX_DISPLACEMENT in aux:
 						self.deslocamentoXpesMAX = aux[FOOT_X_MAX_DISPLACEMENT] 
+						# os.system("echo \"" + str(("deslocamentoXpesMAX", self.deslocamentoXpesMAX)) + "\" >> ./read_params")
 					if FOOT_Z_MAX_DISPLACEMENT in aux:
-						self.deslocamentoZpesMAX = aux[FOOT_Z_MAX_DISPLACEMENT] 
+						self.deslocamentoZpesMAX = aux[FOOT_Z_MAX_DISPLACEMENT]
+						# os.system("echo \"" + str(("deslocamentoZpesMAX", self.deslocamentoZpesMAX))  + "\" >> ./read_params")
 					if PELVES_Y_MAX_DISPLACEMENT in aux:
-						self.deslocamentoYpelvesMAX = aux[PELVES_Y_MAX_DISPLACEMENT] 
+						self.deslocamentoYpelvesMAX = aux[PELVES_Y_MAX_DISPLACEMENT]
+						# os.system("echo \"" + str(("deslocamentoYpelvesMAX", self.deslocamentoYpelvesMAX))  + "\" >> ./read_params")
 					if PELVES_Z_MAX_DISPLACEMENT in aux:
-						self.deslocamentoZpelvesMAX = aux[PELVES_Z_MAX_DISPLACEMENT] 
+						self.deslocamentoZpelvesMAX = aux[PELVES_Z_MAX_DISPLACEMENT]
+						# os.system("echo \"" + str(("deslocamentoZpelvesMAX", self.deslocamentoZpelvesMAX))  + "\" >> ./read_params")
 				# gravity compensation
 				if GRAVITY_COMPENSATION_ENABLE in readParams:
 					self.gravity_compensation_enable = readParams[GRAVITY_COMPENSATION_ENABLE]
+					# os.system("echo \"" + str(("gravity_compensation_enable", self.gravity_compensation_enable)) + "\" >> ./read_params")
+				if INCLINATION_OFFSET in readParams:
+					self.INCLINATION_OFFSET = readParams[INCLINATION_OFFSET]
+					# os.system("echo \"" + str(("INCLINATION_OFFSET", self.INCLINATION_OFFSET)) + "\" >> ./read_params")
 				if IGNORE_JOINT_CORRECTION_TIME in readParams:
 					self.time_ignore_GC = readParams[IGNORE_JOINT_CORRECTION_TIME] 
+					# os.system("echo \"" + str(("time_ignore_GC", self.time_ignore_GC)) + "\" >> ./read_params")
 				# limit enforcement flag
 				if JOINT_LIMIT_ENFORCEMENT_ENABLED in readParams:
 					self.limit_enforcement_enabled = readParams[JOINT_LIMIT_ENFORCEMENT_ENABLED] 
+					# os.system("echo \"" + str(("limit_enforcement_enabled", self.limit_enforcement_enabled)) + "\" >> ./read_params")
 				# torque correction flag
 				# if JOINT_TORQUE_CORRECTION_ENABLE in readParams:
 					# self.torque_correction_enabled = readParams[JOINT_TORQUE_CORRECTION_ENABLE] 
 				# inertial foot flag
 				if INERTIAL_FOOT_ENABLE in readParams:
 					self.inertial_foot_enable = readParams[INERTIAL_FOOT_ENABLE]
+					# os.system("echo \"" + str(("inertial_foot_enable", self.inertial_foot_enable)) + "\" >> ./read_params")
 				# joints params
 				if self.limit_enforcement_enabled:
 					for joint in PARAM_NAMES:
@@ -193,9 +214,11 @@ class Controlador():
 									aux[ANGLE_LIMIT_PATH][MIN] if MIN in aux[ANGLE_LIMIT_PATH] else self.JOINT_ANGLES_MIN_MAX[joint][0],
 									aux[ANGLE_LIMIT_PATH][MAX] if MAX in aux[ANGLE_LIMIT_PATH] else self.JOINT_ANGLES_MIN_MAX[joint][1]
 								]
+								# os.system("echo \"" + str((joint + '/' + "JOINT_ANGLES_MIN_MAX", self.JOINT_ANGLES_MIN_MAX[joint])) + "\" >> ./read_params")
 							# joints kp
 							if JOINTS_KP in aux:
-								self.JOINTS_KP = aux[JOINTS_KP] if JOINTS_KP in aux else self.JOINTS_KP
+								self.JOINTS_KP[joint] = aux[JOINTS_KP] if JOINTS_KP in aux else self.JOINTS_KP
+								# os.system("echo \"" + str((joint + '/' + "JOINTS_KP", self.JOINTS_KP[joint])) + "\" >> ./read_params")
 							# torque correction
 							# if self.torque_correction_enabled and ANGLE_MIN_MAX_CORRECTION_PATH in aux:
 							# 	self.JOINT_MIN_MAX_SUPPORTED_JOINT_TORQUES[joint] = [
@@ -210,7 +233,6 @@ class Controlador():
 							# 	]
 							# joint direction correction
 							# self.JOINT_DIRECTION_MULTIPLIERS[joint] = aux[JOINT_DIRECTION_MULTIPLIER] if JOINT_DIRECTION_MULTIPLIER in aux else self.JOINT_DIRECTION_MULTIPLIERS[joint]
-
 
 
 	def __init__(self,
@@ -326,6 +348,7 @@ class Controlador():
 		self.timerMovimentacao = 0
 
 		self.rotDesvio = 0
+		self.INCLINATION_OFFSET = 80
 
 		self.activate = True
 		self.caiu = False
@@ -509,8 +532,8 @@ class Controlador():
 
 				mat.data[4] = -mat.data[4]
 
-				mat.data[RIGHT_HIP_PITCH] += 150
-				mat.data[LEFT_HIP_PITCH] += 150
+				mat.data[RIGHT_HIP_PITCH] += self.INCLINATION_OFFSET
+				mat.data[LEFT_HIP_PITCH] += self.INCLINATION_OFFSET
 
 				self.pub.publish(mat)
 				rospy.sleep(self.simTransRate)

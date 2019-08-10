@@ -21,6 +21,8 @@ NUM_STATES = "num_states"
 
 GRAVITY_COMPENSATION_ENABLE = "gravity_compensation_enable"
 
+INCLINATION_OFFSET = "inclination_offset"
+
 # JOINT_TORQUE_CORRECTION_ENABLE = "torque_joint_correction_enable"
 
 # IGNORE_JOINT_CORRECTION_TIME = "ignore_joint_correction"
@@ -79,7 +81,8 @@ PARAMS_DICT = {
     # JOINT_DIRECTION_MULTIPLIER: 1,
     STEP_TIME: .3,
     NUM_STATES: 125,
-    GRAVITY_COMPENSATION_ENABLE: False,
+    GRAVITY_COMPENSATION_ENABLE: True,
+    INCLINATION_OFFSET: 80
     # IGNORE_JOINT_CORRECTION_TIME: 0.1
 }
 
