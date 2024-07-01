@@ -1,4 +1,8 @@
-pyserial-3.4
-numpy-1.16.3
+pyserial==3.4
+numpy<2
+autograd
 construct==2.5.3
-tinyik-1.2.0
+tinyik==1.2.0
+tensorboardX
+pandas
+matplotlib

@@ -1,23 +1,20 @@
 # -*- coding:utf-8 -*-
-import socket
 import threading
 import time
 import os
 import numpy as np
-from functools import reduce
-import struct
 import csv
 try:
 	from std_msgs.msg import Float32MultiArray
 except Exception as e:
-	pass
+	print("Falha ao importar a bibliotera 'std_msgs.msg'!")
 try:
-	import rospy
+	import rclpy
+	from rclpy.node import Node
 except Exception as e:
 	print("Falha ao importar a bibliotera 'rospy'!")
 import math
 try:
-	from Adafruit_BNO055 import BNO055
 	import Adafruit_GPIO as AGPIO
 	gpio = AGPIO.get_platform_gpio()
 except Exception as e:
@@ -216,7 +213,7 @@ class Controlador():
 		self.dist_em_x = 0
 
 		porta = 19700
-		os.system("~/vrep/vrep.sh -gREMOTEAPISERVERSERVICE_"+str(porta)+"_FALSE_FALSE ~/Documentos/temp/controle_humanoide2018/teste_09_03.ttt&")
+		os.system("bash /home/marcos/Documents/CoppeliaSim_Edu_V4_7_0_rev2_Ubuntu22_04/coppeliaSim.sh -gREMOTEAPISERVERSERVICE_"+str(porta)+"_FALSE_FALSE ~/Documents/dev/controle_humanoide2018/teste_09_03.ttt&")
 		time.sleep(20)
 		self.clientID=vrep.simxStart('127.0.0.1',porta,True,True,5000,5) # Connect to V-REP
 
@@ -234,26 +231,32 @@ class Controlador():
 	def inicia_modulo_simulador(self):
 		#INICIA PUBLISHER PARA ENVIAR POSIÇÕES DOS MOTORES
 		print("Iniciando ROS node para execucao do simulador..")
-		rospy.init_node('controller', anonymous=True)
-		self.pub = rospy.Publisher('Bioloid/joint_pos', Float32MultiArray, queue_size=1)
-		self.rate = rospy.Rate(self.tempoPasso/self.nEstados)
-		t = threading.Thread(target=self.envia_para_simulador)
-		t.daemon = True
-		t.start()
+
+		rclpy.init()
+		node = Node('controller')
+
+		self.pub = node.create_publisher(Float32MultiArray, 'Bioloid/joint_pos', 1)
+		self.rate = node.create_rate(1/(self.tempoPasso/self.nEstados))
+		#self.rate = rclpy.Rate(self.tempoPasso/self.nEstados)
+		self.spin_t = threading.Thread(target=rclpy.spin, args=(node, ), daemon=True)
+		self.spin_t.start()
+		self.sim_t = threading.Thread(target=self.envia_para_simulador)
+		self.sim_t.daemon = True
+		self.sim_t.start()
 
 		#INICIA SUBSCRIBER PARA RECEBER DADOS DOS SENSORES INERCIAIS DOS PÉS
-		rospy.Subscriber("/vrep_ros_interface/Bioloid/foot_inertial_sensor", Float32MultiArray, self.foot_inertial_callback)
+		node.create_subscription(Float32MultiArray, "/vrep_ros_interface/Bioloid/foot_inertial_sensor", self.foot_inertial_callback, 1)
 
 		#INICIA SUBSCRIBER PARA RECEBER DADOS DOS SENSORES DE PRESSÃO DOS PÉS
-		rospy.Subscriber("/vrep_ros_interface/Bioloid/foot_pressure_sensor", Float32MultiArray, self.foot_pressure_callback)
+		node.create_subscription(Float32MultiArray, "/vrep_ros_interface/Bioloid/foot_pressure_sensor", self.foot_pressure_callback, 1)
 
 		#INICIA SUBSCRIBER PARA RECEBER DADOS DO SENSOR IMU DO ROBÔ
-		rospy.Subscriber("/vrep_ros_interface/Bioloid/robot_inertial_sensor", Float32MultiArray, self.robot_inertial_callback)
+		node.create_subscription(Float32MultiArray, "/vrep_ros_interface/Bioloid/robot_inertial_sensor", self.robot_inertial_callback, 1)
 
 		#INICIA SUBSCRIBER PARA RECEBER COMANDOS DA VISÃO
-		rospy.Subscriber("/Bioloid/visao_cmd", Float32MultiArray, self.visao_cmd_callback)
+		node.create_subscription(Float32MultiArray, "/Bioloid/visao_cmd", self.visao_cmd_callback, 1)
 
-		rospy.Subscriber("/vrep_ros_interface/Bioloid/robot_position", Vector3, self.robot_position_callback)
+		node.create_subscription(Vector3, "/vrep_ros_interface/Bioloid/robot_position", self.robot_position_callback, 1)
 
 
 	def atualiza_fps(self):
@@ -293,18 +296,18 @@ class Controlador():
 			# mat.data[17]  = Right Arm Roll
 			mat = Float32MultiArray()
 			if self.simulador_ativado:
-				while not rospy.is_shutdown():
-					mat.data = self.msg_to_micro[:18]
+				while rclpy.ok():
+					mat.data = np.array(self.msg_to_micro[:18]).astype(np.float32).tolist()
 
 					# mat.data[10] = -mat.data[10] # quadril esquerdo ROLL
 					mat.data[0] = -mat.data[0] #calcanhar direito ROLL
 
 					mat.data[4] = -mat.data[4]
 					# mat.data[10] = -mat.data[10]
-
 					self.pub.publish(mat)
-					rospy.sleep(self.simTransRate)
+					self.rate.sleep()
 		except Exception as e:
+			print(e)
 			pass
 	# '''
 	# 	- descrição: função que recebe informações de onde está a bola,
@@ -384,19 +387,19 @@ class Controlador():
 		self.dist_em_x = vetor.x
 
 	def classifica_estado(self):
-		if self.state is 'IDDLE':
+		if self.state == 'IDDLE':
 			if self.turn90:
 				return 'MARCH'
 			elif self.visao_bola:
 				return 'MARCH'
 			else:
 				return -1
-		elif self.state is 'TURN90':
+		elif self.state == 'TURN90':
 			if abs(self.robo_yall_lock) <= self.min_yall:
 				return 'MARCH'
 			else:
 				return -1
-		elif self.state is 'MARCH':
+		elif self.state == 'MARCH':
 			if self.turn90:
 				return 'TURN90'
 			elif not self.visao_bola:
@@ -407,13 +410,13 @@ class Controlador():
 				return 'WALK'
 			else:
 				return -1
-		elif self.state is 'WALK':
+		elif self.state == 'WALK':
 			return -1
 			if not self.visao_bola or abs(self.robo_yall_lock) > self.max_yall or self.robo_pitch_lock <= -45:
 				return 'MARCH'
 			else:
 				return -1
-		elif self.state is 'TURN':
+		elif self.state == 'TURN':
 			if not self.visao_bola or abs(self.robo_yall_lock) < self.min_yall:
 				return 'MARCH'
 			else:
@@ -424,7 +427,7 @@ class Controlador():
 
 	def gravity_compensation(self):
 		#return
-		if not self.gravity_compensation_enable or (self.t_state < self.tempoPasso/2 and self.t_state < self.tempoPasso*self.time_ignore_GC) or (self.t_state >= self.tempoPasso/2 and self.t_state > self.tempoPasso*(1-self.time_ignore_GC)) or self.deslocamentoYpelves != self.deslocamentoYpelvesMAX or self.state is "IDDLE":
+		if not self.gravity_compensation_enable or (self.t_state < self.tempoPasso/2 and self.t_state < self.tempoPasso*self.time_ignore_GC) or (self.t_state >= self.tempoPasso/2 and self.t_state > self.tempoPasso*(1-self.time_ignore_GC)) or self.deslocamentoYpelves != self.deslocamentoYpelvesMAX or self.state == "IDDLE":
 			return
 
 		torques = self.body.get_torque_in_joint(self.perna,[3,5])
@@ -487,7 +490,7 @@ class Controlador():
 
 				if time.time() - self.tempo_anterior > 30:
 					self.state = 'FALLEN'
-				if (self.state is 'FALLEN'):
+				if (self.state == 'FALLEN'):
 					if (self.cont_samples <= 40):
 						duracao = time.time()-self.tempo_anterior
 						print("salvando dados da simulação %i" % self.cont_samples)
@@ -602,7 +605,7 @@ class Controlador():
 					self.cont_samples += 1
 					#if not self.interpolando:
 					#	self.levanta()
-				elif self.state is 'MARCH':
+				elif self.state == 'MARCH':
 					if self.deslocamentoYpelves != self.deslocamentoYpelvesMAX:
 						self.marchar()
 					elif self.deslocamentoXpes != 0:
@@ -611,7 +614,7 @@ class Controlador():
 						novo_estado = self.classifica_estado()
 						if novo_estado != -1:
 							self.state = novo_estado
-				elif self.state is 'IDDLE':
+				elif self.state == 'IDDLE':
 					if self.rota_dir != 0 or self.rota_esq != 0:
 						self.para_de_virar()
 					elif self.deslocamentoXpes != 0:
@@ -623,7 +626,7 @@ class Controlador():
 							novo_estado = self.classifica_estado()
 							if novo_estado != -1:
 								self.state = novo_estado
-				elif self.state is 'WALK':
+				elif self.state == 'WALK':
 					if self.deslocamentoYpelves != self.deslocamentoYpelvesMAX:
 						self.marchar()
 					if self.deslocamentoXpes < self.deslocamentoXpesMAX:
@@ -632,7 +635,7 @@ class Controlador():
 						novo_estado = self.classifica_estado()
 						if novo_estado != -1:
 							self.state = novo_estado
-				elif self.state is 'TURN':
+				elif self.state == 'TURN':
 					if abs(self.robo_yall_lock) > self.min_yall:
 						self.vira()
 					elif self.rota_dir != 0 or self.rota_esq != 0:
@@ -641,7 +644,7 @@ class Controlador():
 						novo_estado = self.classifica_estado()
 						if novo_estado != -1:
 							self.state = novo_estado
-				elif self.state is 'TURN90':
+				elif self.state == 'TURN90':
 					if self.deslocamentoYpelves < self.deslocamentoYpelvesMAX:
 						self.marchar()
 					elif abs(self.robo_yall_lock) > self.min_yall:
@@ -653,7 +656,7 @@ class Controlador():
 						if novo_estado != -1:
 							self.turn90 = False
 							self.state = novo_estado
-				elif self.state is 'UP':
+				elif self.state == 'UP':
 					if self.rota_dir != 0 or self.rota_esq != 0:
 						self.para_de_virar()
 					elif self.deslocamentoXpes != 0:
@@ -663,7 +666,7 @@ class Controlador():
 					else:
 						#robo pronto para levantar
 						pass
-				elif self.state is 'PENALIZED':
+				elif self.state == 'PENALIZED':
 					if self.rota_dir != 0 or self.rota_esq != 0:
 						self.para_de_virar()
 					elif self.deslocamentoXpes != 0:
@@ -683,6 +686,9 @@ class Controlador():
 
 
 			except KeyboardInterrupt as e:
+				rclpy.shutdown()
+				self.sim_t.join()
+				self.spin_t.join()
 				print("Main loop finalizado!!")
 				break
 			except Exception as e:
