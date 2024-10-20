@@ -4,15 +4,17 @@ import threading
 import time
 import os
 import numpy as np
+import matplotlib.pyplot as plt
 from functools import reduce
 import struct
 import csv
 try:
-	from std_msgs.msg import Float32MultiArray, Int16MultiArray
+	from std_msgs.msg import Float32MultiArray, Int16MultiArray, Int8
 except Exception as e:
-	pass
+	print("Falha ao importar a bibliotera 'std_msgs.msg'!")
 try:
-	import rospy
+	import rclpy
+	from rclpy.node import Node
 except Exception as e:
 	print("Falha ao importar a bibliotera 'rospy'!")
 import math
@@ -30,6 +32,7 @@ try:
 except Exception as e:
 	RASPBERRY = False
 from body_solver import Body
+from enum import Enum
 
 RAD_TO_DEG = 180 / np.pi
 DEG_TO_RAD = np.pi / 180.
@@ -37,8 +40,12 @@ DEG_TO_RAD = np.pi / 180.
 KP_CONST = 0.3
 
 
-def sigmoid_deslocada(x, periodo):
-	return 1./(1.+math.exp(-(12./periodo)*(x-(periodo/2.))))
+def sigmoid_deslocada(x, periodo, inc=12.):
+	return 1./(1.+math.exp(-(inc/periodo)*(x-(periodo/2.))))
+
+class OrientationMode(Enum):
+    VISAO = 1
+    POSICAO_ALVO = 2
 
 class Controlador():
 
@@ -47,14 +54,15 @@ class Controlador():
 				time_id=17,
 				robo_id=0,
 				altura_inicial=17.,
-				tempo_passo = 0.3,
-				deslocamento_ypelves = 2.,
-				deslocamento_zpes = 3.,
-				deslocamento_xpes= 1.5,
+				tempo_passo = 0.4, # 0.4
+				deslocamento_ypelves = 3.5, # 3.5
+				deslocamento_zpes = 3., # 3.
+				deslocamento_xpes= 1.5, # 1.5
 				deslocamento_zpelves = 30.,
 				inertial_foot_enable = False,
 				gravity_compensation_enable = False,
-				step_mode=False):
+				step_mode=False,
+				orientation_mode=OrientationMode.POSICAO_ALVO):
 		if (robo_id == -1):
 			print("ERRO: ID do robo inválido")
 			exit()
@@ -62,6 +70,7 @@ class Controlador():
 
 		self.simulador = simulador_enable
 		self.step_mode = step_mode
+		self.orientation_mode = orientation_mode
 		self.state = 'IDDLE'
 		self.time_id = time_id
 		self.robo_id = robo_id
@@ -96,7 +105,7 @@ class Controlador():
 		if RASPBERRY:
 			GPIO.setup(self.ON_PIN, GPIO.IN)
 
-		self.visao_ativada = False
+		self.visao_ativada = True
 		self.micro_ativado = False
 		self.incercial_ativado = False
 		self.simulador_ativado = True
@@ -108,7 +117,7 @@ class Controlador():
 		self.tempo_virando = 3.
 
 		self.visao_search = False
-		self.visao_bola = False
+		self.chegou_no_alvo = True
 		self.turn90 = False
 		self.max_yall = 20
 		self.min_yall = 5
@@ -144,10 +153,7 @@ class Controlador():
 		self.recuando = False
 		self.acelerando = False
 		self.freando = False
-		self.ladeando = False
-		self.desladeando = False
 		self.interpolando = False
-		self.posicionando = False
 
 		# Perna no chão: 1 = direita; 0 = esquerda
 		self.perna = 0
@@ -214,38 +220,56 @@ class Controlador():
 			self.tempos_levanta_frente = []
 
 		#if self.simulador:
-		self.inicia_modulo_simulador()
+		self.setup_ros()
+
+		self.posicao_alvo = [0, 0, 0]
+		self.posicao_robo = [0, 0, 0]
 
 
-	def inicia_modulo_simulador(self):
+	def setup_ros(self):
 		#INICIA PUBLISHER PARA ENVIAR POSIÇÕES DOS MOTORES
-		print("Iniciando ROS node para execucao do simulador..")
+		rclpy.init()
+		node = Node('controller')
+
 		if self.simulador:
-			self.pub = rospy.Publisher('Bioloid/joint_pos', Float32MultiArray, queue_size=1)
+			print("Iniciando ROS node para execucao do simulador")
+			self.pub = node.create_publisher(Float32MultiArray, 'Bioloid/joint_pos', 1)
 		else:
-			self.pub = rospy.Publisher('Bioloid/joint_pos', Int16MultiArray, queue_size=1)
-		rospy.init_node('controller', anonymous=True)
-		self.rate = rospy.Rate(self.tempoPasso/self.nEstados)
+			print("Iniciando ROS node para execucao do micro-controlador")
+			self.pub = node.create_publisher(Int16MultiArray, 'Bioloid/joint_pos', 1)
+
+		self.rate = node.create_rate(1/(self.tempoPasso/self.nEstados))
+		self.spin_t = threading.Thread(target=rclpy.spin, args=(node, ), daemon=True)
+		self.spin_t.start()
+
 		if self.simulador:
-			t = threading.Thread(target=self.envia_para_simulador)
+			self.sim_t = threading.Thread(target=self.envia_para_simulador)
 		else:
-			t = threading.Thread(target=self.envia_para_micro)
-		t.daemon = True
-		t.start()
+			self.sim_t = threading.Thread(target=self.envia_para_micro)
+		self.sim_t.daemon = True
+		self.sim_t.start()
 
 		if self.simulador:
 			#INICIA SUBSCRIBER PARA RECEBER DADOS DOS SENSORES INERCIAIS DOS PÉS
-			rospy.Subscriber("/vrep_ros_interface/Bioloid/foot_inertial_sensor", Float32MultiArray, self.foot_inertial_callback)
+			node.create_subscription(Float32MultiArray, "/Bioloid/foot_inertial_sensor", self.foot_inertial_callback, 1)
 
 			#INICIA SUBSCRIBER PARA RECEBER DADOS DOS SENSORES DE PRESSÃO DOS PÉS
-			rospy.Subscriber("/vrep_ros_interface/Bioloid/foot_pressure_sensor", Float32MultiArray, self.foot_pressure_callback)
+			node.create_subscription(Float32MultiArray, "/Bioloid/foot_pressure_sensor", self.foot_pressure_callback, 1)
+
+			#INICIA SUBSCRIBER PARA RECEBER DADOS DA POSIÇÃO DO ROBÔ
+			node.create_subscription(Float32MultiArray, "/Bioloid/robot_position", self.robot_position_callback, 1)
+
+			#INICIA SUBSCRIBER PARA RECEBER DADOS DA POSIÇÃO ALVO
+			node.create_subscription(Float32MultiArray, "/Bioloid/target_position", self.target_position_callback, 1)
 
 		#INICIA SUBSCRIBER PARA RECEBER DADOS DO SENSOR IMU DO ROBÔ
-		rospy.Subscriber("/vrep_ros_interface/Bioloid/robot_inertial_sensor", Float32MultiArray, self.robot_inertial_callback)
+		node.create_subscription(Float32MultiArray, "/Bioloid/robot_inertial_sensor", self.robot_inertial_callback, 1)
 
 		#INICIA SUBSCRIBER PARA RECEBER COMANDOS DA VISÃO
-		rospy.Subscriber("/Bioloid/visao_cmd", Float32MultiArray, self.visao_cmd_callback)
+		node.create_subscription(Float32MultiArray, "/Bioloid/visao_cmd", self.visao_cmd_callback, 1)
 
+		#INICIA SUBSCRIBER PARA RECEBER COMANDOS ESTADO DO ROBÔ
+		node.create_subscription(Int8, "/Bioloid/state_cmd", self.state_cmd_callback, 1)
 
 	def atualiza_fps(self):
 		if self.timer_fps >= 1:
@@ -258,7 +282,28 @@ class Controlador():
 		self.count_frames += 1
 		self.timer_fps += self.deltaTime
 		return None
+	
+	def calcula_centro_pressao(self):
+		l_foot_y = 11
+		l_foot_x = 6.2
 
+		LD = [-l_foot_x/2., -l_foot_y/2.]
+		LT = [-l_foot_x/2., l_foot_y/2.]
+		RD = [l_foot_x/2., -l_foot_y/2.]
+		RT = [l_foot_x/2., l_foot_y/2.]
+
+		div_l = np.max(self.Lfoot_press)-np.min(self.Lfoot_press)
+		div_r = np.max(self.Rfoot_press)-np.min(self.Rfoot_press)
+		div_l = div_l if div_l != 0.0 else 0.00001
+		div_r = div_r if div_r != 0.0 else 0.00001
+		l_press_weights_norm = (self.Lfoot_press-np.min(self.Lfoot_press))/div_l
+		r_press_weights_norm = (self.Rfoot_press-np.min(self.Rfoot_press))/div_r
+
+		l_press_vectors = np.array([LD, LT, RD, RT]) * np.array(l_press_weights_norm)[:, np.newaxis]
+		self.l_center_of_press = np.sum(l_press_vectors, axis=0)
+
+		r_press_vectors = np.array([LD, LT, RD, RT]) * np.array(r_press_weights_norm)[:, np.newaxis]
+		self.r_center_of_press = np.sum(r_press_vectors, axis=0)
 
 	def envia_para_simulador(self):
 		try:
@@ -284,8 +329,8 @@ class Controlador():
 			# mat.data[17]  = Right Arm Roll
 			mat = Float32MultiArray()
 			if self.simulador_ativado:
-				while not rospy.is_shutdown():
-					mat.data = self.msg_to_micro[:18]
+				while rclpy.ok():
+					mat.data = np.array(self.msg_to_micro[:18]).astype(np.float32).tolist()
 
 					# mat.data[10] = -mat.data[10] # quadril esquerdo ROLL
 					mat.data[0] = -mat.data[0] #calcanhar direito ROLL
@@ -294,7 +339,7 @@ class Controlador():
 					# mat.data[10] = -mat.data[10]
 
 					self.pub.publish(mat)
-					rospy.sleep(self.simTransRate)
+					self.rate.sleep()
 		except Exception as e:
 			pass
 
@@ -303,8 +348,8 @@ class Controlador():
 			print("Publicando no topico para o micro!!")
 			mat = Int16MultiArray()
 			self.simulador_ativado = True
-			while not rospy.is_shutdown():
-				data = (np.array(self.msg_to_micro[:19])*(1800/np.pi)).astype(np.int16)
+			while rclpy.ok():
+				data = (np.array(self.msg_to_micro[:19])*(1800/np.pi)).astype(np.int16).tolist()
 				data[18] = self.state_encoder[self.state]
 				mat.data = data
 
@@ -316,7 +361,7 @@ class Controlador():
 				mat.data[self.LEFT_HIP_PITCH] += 150
 
 				self.pub.publish(mat)
-				rospy.sleep(self.simTransRate)
+				self.rate.sleep()
 		except Exception as e:
 			raise e
 
@@ -340,7 +385,40 @@ class Controlador():
 		else:
 			self.gimbal_yall = self.robo_yall + visao_msg[1]
 		self.gimbal_pitch = visao_msg[0]
-		self.visao_bola = visao_msg[2] != 0.
+		self.chegou_no_alvo = visao_msg[2] == 0.
+
+
+	# '''
+	# 	- descrição: função que recebe próximo estado do robô,
+	#     forçando a atualização do estado atual para o estado fornecido.
+	#
+	# 	- entrada: inteiro "data" com o codigo para o próximo estado
+	# '''
+
+	def state_cmd_callback(self, msg):
+		state_decoder = {
+			1 : "IDDLE",
+			2 : "MARCH",
+			3 : "WALK",
+			5 : "FALLEN",
+			6 : "UP", 
+			7 : "PENALIZED",
+			8 : "TURN_R",
+			9 : "TURN_L"
+		}
+		state_msg = state_decoder[msg.data]
+		if state_msg == "IDDLE":
+			self.visao_cmd_callback(Float32MultiArray(data = [-45, 0, 0]))
+			self.state = "IDDLE"
+		elif state_msg == "MARCH":
+			self.visao_cmd_callback(Float32MultiArray(data = [-45, 0, 1]))
+		elif state_msg == "WALK":
+			self.visao_cmd_callback(Float32MultiArray(data = [0, 0, 1]))
+		elif state_msg == "TURN_R":
+			self.visao_cmd_callback(Float32MultiArray(data = [0, 90, 1]))
+		elif state_msg == "TURN_L":
+			self.visao_cmd_callback(Float32MultiArray(data = [0, -90, 1]))		
+
 
 	# '''
 	# 	- descrição: função que recebe dados do sensor inercial dos pés e atualiza as variaveis globais correspondentes.
@@ -364,8 +442,8 @@ class Controlador():
 	# 	'''
 	# 	Leitura sensores de pressão
 	def foot_pressure_callback(self, msg):
-		self.Lfoot_press = msg.data[:4]
-		self.Rfoot_press = msg.data[4:]
+		self.Lfoot_press = [(v if v != np.nan else 0.000001) for v in msg.data[:4]]
+		self.Rfoot_press = [(v if v != np.nan else 0.000001) for v in msg.data[4:]]
 		self.total_press = np.sum(self.Lfoot_press)+np.sum(self.Rfoot_press)
 
 	# 	Leitura IMU - robo
@@ -373,55 +451,47 @@ class Controlador():
 		self.robo_yall = msg.data[2]
 		self.robo_pitch = msg.data[1]
 		self.robo_roll = msg.data[0]
-
+		print(self.robo_yall)
 		if (abs(self.robo_pitch) > 45 or abs(self.robo_roll) > 45) and not self.interpolando:
 			self.state = 'FALLEN'
 
-		# 		'''
-		# 		if self.roboYall > self.roboYall:
-		# 			esq_angle = self.roboYall - self.roboYall
-		# 			dir_angle = 360 - esq_angle
-		# 		else:
-		# 			dir_angle = self.roboYall - self.roboYall
-		# 			esq_angle = 360 - dir_angle
-		# 		if esq_angle > dir_angle:
-		# 			self.roboYallLock = dir_angle
-		# 		else:
-		# 			self.roboYallLock = -esq_angle
-		# 		'''
+	def robot_position_callback(self, msg):
+		self.posicao_robo = msg.data[:3]
 
+	def target_position_callback(self, msg):
+		self.posicao_alvo = msg.data[:3]
 
 	def classifica_estado(self):
-		if self.state is 'IDDLE':
+		if self.state == 'IDDLE':
 			if self.turn90:
 				return 'MARCH'
-			elif self.visao_bola:
+			elif not self.chegou_no_alvo:
 				return 'MARCH'
 			else:
 				return -1
-		elif self.state is 'TURN90':
+		elif self.state == 'TURN90':
 			if abs(self.robo_yall_lock) <= self.min_yall:
 				return 'MARCH'
 			else:
 				return -1
-		elif self.state is 'MARCH':
+		elif self.state == 'MARCH':
 			if self.turn90:
 				return 'TURN90'
-			elif not self.visao_bola:
+			elif self.chegou_no_alvo:
 				return 'IDDLE'
-			elif self.visao_bola and abs(self.robo_yall_lock) > self.max_yall and self.visao_ativada:
+			elif not self.chegou_no_alvo and abs(self.robo_yall_lock) > self.max_yall and self.visao_ativada:
 				return 'TURN'
-			elif self.visao_bola and self.robo_pitch_lock > -45:
+			elif not self.chegou_no_alvo and self.robo_pitch_lock > -45:
 				return 'WALK'
 			else:
 				return -1
-		elif self.state is 'WALK':
-			if not self.visao_bola or abs(self.robo_yall_lock) > self.max_yall or self.robo_pitch_lock <= -45:
+		elif self.state == 'WALK':
+			if self.chegou_no_alvo or abs(self.robo_yall_lock) > self.max_yall or self.robo_pitch_lock <= -45:
 				return 'MARCH'
 			else:
 				return -1
-		elif self.state is 'TURN':
-			if not self.visao_bola or abs(self.robo_yall_lock) < self.min_yall:
+		elif self.state == 'TURN':
+			if self.chegou_no_alvo or abs(self.robo_yall_lock) < self.min_yall:
 				return 'MARCH'
 			else:
 				return -1
@@ -431,7 +501,7 @@ class Controlador():
 
 	def gravity_compensation(self):
 		#return
-		if not self.gravity_compensation_enable or (self.t_state < self.tempoPasso/2 and self.t_state < self.tempoPasso*self.time_ignore_GC) or (self.t_state >= self.tempoPasso/2 and self.t_state > self.tempoPasso*(1-self.time_ignore_GC)) or self.deslocamentoYpelves != self.deslocamentoYpelvesMAX or self.state is "IDDLE":
+		if not self.gravity_compensation_enable or (self.t_state < self.tempoPasso/2 and self.t_state < self.tempoPasso*self.time_ignore_GC) or (self.t_state >= self.tempoPasso/2 and self.t_state > self.tempoPasso*(1-self.time_ignore_GC)) or (self.state == "IDDLE" and not self.recuando and not self.freando):
 			return
 
 		torques = self.body.get_torque_in_joint(self.perna,[3,5])
@@ -440,6 +510,8 @@ class Controlador():
 		#print(dQ[1], self.perna)
 
 		dQ *= math.sin(self.t_state*math.pi/self.tempoPasso)
+		dQ *= (self.deslocamentoZpes / self.deslocamentoZpesMAX)
+
 		if self.perna:
 			self.msg_to_micro[self.RIGHT_ANKLE_PITCH] += dQ[0]
 			self.msg_to_micro[self.RIGHT_HIP_ROLL] += (dQ[1]*-1)
@@ -447,7 +519,7 @@ class Controlador():
 			self.msg_to_micro[self.LEFT_KNEE] += dQ[0]
 			self.msg_to_micro[self.LEFT_HIP_ROLL] += dQ[1]
 
-	def posiciona_robo(self):
+	def compura_direcao_pelo_gimbal(self):
 		if self.robo_yall > self.gimbal_yall:
 			esq_angle = self.robo_yall - self.gimbal_yall
 			dir_angle = 360 - esq_angle
@@ -461,6 +533,23 @@ class Controlador():
 
 		self.robo_pitch_lock = self.gimbal_pitch
 
+	def computa_direcao_pela_posicao_alvo(self):
+		robo_para_ponto_alvo = np.array(self.posicao_alvo[:2]) - np.array(self.posicao_robo[:2])
+		theta = math.atan2(robo_para_ponto_alvo[1], robo_para_ponto_alvo[0]) * (180/math.pi) - self.robo_yall
+		if theta < -180:
+			theta += 360
+		elif theta > 180:
+			theta -= 360
+		self.robo_yall_lock = -theta
+
+		distancia_ponto_alvo = math.sqrt((self.posicao_alvo[0] - self.posicao_robo[0])**2 + (self.posicao_alvo[1] - self.posicao_robo[1])**2)
+		if (distancia_ponto_alvo > 0.2):
+			self.chegou_no_alvo = False
+			self.robo_pitch_lock = 0
+		else:
+			self.chegou_no_alvo = True
+			self.robo_pitch_lock = -45
+
 	def run(self):
 		#update function
 		timer_main_loop = 0
@@ -469,8 +558,6 @@ class Controlador():
 		self.rot_desvio = 0
 		while (True):
 			try:
-				#print ("%s GIMBAL_YALL:%.f  ROBO_YALL:%.2f  ANGULO PARA VIRAR:%.2f BOLA:%r"%(self.state, self.gimbal_yall, self.robo_yall, self.robo_yall_lock, self.visao_bola), flush=True)
-				#print (np.array(self.Rfoot_orientation).astype(np.int), np.array(self.Lfoot_orientation).astype(np.int))
 				if RASPBERRY:
 					# só executa se o dispositivo que estiver rodando for a raspberry
 					if GPIO.input(self.ON_PIN):
@@ -482,11 +569,11 @@ class Controlador():
 					else:
 						self.activate = False
 						self.state = 'IDDLE'
-				if (self.state is 'FALLEN'):
+				if (self.state == 'FALLEN'):
 					if not self.interpolando:
 						self.levanta()
-				elif self.state is 'MARCH':
-					if self.deslocamentoYpelves != self.deslocamentoYpelvesMAX:
+				elif self.state == 'MARCH':
+					if self.deslocamentoZpes != self.deslocamentoZpesMAX:
 						self.marchar()
 					elif self.deslocamentoXpes != 0:
 						self.freia_frente()
@@ -494,26 +581,26 @@ class Controlador():
 						novo_estado = self.classifica_estado()
 						if novo_estado != -1:
 							self.state = novo_estado
-				elif self.state is 'IDDLE':
+				elif self.state == 'IDDLE':
 					if self.rota_dir != 0 or self.rota_esq != 0:
 						self.para_de_virar()
-					elif self.deslocamentoXpes != 0:
+					if self.deslocamentoXpes != 0:
 						self.freia_frente()
 					elif self.deslocamentoYpelves != 0:
-						self.recuar()
+						self.para_de_machar()
 					else:
 						if self.activate:
 							novo_estado = self.classifica_estado()
 							if novo_estado != -1:
 								self.state = novo_estado
-				elif self.state is 'WALK':
+				elif self.state == 'WALK':
 					if self.deslocamentoXpes < self.deslocamentoXpesMAX:
 						self.acelera_frente()
 					else:
 						novo_estado = self.classifica_estado()
 						if novo_estado != -1:
 							self.state = novo_estado
-				elif self.state is 'TURN':
+				elif self.state == 'TURN':
 					if abs(self.robo_yall_lock) > self.min_yall:
 						self.vira()
 					elif self.rota_dir != 0 or self.rota_esq != 0:
@@ -522,8 +609,8 @@ class Controlador():
 						novo_estado = self.classifica_estado()
 						if novo_estado != -1:
 							self.state = novo_estado
-				elif self.state is 'TURN90':
-					if self.deslocamentoYpelves < self.deslocamentoYpelvesMAX:
+				elif self.state == 'TURN90':
+					if self.deslocamentoZpes != self.deslocamentoZpesMAX:
 						self.marchar()
 					elif abs(self.robo_yall_lock) > self.min_yall:
 						self.vira()
@@ -534,70 +621,44 @@ class Controlador():
 						if novo_estado != -1:
 							self.turn90 = False
 							self.state = novo_estado
-				elif self.state is 'UP':
+				elif self.state == 'UP':
 					if self.rota_dir != 0 or self.rota_esq != 0:
 						self.para_de_virar()
 					elif self.deslocamentoXpes != 0:
 						self.freia_frente()
 					elif self.deslocamentoYpelves != 0:
-						self.recuar()
+						self.para_de_machar()
 					else:
 						#robo pronto para levantar
 						pass
-				elif self.state is 'PENALIZED':
+				elif self.state == 'PENALIZED':
 					if self.rota_dir != 0 or self.rota_esq != 0:
 						self.para_de_virar()
 					elif self.deslocamentoXpes != 0:
 						self.freia_frente()
 					elif self.deslocamentoYpelves != 0:
-						self.recuar()
-
+						self.para_de_machar()
 
 				self.atualiza_fps()
-				self.chage_state()
+				self.atualiza_tempo_marcha()
 				self.atualiza_cinematica()
 				self.gravity_compensation()
-				#self.posiciona_gimbal()
-				self.posiciona_robo()
+				if (self.orientation_mode == OrientationMode.VISAO):
+					self.compura_direcao_pelo_gimbal()
+				elif (self.orientation_mode) == OrientationMode.POSICAO_ALVO:
+					self.computa_direcao_pela_posicao_alvo()
+				self.calcula_centro_pressao()
 				timer_main_loop += self.deltaTime
 				time.sleep(self.simTransRate)
 
 
 			except KeyboardInterrupt as e:
 				print("Main loop finalizado!!")
+				rclpy.shutdown()
+				self.sim_t.join()
 				break
 			except Exception as e:
 				raise e
-
-	# Anda de lado para alinhar com o gol
-	def posiciona(self):
-		if not self.posicionando:
-			self.posicionando = True
-			self.timer_reposiciona = 0
-		if self.posicionando:
-			self.timer_reposiciona += self.deltaTime
-			if self.robo_yall > 270:
-				#anda de lado para a esquerda
-				if self.perna:
-					self.anda_de_lado_esquerda()
-				else:
-					self.desanda_de_lado_esquerda()
-			elif self.robo_yall < 90:
-				#anda de lado para a direita
-				if not self.perna:
-					self.anda_de_lado_direita()
-				else:
-					self.desanda_de_lado_direita()
-		if self.timer_reposiciona > self.tempoPasso*6:
-			if abs(self.pos_inicial_pelves[1]) < 0.01:
-				self.pos_inicial_pelves[1] = 0
-				self.posicionando = False
-				self.state = 'IDDLE'
-			else:
-				if self.pos_inicial_pelves[1] > 0 and not self.perna:
-					self.desanda_de_lado_esquerda()
-				if self.pos_inicial_pelves[1] < 0 and self.perna:
-					self.desanda_de_lado_direita()
 
 	def levanta(self):
 		if not self.interpolando:
@@ -610,54 +671,6 @@ class Controlador():
 				t = threading.Thread(target=self.interpola_estados, args=[self.estados_levanta_costas, self.tempos_levanta_costas])
 				t.daemon = True
 				t.start()
-
-	def anda_de_lado_esquerda(self):
-		if (not self.ladeando or self.desladeando)and self.pos_inicial_pelves[1] != self.deslocamentoYpelvesMAX/8:
-			self.ladeando = True
-			self.desladeando = False
-			self.timer_movimentacao = 0
-		if self.pos_inicial_pelves[1] != self.deslocamentoYpelvesMAX/8:
-			self.timer_movimentacao += self.deltaTime
-			self.pos_inicial_pelves[1] = sigmoid_deslocada(self.timer_movimentacao, self.tempoPasso)*self.deslocamentoYpelvesMAX/8
-		if abs (self.pos_inicial_pelves[1] - self.deslocamentoYpelvesMAX/8) <= 0.01:
-			self.pos_inicial_pelves[1] = self.deslocamentoYpelvesMAX/8
-			self.ladeando = False
-
-	def desanda_de_lado_esquerda(self):
-		if (not self.desladeando or self.ladeando) and self.pos_inicial_pelves[1] != 0.:
-			self.desladeando = True
-			self.ladeando = False
-			self.timer_movimentacao = 0
-		if self.pos_inicial_pelves[1] != 0.:
-			self.timer_movimentacao += self.deltaTime
-			self.pos_inicial_pelves[1] = (1-sigmoid_deslocada(self.timer_movimentacao, self.tempoPasso))*self.deslocamentoYpelvesMAX/8
-		if self.pos_inicial_pelves[1] <= 0.01:
-			self.pos_inicial_pelves[1] = 0.
-			self.desladeando = False
-
-	def anda_de_lado_direita(self):
-		if (not self.ladeando or self.desladeando)and self.pos_inicial_pelves[1] != self.deslocamentoYpelvesMAX/8:
-			self.ladeando = True
-			self.desladeando = False
-			self.timer_movimentacao = 0
-		if self.pos_inicial_pelves[1] != self.deslocamentoYpelvesMAX/8:
-			self.timer_movimentacao += self.deltaTime
-			self.pos_inicial_pelves[1] = -sigmoid_deslocada(self.timer_movimentacao, self.tempoPasso)*self.deslocamentoYpelvesMAX/8
-		if abs (self.pos_inicial_pelves[1] - self.deslocamentoYpelvesMAX/8) <= 0.01:
-			self.pos_inicial_pelves[1] = self.deslocamentoYpelvesMAX/8
-			self.ladeando = False
-
-	def desanda_de_lado_direita(self):
-		if (not self.desladeando or self.ladeando) and self.pos_inicial_pelves[1] != 0.:
-			self.desladeando = True
-			self.ladeando = False
-			self.timer_movimentacao = 0
-		if self.pos_inicial_pelves[1] != 0.:
-			self.timer_movimentacao += self.deltaTime
-			self.pos_inicial_pelves[1] = (-1 +sigmoid_deslocada(self.timer_movimentacao, self.tempoPasso))*self.deslocamentoYpelvesMAX/8
-		if self.pos_inicial_pelves[1] <= 0.01:
-			self.pos_inicial_pelves[1] = 0.
-			self.desladeando = False
 
 	# 	'''
 	# 		- Define para qual lado o robô deve virar com base no yall lock
@@ -706,14 +719,14 @@ class Controlador():
 	# 		- Interpola deslocamento lateral da pelves e o deslocamento para cima dos pés, da atual até o max
 	# 	'''
 	def marchar(self):
-		if (not self.marchando) and self.deslocamentoYpelves != self.deslocamentoYpelvesMAX:
+		if (not self.marchando) and self.deslocamentoZpes != self.deslocamentoZpesMAX:
 			self.marchando = True
 			self.timer_movimentacao = 0
-		if self.deslocamentoYpelves != self.deslocamentoYpelvesMAX:
+		if self.deslocamentoZpes != self.deslocamentoZpesMAX:
 			self.timer_movimentacao += self.deltaTime
-			self.deslocamentoZpes = sigmoid_deslocada(self.timer_movimentacao, self.tempo_marchando)*self.deslocamentoZpesMAX
-			self.deslocamentoYpelves = sigmoid_deslocada(self.timer_movimentacao, self.tempo_marchando)*self.deslocamentoYpelvesMAX
-		if abs(self.deslocamentoYpelves - self.deslocamentoYpelvesMAX) <= 0.01:
+			self.deslocamentoZpes = sigmoid_deslocada(self.timer_movimentacao - (self.tempo_marchando/5), self.tempo_marchando, inc=9.)*self.deslocamentoZpesMAX
+			self.deslocamentoYpelves = sigmoid_deslocada(self.timer_movimentacao, self.tempo_marchando, inc=9.)*self.deslocamentoYpelvesMAX
+		if abs(self.deslocamentoZpes - self.deslocamentoZpesMAX) <= 0.01:
 			self.deslocamentoZpes = self.deslocamentoZpesMAX
 			self.deslocamentoYpelves = self.deslocamentoYpelvesMAX
 			self.marchando = False
@@ -722,14 +735,14 @@ class Controlador():
 	# 		- Interpola deslocamento lateral da pelves e o deslocamento para cima dos pés,
 	#           diminuindo estes valores até chegar em 0
 	# 	'''
-	def recuar(self):
+	def para_de_machar(self):
 		if not self.recuando and self.deslocamentoYpelves != 0:
 			self.recuando = True
 			self.timer_movimentacao = 0
 		if self.deslocamentoYpelves != 0:
 			self.timer_movimentacao += self.deltaTime
-			self.deslocamentoZpes = (1. - sigmoid_deslocada(self.timer_movimentacao, self.tempo_marchando))*self.deslocamentoZpesMAX
-			self.deslocamentoYpelves = (1. - sigmoid_deslocada(self.timer_movimentacao, self.tempo_marchando))*self.deslocamentoYpelvesMAX
+			self.deslocamentoZpes = (1. - sigmoid_deslocada(self.timer_movimentacao, self.tempo_marchando, inc=9.))*self.deslocamentoZpesMAX
+			self.deslocamentoYpelves = (1. - sigmoid_deslocada(self.timer_movimentacao, self.tempo_marchando, inc=9.))*self.deslocamentoYpelvesMAX
 		if self.deslocamentoYpelves <= 0.01:
 			self.deslocamentoZpes = 0
 			self.deslocamentoYpelves = 0
@@ -737,7 +750,7 @@ class Controlador():
 
 
 	#Change state
-	def chage_state(self):
+	def atualiza_tempo_marcha(self):
 		# incrementa currentStateTime até tempoPasso (até trocar voltar à fase de suporte duplo)
 		self.t_state += self.deltaTime
 		if self.t_state >= self.tempoPasso:
@@ -821,11 +834,6 @@ class Controlador():
 	def getTragectoryPoint(self, x):
 		pos_pelves = self.pos_inicial_pelves[:]
 
-		# nEstados * [-0.5,0.5]
-		# aux_estados = (x-self.N_ESTADOS/2)
-
-		# deslocamentoXpes/2 * tgh(x)
-
 		dif_estado = (x-self.nEstados/2)
 
 		aux = (2*dif_estado)/50
@@ -838,7 +846,7 @@ class Controlador():
 		pos_foot = self.pos_inicial_pelves[:]
 		p2 = (-self.deslocamentoXpes/2)*aux2
 		pos_foot[0] = p2
-		pos_foot[1] += self.deslocamentoYpelves*math.sin(x*math.pi/self.nEstados)
+		pos_foot[1] += self.deslocamentoYpelves*math.sin(x*math.pi/self.nEstados)*1.3
 		pos_foot[2] = self.altura - self.deslocamentoZpes*math.exp(-(dif_estado**2)/600)
 		return pos_pelves, pos_foot
 
@@ -949,24 +957,10 @@ class Controlador():
 
 
 
-
-
-# '''
-# 	- descrição: Calcula posição do centro de massa em relação ao pé que está em contato com o chão
-#
-# def centro_de_massa(self, ith_joint=0):
-# 	if (ith_joint != 0): #calcula centro de massa a partir da junta ith_joint
-# 		if self.perna: #pé direito no chão e será a perna de referência
-#
-# 		else:
-#
-# '''
-
-
 if __name__ == '__main__':
 	control = Controlador(time_id = 17,
 						robo_id = 0,
-						simulador_enable=False,
+						simulador_enable=True,
 						inertial_foot_enable=False,
 						gravity_compensation_enable=True)
 	control.run()

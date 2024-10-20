@@ -1,14 +1,16 @@
 # -*- coding:utf-8 -*-
 
-import rospy
+import rclpy
+from rclpy.node import Node
 from std_msgs.msg import Float32MultiArray
 import numpy as np
 import os
 
 class Visao():
 	def __init__(self):
-		self.pub = rospy.Publisher('Bioloid/visao_cmd', Float32MultiArray, queue_size=1)
-		rospy.init_node('visão', anonymous=True)
+		rclpy.init()
+		node = Node('visao')
+		self.pub = node.create_publisher(Float32MultiArray, 'Bioloid/visao_cmd', 1)
 
 	def wait_for_cmd(self):
 		while (True):
@@ -24,7 +26,7 @@ class Visao():
 				info[2] = flag_msg
 
 				msg = Float32MultiArray()
-				msg.data = np.array(info).astype(np.float)
+				msg.data = np.array(info).astype(np.float32).tolist()
 				self.pub.publish(msg)
 			except KeyboardInterrupt as e:
 				break
@@ -32,5 +34,5 @@ class Visao():
 				continue
 		
 if "__main__" == __name__:
-	visao = Visao();
+	visao = Visao()
 	visao.wait_for_cmd()

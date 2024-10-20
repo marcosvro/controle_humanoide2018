@@ -79,7 +79,7 @@ class Actuator(object):
                     coms_pos.append([com_pos, mass_bk])
                 else:
                     coms_pos.append(com_pos)
-            return np.array(coms_pos)   
+            return coms_pos   
 
     @ee.setter
     def ee(self, position):

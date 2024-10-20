@@ -3,77 +3,117 @@ import matplotlib.animation as anim
 import time
 import math
 import numpy as np
-import rospy
+import rclpy
+from rclpy.node import Node
 from std_msgs.msg import Float32MultiArray
+import threading
 
-R_press_vet = [0]*4
-L_press_vet = [0]*4
+l_foot_y = 11
+l_foot_x = 6.2
 
-fig1 = plt.figure()
-ax1 = fig1.add_subplot(111)
-fig2 = plt.figure()
-ax2 = fig2.add_subplot(111)
+LD = [-l_foot_x/2., -l_foot_y/2.]
+LT = [-l_foot_x/2., l_foot_y/2.]
+RD = [l_foot_x/2., -l_foot_y/2.]
+RT = [l_foot_x/2., l_foot_y/2.]
 
-norma = 5
+class Plotter():
+	def __init__(self):
+		self.R_press_vet = [0]*4
+		self.L_press_vet = [0]*4
+
+		# self.fig1 = plt.figure()
+		# self.ax1 = self.fig1.add_subplot(111)
+		self.fig2 = plt.figure()
+		self.ax2 = self.fig2.add_subplot(111)
+
+		#inicia nó e se inscreve no tópico do sensor de pressão
+		rclpy.init()
+		self.node = Node('Pressure_plotter')
+		self.node.create_subscription(Float32MultiArray, "/Bioloid/foot_pressure_sensor", self.foot_inertial_callback, 1)
+
+	def foot_inertial_callback (self, msg):
+		self.L_press_vet = [(v if v != np.nan else 0.) for v in msg.data[:4]]
+		self.R_press_vet = [(v if v != np.nan else 0.) for v in msg.data[4:]]
+		self.total_press_esq = np.sum(self.L_press_vet)
+		self.total_press_dir = np.sum(self.R_press_vet)
+		#norma = np.sum(R_press_vet)+np.sum(L_press_vet)+0.001
+		#print (np.array(L_press_vet).astype(np.int8), np.array(R_press_vet).astype(np.int8), total_press_esq, total_press_dir)
+
+	def get_r_vet(self):
+		r_press_weights_norm = (self.R_press_vet-np.min(self.R_press_vet))/(np.max(self.R_press_vet)-np.min(self.R_press_vet))
+		return r_press_weights_norm
+
+	def get_l_vet(self):
+		l_press_weights_norm = (self.L_press_vet-np.min(self.L_press_vet))/(np.max(self.L_press_vet)-np.min(self.L_press_vet))
+		return l_press_weights_norm
+
+	def refrGraph_esq (self):
+		self.ax1.clear()
+		
+		data = self.get_l_vet()
+
+		l_press_vectors = np.array([LD, LT, RD, RT]) * np.array(data)[:, np.newaxis]
+		self.l_center_of_press = np.sum(l_press_vectors, axis=0)
+
+		self.ax1.set_xlim(-l_foot_x, l_foot_x)
+		self.ax1.set_ylim(-l_foot_y, l_foot_y)
+		self.ax1.set_aspect('equal', 'box')
+		self.ax1.set_title(f"Pé esquerdo")
+		
+		# self.ax1.quiver(0, 0, l_press_vectors[0][0], l_press_vectors[0][1], angles='xy', scale_units='xy', scale=1)
+		# self.ax1.quiver(0, 0, l_press_vectors[1][0], l_press_vectors[1][1], angles='xy', scale_units='xy', scale=1)
+		# self.ax1.quiver(0, 0, l_press_vectors[2][0], l_press_vectors[2][1], angles='xy', scale_units='xy', scale=1)
+		# self.ax1.quiver(0, 0, l_press_vectors[3][0], l_press_vectors[3][1], angles='xy', scale_units='xy', scale=1)
+		self.ax2.quiver(0, 0, self.l_center_of_press[0], self.l_center_of_press[1], color='r', angles='xy', scale_units='xy', scale=1)
 
 
-def get_r_vet():
-	return R_press_vet
+	def refrGraph_dir (self):
+		self.ax2.clear()
 
-def get_l_vet():
-	return L_press_vet
+		data = self.get_r_vet()
 
-def foot_inertial_callback (msg):
-	L_press_vet = msg.data[:4]
-	R_press_vet = msg.data[4:]
-	total_press_esq = np.sum(L_press_vet)
-	total_press_dir = np.sum(R_press_vet)
-	#norma = np.sum(R_press_vet)+np.sum(L_press_vet)+0.001
-	print (np.array(L_press_vet).astype(np.int), np.array(R_press_vet).astype(np.int), total_press_esq, total_press_dir)
+		r_press_vectors = np.array([LD, LT, RD, RT]) * np.array(data)[:, np.newaxis]
+		self.r_center_of_press = np.sum(r_press_vectors, axis=0)
 
-#inicia nó e se inscreve no tópico do sensor de pressão
-rospy.init_node('Pressure_plotter', anonymous=True)
-rospy.Subscriber("/vrep_ros_interface/Bioloid/foot_pressure_sensor", Float32MultiArray, foot_inertial_callback)
+		self.ax2.set_xlim(-l_foot_x, l_foot_x)
+		self.ax2.set_ylim(-l_foot_x, l_foot_x)
+		self.ax2.set_aspect('equal', 'box')
+		self.ax2.set_title(f"Pé direito")
+		
+		# self.ax2.quiver(0, 0, r_press_vectors[0][0], r_press_vectors[0][1], angles='xy', scale_units='xy', scale=1)
+		# self.ax2.quiver(0, 0, r_press_vectors[1][0], r_press_vectors[1][1], angles='xy', scale_units='xy', scale=1)
+		# self.ax2.quiver(0, 0, r_press_vectors[2][0], r_press_vectors[2][1], angles='xy', scale_units='xy', scale=1)
+		# self.ax2.quiver(0, 0, r_press_vectors[3][0], r_press_vectors[3][1], angles='xy', scale_units='xy', scale=1)
+		self.ax2.quiver(0, 0, self.r_center_of_press[0], self.r_center_of_press[1], color='r', angles='xy', scale_units='xy', scale=1)
 
-rospy.spin()
-'''
-def refrGraph_esq (i):
-	ax1.clear()
-	
-	data = get_l_vet()
 
-	e1 = data[1]
-	e2 = data[3]
-	e3 = data[2]
-	e4 = data[0]
+	def setup_ros(self):
+		rclpy.spin(self.node)
+		self.node.destroy_node()
+		rclpy.shutdown()
 
-	print(data)
+	def run(self):
+		rate = self.node.create_rate(125)
+		spin_t = threading.Thread(target=self.setup_ros, daemon=True)
+		spin_t.start()
 
-	ve1= np.array([-1, 1])*e1
-	ve2= np.array([1, 1])*e2
-	ve3= np.array([1, -1])*e3
-	ve4= np.array([-1, -1])*e4
-	
-	ax1.quiver(0, 0, ve1[0], ve1[1], color='r', scale=3)
-	ax1.quiver(0, 0, ve2[0], ve2[1], color='g', scale=3)	
-	ax1.quiver(0, 0, ve3[0], ve3[1], color='b', scale=3)
-	ax1.quiver(0, 0, ve4[0], ve4[1], scale=3)
+		while True:
+			try:
+				#self.refrGraph_esq()
+				self.refrGraph_dir()
+				
+				plt.grid()
+				#plt.draw()
+				plt.pause(0.01)  # Pausa para permitir a atualização do gráfico
+			except KeyboardInterrupt:
+				break
 
-def refrGraph_dir (i):
-	ax2.clear()
+		#plt.close(self.fig1)
+		#plt.close(self.fig2)
+		plt.show()
+		spin_t.join()
 
-	vd1= np.array([-1, 1])
-	vd2= np.array([1, 1])
-	vd3= np.array([1, -1])
-	vd4= np.array([-1, -1])
 
-	ax2.quiver(0, 0, vd1[0], vd1[1], color='r', scale=3)
-	ax2.quiver(0, 0, vd2[0], vd2[1], color='g', scale=3)
-	ax2.quiver(0, 0, vd3[0], vd3[1], color='b', scale=3)
-	ax2.quiver(0, 0, vd4[0], vd4[1], scale=3)
-
-ani1 = anim.FuncAnimation(fig1, refrGraph_esq,interval=0)
-ani2 = anim.FuncAnimation(fig2, refrGraph_dir,interval=0)
-
-plt.show()
-'''
+if __name__ == '__main__':
+	plotter = Plotter()
+	plotter.run()
