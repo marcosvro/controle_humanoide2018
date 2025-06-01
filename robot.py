@@ -74,7 +74,7 @@ class Robo():
 		self.rot_desvio = 0
 		self.rota_dir = 0
 		self.rota_esq = 0
-		self.angulo_vira = 3
+		self.angulo_vira = 10
 
 		self.marchando = False
 		self.recuando = False
@@ -404,22 +404,16 @@ class Robo():
 					influencia = np.sum(self.Lfoot_press)/self.total_press
 				data_foot[:2] = np.array(data_foot[:2]) + np.array(self.Lfoot_orientation[:2])*(np.pi/180.)*(1-influencia)
 	
-			#ROTINHA PARA VIRAR/PARAR DE VIRAR PARA A ESQUERDA
-			if self.rota_dir == 1:
-				data_pelv[5] = self.angulo_vira/2. + self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50)))
-				data_pelv[5] = data_pelv[5] * math.pi/180.
-			elif self.rota_dir == -1:
+			#ROTINHA PARA PRODUZIR MOVIMENTO DE ROTAÇÃO NA PERNA DIREITA (VIRANDO PARA A ESQUERDA)
+			if self.rota_dir == -1:
 				data_pelv[5] = -self.angulo_vira/2. - self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50)))
 				data_pelv[5] = data_pelv[5] * math.pi/180.
 			else:
 				data_pelv[5] = 0
 
-			#ROTINHA PARA VIRAR/PARAR DE VIRAR PARA A DIREITA
+			#ROTINHA PARA RESETAR PERNA ESQUERDA (CASO ESTEJA VIRANDO PARA A DIREITA)
 			if self.rota_esq == 2:
 				data_foot[5] = self.angulo_vira - (self.angulo_vira/2. + self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50))))
-				data_foot[5] = data_foot[5] * math.pi/180.
-			elif self.rota_esq == -2:
-				data_foot[5] = -self.angulo_vira - (-self.angulo_vira/2. - self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50))))
 				data_foot[5] = data_foot[5] * math.pi/180.
 			else:
 				data_foot[5] = 0
@@ -442,21 +436,15 @@ class Robo():
 					influencia = np.sum(self.Rfoot_press)/self.total_press
 				data_foot[:2] = np.array(data_foot[:2]) + np.array(self.Rfoot_orientation[:2])*(np.pi/180.)*(1-influencia)
 
-			#ROTINHA PARA VIRAR/PARAR DE VIRAR PARA A ESQUERDA
+			#ROTINHA PARA PRODUZIR MOVIMENTO DE ROTAÇÃO NA PERNA ESQUERDA (VIRANDO PARA A DIREITA)
 			if self.rota_esq == 1:
 				data_pelv[5] =  self.angulo_vira/2. + self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50)))
-				data_pelv[5] = data_pelv[5] * math.pi/180.
-			elif self.rota_esq == -1:
-				data_pelv[5] =  -self.angulo_vira/2. - self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50)))
 				data_pelv[5] = data_pelv[5] * math.pi/180.
 			else:
 				data_pelv[5] = 0
 
-			#ROTINHA PARA VIRAR/PARAR DE VIRAR PARA A DIREITA
-			if self.rota_dir == 2:
-				data_foot[5] =  self.angulo_vira - (self.angulo_vira/2. + self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50))))
-				data_foot[5] = data_foot[5] * math.pi/180.
-			elif self.rota_dir == -2:
+			#ROTINHA PARA RESETAR PERNA DIREITA (CASO ESTEJA VIRANDO PARA A ESQUERDA)
+			if self.rota_dir == -2:
 				data_foot[5] =  -self.angulo_vira - (-self.angulo_vira/2. - self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50))))		
 				data_foot[5] = data_foot[5] * math.pi/180.
 			else:

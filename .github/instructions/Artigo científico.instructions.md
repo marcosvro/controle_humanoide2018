@@ -1,6 +1,3 @@
----
-applyTo: '**'
----
 Modelagem e Representação de Conhecimento para Algoritmos Bioinspirados
 Marcos V. R. de Oliveira¹ e Telma W. de Lima Soares²
 
@@ -29,7 +26,7 @@ Estabilização e equilíbrio: Implementar algoritmos de controle para manter o 
 O controlador de baixo nível atua como a interface direta entre o "cérebro" do bípede (controlador de alto nível) e o "corpo" do bípede (atuadores e sensores), garantindo que os comandos sejam executados gerando o movimento esperado.
 
 2.1  Controlador de baixo nível
-O controlador baixo pode ser resumido como uma equação matemática em função do tempo, que possui parâmetros que combinados produzem a ação esperada pelo controlador de alto nível. Para melhor descrevermos essas equações vamos remover estes parâmetros, assumindo que o bípede se encontra no estado “andando”.
+O controlador de baixo nível pode ser resumido como uma equação matemática em função do tempo, que possui parâmetros que combinados produzem a ação esperada pelo controlador de alto nível. Para melhor descrevermos essas equações vamos remover estes parâmetros, assumindo que o bípede se encontra no estado “andando”.
 Assumimos também que o bípede é composto por dois atuadores (ou conjunto de links), um representando a perna de apoio, considerando o eixo do pé como base e o eixo do quadril como extremidade, e outro representando a perna de balanço, tendo o eixo do quadril como base e o eixo do pé como extremidade. O cálculo de cinemática inversa, é o cálculo dos ângulos que devem ser aplicados nos atuadores para mover suas extremidades para um determinado ponto no espaço. O controlador de baixo nível foi divido em dois outros sub-componentes:
 Gerador de trajetória do CoM: Tem como objetivo gerar os pontos das extremidades dos atuadores, representados por pH e pF, sendo estas as posições do quadril da perna de apoio e a posição do tornozelo da perna de balanço respectivamente.
 Gerador de cinemática: Dados os pontos pH e pF, o gerador de cinemática é responsável por calcular os ângulos que serão aplicados nos atuadores.
@@ -38,7 +35,7 @@ Gerador de cinemática: Dados os pontos pH e pF, o gerador de cinemática é res
 Para facilitar o entendimento do padrão de caminhada, dividimos um ciclo deste padrão em duas partes, cada parte define qual perna estará em contato com o chão (perna de apoio) e qual perna estará se movendo para o próximo ponto (perna de balanço). 
 
 
-Figura 1. Representação dos links da perna vistos de lado (a) e de frente (b).
+Figura 2. Representação dos links da perna vistos de lado (a) e de frente (b).
 
 Para o calcular os ângulos dos atuadores é assumido que o bípede estará com o tronco sempre ereto, e no caso do eixo pitch, os dois maiores links da perna (link entre as juntas do quadril e joelho, e entre as juntas do joelho e o tornozelo) juntamente com um link imaginário entre as juntas do quadril e do tornozelo formam  um triângulo, onde os lados são conhecidos ou possivelmente calculados (no caso do link imaginário), a Figura 1.a ilustra o cenário apresentado. Uma vez que os lados deste triângulo é conhecido, podemos inferir os ângulos necessários para que o bípede seja posicionado conforme o ponto pH ou pF fornecido. Considerando que o ponto informado seja pH, as equações para {2, 3, 4} são definidas a seguir.
 
@@ -60,7 +57,7 @@ Em relação ao eixo roll, na Figura 1.b podemos observar um triângulo retângu
 Neste capítulo será descrito como usamos heurísticas e informações do modelo físico do bípede para gerar pH e pF. Dado que conhecemos o padrão de caminhada humano como ilustrado na Figura 2, podemos compor funções que se assimilam ao movimento realizado pelos pontos do pé e quadril. Assumimos que estas funções têm duração definida pela metade do ciclo de caminhada, sendo assim, são necessárias duas delas para completar o período da marcha. Na primeira metade, a perna de apoio recebe o ponto FH(t) enquanto a perna de balanço recebe o ponto FF(t) que serão usados pelo solucionador cinemático definido no Capítulo 2.1. 
 
 
-Figura 2. Divisão do ciclo de caminhada segundo Perry e Burnfield[1].
+Figura 3. Divisão do ciclo de caminhada segundo Perry e Burnfield[1].
 
 
 2.1.2.1  Função de tragerória baseada no ZMP
@@ -77,9 +74,9 @@ Para satisfazer a condição 2 listada acima, o ZMP calculado precisa residir so
 Onde а ∊ {x, y}, h representa a altura do CoM (zCoM) e g a aceleração da gravidade (9,80665 m/s²). Dado аCoM atual, poderíamos calcular posições futuras do centro de massa, fazendo com que a aceleração final produzida (ä'CoM) leve a posição final do ZMP (а'ZMP) para o intervalo definido pela SC. Para isso, precisaríamos para cada аCoM, i intermediário, gerar o conjunto de pontos {pH, i e pF, i} não distante do seu sucessor e antecessor (para que a interpolação seja possível dada a velocidade máxima das juntas). Além disso, ao invés de modificar ä'CoM para obter equilíbrio, também poderíamos gerar posições futuras para os pés, fazendo com que а'ZMP coincida com a SC neste momento futuro. Para solucionar este problema podemos utilizar um algoritmo de otimização, onde é necessário a elaboração de uma função a ser minimizada (ou maximizada), gerando no processo um plano de caminhada satisfatório, abordagem utilizada em [2]. Na ausência dessa função e devido à complexidade dos cálculos realizados, a abordagem evolutiva que propunha encontrar estes pontos através de uma busca estocástica, foi desconsiderada por não atender ao requisito do controlador ser executado em tempo real.
 
 2.1.2.2  Função de trajetória proposta
-A partir de (7) podemos observar que quando a aceleração do CoM tende para 0, аZMP tende para аCoM. Isso significa que quando o bípede está parado ou se movimentando de maneira com que haja pouca aceleração do CoM, para se manter em equilíbrio, a posição do CoM (x, y) precisa residir sobre a superfície de contato. Como podemos ver no ciclo na (Figura 2), o ciclo de caminhada possui fases onde apenas um dos pés está em contato com o chão, nesse caso, o CoM precisa se mover na direção desses pontos de contato com o chão, e vamos definir FH(t) com esse objetivo. Além disso, precisamos posicionar o pé de balanço na posição futura de contato com o chão e para isso definimos FF(t). Começando por FH(t).
+A partir de (7) podemos observar que quando a aceleração do CoM tende para 0, аZMP tende para аCoM. Isso significa que quando o bípede está parado ou se movimentando de maneira com que haja pouca aceleração do CoM, para se manter em equilíbrio, a posição do CoM (x, y) precisa residir sobre a superfície de contato. Como podemos ver no ciclo na (Figura 3), o ciclo de caminhada possui fases onde apenas um dos pés está em contato com o chão, nesse caso, o CoM precisa se mover na direção desses pontos de contato com o chão, e vamos definir FH(t) com esse objetivo. Além disso, precisamos posicionar o pé de balanço na posição futura de contato com o chão e para isso definimos FF(t). Começando por FH(t).
 
-	Tpr(t)=10 (t -Tpasso/2)/Tpasso
+	Tpr(t)=(t -Tpasso/2)/(Tpasso/3)
 
 FH, x(t)=pHx=(dfeet/2)exp(Tpr(t))-exp(-Tpr(t))exp(Tpr(t))+exp(-Tpr(t))                               (8)
 
@@ -87,38 +84,66 @@ FH, y(t)=pHy= -lhip sin (t/Tpasso)                                     (9)
 
 FH, z(t)=pHz=hhip                                                 (10)
 
-Onde Tpasso é o tempo de um passo e metade do ciclo de caminhada, dfeet é a distância entre os pés na fase double support (Figura 2), lhip é o deslocamento lateral máximo do quadril e hhip é a altura fixa do quadril. Além disso, pHx é dado pela equação tanh (Tangente Hiperbólica), com o objetivo de permitir o deslocamento no eixo x apenas quando próximo da fase double support (Figura 2). A componente pHy representa o deslocamento lateral do quadril com amplitude lhip, e consequentemente o de yCoM.  A função FF(t) é similar a função FH(t) em relação aos componentes horizontais, com a diferença de que pFy é igual a  -pHy para evitar que as pernas se colidam durante a caminhada. Note que pFx também segue o comportamento de uma função tanh, devido ao problema de tentar mover o pé de balanço sem que o ZMP esteja sobre o próximo pé de apoio. A equação para o eixo z de pF é representada pela função sino (11):
+Onde Tpasso é o tempo de um passo e metade do ciclo de caminhada, dfeet é a distância entre os pés na fase double support (Figura 2), lhip é o deslocamento lateral máximo do quadril e hhip é a altura fixa do quadril. Além disso, pHx é dado pela equação tanh (Tangente Hiperbólica), com o objetivo de permitir o deslocamento no eixo x apenas quando próximo da fase double support (Figura 3). A componente pHy representa o deslocamento lateral do quadril com amplitude lhip, e consequentemente o de yCoM.  A função FF(t) é similar a função FH(t) em relação aos componentes horizontais, com a diferença de que pFy é igual a  -pHy para evitar que as pernas se colidam durante a caminhada. Note que pFx também segue o comportamento de uma função tanh, devido ao problema de tentar mover o pé de balanço sem que o ZMP esteja sobre o próximo pé de apoio. A equação para o eixo z de pF é representada pela função sino (11):
 
 FF, z(t)=pFz=ufootexp(-(t-Tpasso/2)²)                                  (11)
 
 Onde ufoot é a altura máxima que o pé de balanço alcançará durante o passo e  um parâmetro que é ajustado manualmente para que o bípede não tente tirar o pé do chão nos momentos iniciais do passo.
 
+2.1.3  Função de rotação
+A rotação do bípede é realizada através da aplicação de ângulos no eixo yall do quadril. Para controlar a direção da rotação, definimos uma variável RT: RT=-1 indica uma rotação para a esquerda, e RT=1 indica uma rotação para a direita. Os ângulos são calculados utilizando duas funções baseadas na tangente hiperbólica: tanh[0-1](t), que varia de 0 a 1, e tanh[1-0](t), que varia de 1 a 0.
+
+As funções são definidas como:
+
+tanh[0-1](t)=1+exp(Tpr(t))-exp(-Tpr(t))exp(Tpr(t))+exp(-Tpr(t))/2                                  (12)
+
+
+tanh[0-1](t)=1-exp(Tpr(t))-exp(-Tpr(t))exp(Tpr(t))+exp(-Tpr(t))/2                                  (13)
+
+yall =Maxyall RT (tanh[0-1](t) ou tanh[0-1](t) )                           (14)
+
+onde Maxyall representa o ângulo máximo que yall pode atingir. Este ângulo yall é aplicado no atuador do quadril da perna oposta à direção desejada da rotação. Assim, para rotacionar para a esquerda, aplica-se yall na perna direita, e vice-versa. A perna na qual o ângulo é aplicado é referida como a "perna de rotação".
+Um ciclo completo de rotação ocorre em dois passos. No primeiro passo, a perna de rotação está em contato com o chão (perna de apoio), e a função tanh[0-1](t) é utilizada para aumentar gradualmente o ângulo do quadril. No segundo passo, a perna de rotação torna-se a perna de balanço, e a função tanh[0-1](t) é utilizada para diminuir gradualmente o ângulo do quadril de volta a 0 (estado inicial). Este processo faz com que o bípede gire enquanto a perna de rotação está apoiada no chão e, em seguida, corrige a postura quando esta perna é levantada.
+
 2.1.3  Compensação por gravidade
 A atuação da aceleração da gravidade sobre as múltiplas partes do corpo provocam torques indesejados sobre as juntas do bípede, além disso, a presença de falha mecânica também pode inviabilizar que a ação gerada resulte no estado esperado. Obtendo o torque gerado pela gravidade, podemos inferir um ângulo de correção proporcional nas juntas mais afetadas por estes fenômenos. Conforme em [2], para cada junta j onde queremos aplicar o ângulo de correção, devemos primeiro calcular m'j e r'CoM, j, a massa total e CoM das partes apoiada por ela respectivamente.
-m'j=i∊B'jmi                                                       (12)
+m'j=i∊B'jmi                                                       (15)
 
-r'CoM, j=(i∊B'jrCoM, imi)/m'j                                           (13)
+r'CoM, j=(i∊B'jrCoM, imi)/m'j                                           (16)
 
 Onde B'j é o conjuntos das partes do corpo apoiadas por j.Com estas informações estamos aptos a calcular o torque exercido pela ação da gravidade em relação ao ponto da junta j.
 
-'j=r'CoM, j0,0,m'jgT                                          (14)
+'j=r'CoM, j0,0,m'jgT                                          (17)
 
 Agora precisamos obter de 'j a componente na direção do eixo de j,
 
-j, g=-'jej                                                     (15)
+j, g=-'jej                                                     (18)
 
 onde ej representa o vetor unitário que aponta em direção ao eixo de j. Desconsiderando os termos integral e derivativo do controlador, o ângulo de correção a ser aplicado em j, é dado por:
 
-j, g= j, g/Kp                                                    (16)
+j, g= j, g/Kp                                                    (19)
 
-Onde Kp é a constante proporcional do controlador interno do servo motor. Além disso, na presença de falha mecânica esta constante pode ser ajustada a fim de compensar este tipo de erro. Aplicamos este ângulo de correção apenas nas juntas do joelho e quadril(eixo X, roll) devido ao maior esforço exigido.
+Onde Kp é a constante proporcional do controlador interno do servo motor. Além disso, na presença de falha mecânica esta constante pode ser ajustada a fim de compensar este tipo de erro. Aplicamos este ângulo de correção apenas nas juntas do joelho e quadril (eixo X, roll) devido ao maior esforço exigido.
+
 
 2.1  Controlador de alto nível
-O controlador de alto nível é responsável por determinar as ações necessárias para fazer com que o bípede cumpra seu objetivo. Ele é uma máquina de estados que a cada frame computa os estados futuros do bípede com base no estado atual e objetivo geral. O objetivo geral é chegar em um determinado ponto no espaço e para isso serão calculados dtarget e target, sendo eles  a distância e o ângulo mínimo necessário para rotacionar o bípede na direção do alvo. Os estados da máquina são “Parado”, “Marchando”, “Caminhando” e “Virando”, e podem ser descritos pela composição das variáveis dfeet, lhip e ufoot utilizadas na função de trajetória do CoM, a seguir vemos cada estado detalhadamente:
-Parado: Este é o estado mais simples e é atingido quando todas as variáveis dfeet, lhip e ufoot tem atribuídas o valor 0.
-Marchando: A marcha é o estado onde o bípede está deslocando lateralmente o centro de massa entre as superfícies de contato com o chão e o pé de balanço está se movimentando em relação ao eixo z (para cima), no entanto, imóvel em relação ao eixo x (para frente). Este estado pode ser considerado um estado intermediário entre os demais, e pode ser alcançado quando dfeet for igual a 0, lhip e ufoot estiverem com seu valor máximo.
-Caminhando: Este é o estado onde o bípede vai estar caminhando para frente e é atingido quando dfeet, lhip e ufoot estiverem em seu valor máximo.
-Virando: Este estado é similar ao “Marchando” com a diferença que VAR_ROT vai possuir um valor diferente de 0, sendo -1 para virar a esquerda e 1 para a direita.
+O controlador de alto nível é responsável por determinar as ações necessárias para fazer com que o bípede cumpra seu objetivo. Ele é uma máquina de estados que a cada frame computa os estados futuros do bípede com base no estado atual e objetivo geral. O objetivo geral é chegar em um determinado ponto no espaço e para isso serão calculados dtarget e target, sendo eles  a distância e diferença angular necessária para rotacionar o bípede na direção do alvo. Os estados da máquina são “Parado”, “Marchando”, “Caminhando” e “Virando”, e podem ser descritos pela composição das variáveis dfeet, lhip,  ufoot e RT, utilizadas na função de trajetória do CoM e rotação do bípede, a seguir vemos cada estado detalhadamente:
+Parado: Este é o estado mais simples e é atingido quando todas as variáveis dfeet, lhip,  ufoot e RT tem atribuídas o valor 0.
+Marchando: A marcha é o estado onde o bípede está deslocando lateralmente o centro de massa entre as superfícies de contato com o chão e o pé de balanço está se movimentando em relação ao eixo z (para cima), no entanto, imóvel em relação ao eixo x (para frente). Este estado pode ser considerado um estado intermediário entre os demais, e pode ser alcançado quando dfeet e RT for igual a 0, lhip e ufoot estiverem com seu valor máximo.
+Caminhando: Este é o estado onde o bípede estará caminhando para frente e é atingido quando dfeet, lhip e ufoot estiverem em seu valor máximo. Neste estado não aplicamos rotação ao bípede e portanto RT será igual a 0.
+Virando: Este estado é similar ao “Marchando” com a diferença que RT vai possuir um valor diferente de 0, sendo -1 para virar a esquerda e 1 para a direita.
+
+
+Figura 4. Máquina de estados implementada pelo controlador de alto nível. As transições são definidas com base na avaliação dos parâmetros dtarget e target .
+
+
+
+As transições entre os estados ocorrem por meio da interpolação linear dos valores das variáveis dfeet, lhip e ufoot. Os critérios para essas transições são os seguintes:
+Objetivo definido: Um objetivo é definido quando um ponto no espaço é estabelecido como destino para o bípede.
+Objetivo atingido: O objetivo é considerado atingido quando a distância até ele dtarget é inferior a um certo limite predefinido, indicando proximidade.
+Necessário ajuste de orientação: Um ajuste de orientação é necessário quando o valor absoluto da diferença angular para o alvo (target) excede um determinado limite, sinalizando que o bípede precisa rotacionar em direção ao objetivo.
+Não chegou ao objetivo: Esta condição ocorre quando não há necessidade de ajuste de rotação (target dentro do limite) e a distância até o objetivo (dtarget) ainda é maior que o limite de proximidade.
+Ajuste de orientação concluído: O ajuste de orientação é concluído quando o valor absoluto de target se torna menor que o limite estabelecido, indicando que o bípede está agora orientado na direção do objetivo.
 
 3.  Experimentos e resultados
 Neste capítulo mostraremos como foram configurados os testes e quais foram os resultados obtidos. Em relação ao ambiente de simulação foi utilizado a Engine V-Rep [6] com o motor físico Bullets v2.8, onde os parâmetros de simulação como o intervalo entre os frames dt, foram personalizados para cada teste. Devido a linguagem padrão da engine ser Lua, tivemos que usar uma interface com o agente implementado em Python, para isso, o Robot Operating System (ROS) nos oferece um meio de comunicação baseado em publishers e subscribers, onde nós podem publicar mensagens em um determinado tópico, para que outros nós possam subscrever funções de callback. 
