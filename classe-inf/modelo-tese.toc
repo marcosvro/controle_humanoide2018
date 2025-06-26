@@ -1,0 +1,20 @@
+\babel@toc {english}{}\relax 
+\contentsline {chapter}{Lista de Figuras}{10}{section*.10}%
+\contentsline {chapter}{Lista de Tabelas}{11}{section*.11}%
+\contentsline {chapter}{Lista de Abrevia\c {c}\~oes}{12}{section*.13}%
+\contentsline {chapter}{Lista de S\'imbolos}{13}{section*.15}%
+\contentsline {chapter}{\numberline {1}Introdução}{15}{chapter.16}%
+\contentsline {chapter}{\numberline {2}Metodologia}{17}{chapter.17}%
+\contentsline {section}{\numberline {2.1}Controlador de Baixo Nível}{19}{section.19}%
+\contentsline {subsection}{\numberline {2.1.1}Gerador de Cinemática}{19}{subsection.20}%
+\contentsline {subsection}{\numberline {2.1.2}Gerador de Trajetória do CoM}{20}{subsection.27}%
+\contentsline {subsubsection}{\numberline {2.1.2.1}Função de trajetória baseada no ZMP}{21}{subsubsection.29}%
+\contentsline {subsubsection}{\numberline {2.1.2.2}Função de trajetória proposta}{22}{subsubsection.35}%
+\contentsline {subsection}{\numberline {2.1.3}Função de Rotação}{23}{subsection.41}%
+\contentsline {subsection}{\numberline {2.1.4}Compensação por Gravidade}{24}{subsection.45}%
+\contentsline {section}{\numberline {2.2}Controlador de Alto Nível}{25}{section.51}%
+\contentsline {chapter}{\numberline {3}Experimentos e Resultados}{27}{chapter.53}%
+\contentsline {section}{\numberline {3.1}Simulações}{27}{section.54}%
+\contentsline {section}{\numberline {3.2}Discussões e Conclusão}{31}{section.71}%
+\contentsline {chapter}{Refer\^encias}{33}{section.71}%
+\contentsfinish 

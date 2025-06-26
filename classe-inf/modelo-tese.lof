@@ -1,0 +1,14 @@
+\babel@toc {english}{}\relax 
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {2.1}{\ignorespaces Interação entre os controladores de alto e baixo nível, incluindo suas responsabilidades.\relax }}{18}{figure.caption.18}%
+\contentsline {figure}{\numberline {2.2}{\ignorespaces Representação dos links da perna.\relax }}{20}{figure.caption.21}%
+\contentsline {figure}{\numberline {2.3}{\ignorespaces Divisão do ciclo de caminhada segundo Perry e Burnfield~\cite {Perry2010}.\relax }}{21}{figure.caption.28}%
+\contentsline {figure}{\numberline {2.4}{\ignorespaces Máquina de estados implementada pelo controlador de alto nível. As transições são definidas com base na avaliação dos parâmetros $d_{target}$ e $\Delta \theta _{target}$.\relax }}{26}{figure.caption.52}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {3.1}{\ignorespaces Imagem da configuração inicial da simulação.\relax }}{29}{figure.caption.60}%
+\contentsline {figure}{\numberline {3.2}{\ignorespaces (a) indica a frequência das distâncias (em metros) do ponto objetivo no final da simulação, e (b) a variação dessas distâncias ao longo do tempo para cada simulação.\relax }}{30}{figure.caption.61}%
+\contentsline {figure}{\numberline {3.3}{\ignorespaces Frequência dos intervalos definidos sobre os valores de variação angular média de cada simulação, medido em graus. (a) mostra a variação em X (roll) e (b) a variação em Y (pitch).\relax }}{30}{figure.caption.64}%
+\contentsline {figure}{\numberline {3.4}{\ignorespaces Frequência dos intervalos definidos sobre os valores de desvio padrão da variação angular de cada simulação, medido em graus. (a) mostra o desvio da variação em X (roll) e (b) o desvio da variação em Y (pitch).\relax }}{31}{figure.caption.67}%
+\contentsline {figure}{\numberline {3.5}{\ignorespaces Frequência da duração dos episódios em segundos.\relax }}{31}{figure.caption.70}%
+\contentsfinish 

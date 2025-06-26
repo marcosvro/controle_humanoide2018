@@ -1,0 +1,53 @@
+\begin{thebibliography}{1}
+
+\bibitem{Vukobratovic2004}
+{\sffamily\scshape Branislav, V. M. B.~A.}
+\newblock {\bfseries Zero-moment point - thirty five years of its life}.
+\newblock {\itshape International Journal of Humanoid Robotics 1(01):157-173},
+  2004.
+
+\bibitem{Maximo2017}
+{\sffamily\scshape de~A.~Maximo, M. R.~O.}
+\newblock {\bfseries Automatic Walking Step Duration through Model Predictive
+  Control}.
+\newblock PhD thesis, Instituto Tecnológico de Aeronáutica, São José dos
+  Campos, 2017.
+
+\bibitem{Kajita2001}
+{\sffamily\scshape Kajita, S.; Kanehiro, F.; Kaneko, K.; Yokoi, K.; Hirukawa,
+  H.}
+\newblock {\bfseries The 3d linear inverted pendulum mode: a simple modeling
+  for a biped walking pattern generation}.
+\newblock In: {\itshape Proceedings 2001 IEEE/RSJ International Conference on
+  Intelligent Robots and Systems}, 2001.
+
+\bibitem{Bin2017}
+{\sffamily\scshape P., X.~B.; Berseth, G.; Yin, K.; van~de Panne, M.}
+\newblock {\bfseries Deeploco: Dynamic locomotion skills using hierarchical
+  deep reinforcement learning}.
+\newblock {\itshape ACM Transactions on Graphics (Proc. SIGGRAPH 2017)}, 2017.
+
+\bibitem{Perry2010}
+{\sffamily\scshape Perry, J.; Burnfield, J.}
+\newblock {\bfseries GAIT ANALYSIS. Normal and Pathological Function}.
+\newblock SLACK Inc., Thorofare, 2010.
+
+\bibitem{Rohmer2013}
+{\sffamily\scshape Rohmer, E.; Singh, S. P.~N.; Freese, M.}
+\newblock {\bfseries V-rep: a versatile and scalable robot simulation
+  framework}.
+\newblock {\itshape IEEE/RSJ Int. Conf. on Intelligent Robots and Systems},
+  2013.
+
+\bibitem{Schulman2017}
+{\sffamily\scshape Schulman, J.; Wolski, F.; Dhariwal, P.; Radford, A.; Klimov,
+  O.}
+\newblock {\bfseries Proximal policy optimization algorithms}.
+\newblock {\itshape arXiv preprint arXiv:1707.06347}, 2017.
+
+\bibitem{Vukobratovic1968}
+{\sffamily\scshape Vukobratović, M.; Juričić, D.}
+\newblock {\bfseries Contribution to the synthesis of biped gait}.
+\newblock {\itshape IFAC Proceedings Volumes}, 1968.
+
+\end{thebibliography}
