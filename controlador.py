@@ -62,7 +62,8 @@ class Controlador():
 		if RASPBERRY:
 			GPIO.setup(self.ON_PIN, GPIO.IN)
 
-		self.simTransRate = 1/self.robo.nEstados*self.robo.tempoPasso
+		self.simTransRate = 0.008
+		# self.robo.nEstados = (self.robo.tempoPasso / self.simTransRate)
 
 		self.chegou_no_alvo = True
 		self.turn90 = False
@@ -106,7 +107,7 @@ class Controlador():
 			print("Iniciando ROS node para execucao do micro-controlador")
 			self.pub = node.create_publisher(Int16MultiArray, 'Bioloid/joint_pos', 1)
 
-		self.rate = node.create_rate(1/(self.robo.tempoPasso/self.robo.nEstados))
+		self.rate = node.create_rate(1/(self.robo.tempoPasso/self.robo.tPasso))
 		self.spin_t = threading.Thread(target=rclpy.spin, args=(node, ), daemon=True)
 		self.spin_t.start()
 
@@ -364,8 +365,8 @@ class Controlador():
 			theta -= 360
 		self.robo_yall_lock = -theta
 
-		distancia_ponto_alvo = math.sqrt((self.posicao_alvo[0] - self.posicao_robo[0])**2 + (self.posicao_alvo[1] - self.posicao_robo[1])**2)
-		if (distancia_ponto_alvo > 0.2):
+		self.distancia_ponto_alvo = math.sqrt((self.posicao_alvo[0] - self.posicao_robo[0])**2 + (self.posicao_alvo[1] - self.posicao_robo[1])**2)
+		if (self.distancia_ponto_alvo > 0.2):
 			self.chegou_no_alvo = False
 			self.robo_pitch_lock = 0
 		else:
@@ -457,7 +458,7 @@ class Controlador():
 				timer_main_loop += self.robo.deltaTime
 				time.sleep(self.simTransRate)
 
-				print(self.state)
+				# print(self.robo.fps_count)
 
 
 			except KeyboardInterrupt as e:

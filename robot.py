@@ -19,11 +19,11 @@ class Robo():
 
 	def __init__(self,
 				altura_inicial=17.,
-				tempo_passo = 0.35, # 0.4
-				deslocamento_ypelves = 3., # 3.5
-				deslocamento_zpes = 2.5, # 3.
-				deslocamento_xpes= 1.2, # 1.5
-				deslocamento_zpelves = 30.,
+				tempo_passo = 0.35, # 0.35
+				deslocamento_ypelves = 3.8, # 3.8
+				deslocamento_zpes = 3., # 3.
+				deslocamento_xpes= 2.5, # 2.5
+				anguloViraMAX = 15., # 15.
 				inertial_foot_enable = False,
 				gravity_compensation_enable = False):
 			
@@ -37,14 +37,18 @@ class Robo():
 		self.deslocamentoXpesMAX = deslocamento_xpes
 		self.deslocamentoZpesMAX = deslocamento_zpes
 		self.deslocamentoYpelvesMAX = deslocamento_ypelves
-		self.deslocamentoZpelvesMAX = deslocamento_zpelves
-		self.influencia_gravity_compensation = 15 # quanto maior o valor menos influencia o GC terá
+		self.anguloViraMAX = anguloViraMAX
+		self.influencia_gravity_compensation = 10 # quanto maior o valor menos influencia o GC terá
 		self.fator_deslocamento_lateral_pe_balanco = 1.1 # 1 representa nenhuma influencia, ou nenhum deslocamento lateral adicional do pé de balanço
 
 		self.nEstados = 125
+		self.tPasso = self.nEstados/2
 		self.tempoPasso = tempo_passo
 		self.a = 10.5
 		self.c = 10.2
+		
+		self.incTanh = 0.3 # utilizado para controlar o deslocamento frontal, e rotação. Quando menor este valor, mais tarde o bipede realizará o movimento
+		self.incSino = 0.4 # utilizado para controlar o deslocamento em z do pé de balanço. Quando menor este valor, mais tarde o bipede realizará o movimento
 
 		self.angulos = [0]*20
 
@@ -74,7 +78,6 @@ class Robo():
 		self.rot_desvio = 0
 		self.rota_dir = 0
 		self.rota_esq = 0
-		self.angulo_vira = 10
 
 		self.marchando = False
 		self.recuando = False
@@ -141,7 +144,7 @@ class Robo():
 		if not self.gravity_compensation_enable or (self.t_state < self.tempoPasso/2 and self.t_state < self.tempoPasso*self.time_ignore_GC) or (self.t_state >= self.tempoPasso/2 and self.t_state > self.tempoPasso*(1-self.time_ignore_GC)) or (current_state == "IDDLE" and not self.recuando and not self.freando):
 			return
 
-		torques = self.body.get_torque_in_joint(self.perna,[3,5])
+		torques = self.body.get_torque_in_joint(self.perna,[2,5])
 
 		dQ = (np.array(torques)/KP_CONST)/self.influencia_gravity_compensation
 		dQ *= math.sin(self.t_state*math.pi/self.tempoPasso)
@@ -151,7 +154,7 @@ class Robo():
 			self.angulos[self.RIGHT_ANKLE_PITCH] += dQ[0]
 			self.angulos[self.RIGHT_HIP_ROLL] += (dQ[1]*-1)
 		else:
-			self.angulos[self.LEFT_KNEE] += dQ[0]
+			self.angulos[self.LEFT_ANKLE_PITCH] += dQ[0]
 			self.angulos[self.LEFT_HIP_ROLL] += dQ[1]
 		
 	def calcula_centro_pressao(self):
@@ -350,20 +353,21 @@ class Robo():
 	def getTragectoryPoint(self, x):
 		pos_pelves = self.pos_inicial_pelves[:]
 
-		dif_estado = (x-self.nEstados/2)
+		dif_estado = (x-self.tPasso)
 
-		aux = (2*dif_estado)/50
-		aux2 = ((math.exp(aux) - math.exp(- aux))/(math.exp(aux)+math.exp(-aux)))
+		aux = dif_estado/(self.nEstados*self.incTanh)
+		aux2 = (math.exp(aux) - math.exp(-aux))/(math.exp(aux)+math.exp(-aux))
 
-		p1 = (self.deslocamentoXpes/2)*aux2
-		pos_pelves[0] = p1
-		pos_pelves[1] += -self.deslocamentoYpelves*math.sin(x*math.pi/self.nEstados)
+		pHx = (self.deslocamentoXpes/2)*aux2
+		pHy = -self.deslocamentoYpelves*math.sin(x*math.pi/self.nEstados)
+		pos_pelves[0] = pHx
+		pos_pelves[1] += pHy
 
 		pos_foot = self.pos_inicial_pelves[:]
-		p2 = (-self.deslocamentoXpes/2)*aux2
-		pos_foot[0] = p2
-		pos_foot[1] += self.deslocamentoYpelves*math.sin(x*math.pi/self.nEstados)*self.fator_deslocamento_lateral_pe_balanco
-		pos_foot[2] = self.altura - self.deslocamentoZpes*math.exp(-(dif_estado**2)/600)
+		pFx = (-self.deslocamentoXpes/2)*aux2
+		pos_foot[0] = pFx
+		pos_foot[1] += -pHy*self.fator_deslocamento_lateral_pe_balanco
+		pos_foot[2] = self.altura - self.deslocamentoZpes*math.exp(-(dif_estado**2)/(self.tPasso*self.incSino)**2)
 		return pos_pelves, pos_foot
 
 	# interpolação simples entre estados
@@ -389,7 +393,7 @@ class Robo():
 
 
 	def atualiza_cinematica(self):
-		x = (self.t_state*125)/self.tempoPasso
+		x = (self.t_state*self.nEstados)/self.tempoPasso
 		pelv_point, foot_point = self.getTragectoryPoint(x)
 		if self.perna:
 			#CINEMÁTICA INVERSA
@@ -404,16 +408,18 @@ class Robo():
 					influencia = np.sum(self.Lfoot_press)/self.total_press
 				data_foot[:2] = np.array(data_foot[:2]) + np.array(self.Lfoot_orientation[:2])*(np.pi/180.)*(1-influencia)
 	
+			xTanH = (x-self.nEstados/2)/(self.nEstados*self.incTanh)
+			tanH = (np.exp(xTanH) - np.exp(-xTanH)) / (np.exp(xTanH) + np.exp(-xTanH))
 			#ROTINHA PARA PRODUZIR MOVIMENTO DE ROTAÇÃO NA PERNA DIREITA (VIRANDO PARA A ESQUERDA)
 			if self.rota_dir == -1:
-				data_pelv[5] = -self.angulo_vira/2. - self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50)))
+				data_pelv[5] = -self.anguloViraMAX/2. - self.anguloViraMAX/2.* tanH
 				data_pelv[5] = data_pelv[5] * math.pi/180.
 			else:
 				data_pelv[5] = 0
 
 			#ROTINHA PARA RESETAR PERNA ESQUERDA (CASO ESTEJA VIRANDO PARA A DIREITA)
 			if self.rota_esq == 2:
-				data_foot[5] = self.angulo_vira - (self.angulo_vira/2. + self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50))))
+				data_foot[5] = self.anguloViraMAX - (self.anguloViraMAX/2. + self.anguloViraMAX/2. * tanH)
 				data_foot[5] = data_foot[5] * math.pi/180.
 			else:
 				data_foot[5] = 0
@@ -438,14 +444,14 @@ class Robo():
 
 			#ROTINHA PARA PRODUZIR MOVIMENTO DE ROTAÇÃO NA PERNA ESQUERDA (VIRANDO PARA A DIREITA)
 			if self.rota_esq == 1:
-				data_pelv[5] =  self.angulo_vira/2. + self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50)))
+				data_pelv[5] =  self.anguloViraMAX/2. + self.anguloViraMAX/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50)))
 				data_pelv[5] = data_pelv[5] * math.pi/180.
 			else:
 				data_pelv[5] = 0
 
 			#ROTINHA PARA RESETAR PERNA DIREITA (CASO ESTEJA VIRANDO PARA A ESQUERDA)
 			if self.rota_dir == -2:
-				data_foot[5] =  -self.angulo_vira - (-self.angulo_vira/2. - self.angulo_vira/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50))))		
+				data_foot[5] =  -self.anguloViraMAX - (-self.anguloViraMAX/2. - self.anguloViraMAX/2.*((np.exp((2*(x-self.nEstados/2))/50) - np.exp((2*(x-self.nEstados/2))/-50))/(np.exp((2*(x-self.nEstados/2))/50)+np.exp((2*(x-self.nEstados/2))/-50))))		
 				data_foot[5] = data_foot[5] * math.pi/180.
 			else:
 				data_foot[5] = 0
