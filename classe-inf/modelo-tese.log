@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.22 (TeX Live 2022/dev/Debian) (preloaded format=pdflatex 2025.6.20)  22 JUN 2025 13:42
+This is pdfTeX, Version 3.141592653-2.6-1.40.22 (TeX Live 2022/dev/Debian) (preloaded format=pdflatex 2025.6.20)  5 JUL 2025 11:33
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -356,14 +356,45 @@ Package: subfigure 2002/03/15 v2.1.5 subfigure package
 \subfig@top=\skip54
 \subfig@bottom=\skip55
 )
+(/usr/share/texlive/texmf-dist/tex/latex/pdfpages/pdfpages.sty
+Package: pdfpages 2022/01/29 v0.5u Insert pages of external PDF documents (AM)
+
+(/usr/share/texlive/texmf-dist/tex/latex/tools/calc.sty
+Package: calc 2017/05/25 v4.3 Infix arithmetic (KKT,FJ)
+\calc@Acount=\count281
+\calc@Bcount=\count282
+\calc@Adimen=\dimen157
+\calc@Bdimen=\dimen158
+\calc@Askip=\skip56
+\calc@Bskip=\skip57
+LaTeX Info: Redefining \setlength on input line 80.
+LaTeX Info: Redefining \addtolength on input line 81.
+\calc@Ccount=\count283
+\calc@Cskip=\skip58
+)
+\AM@pagewidth=\dimen159
+\AM@pageheight=\dimen160
+\AM@fboxrule=\dimen161
+
+(/usr/share/texlive/texmf-dist/tex/latex/pdfpages/pppdftex.def
+File: pppdftex.def 2022/01/29 v0.5u Pdfpages driver for pdfTeX (AM)
+)
+\pdfpages@includegraphics@status=\count284
+\AM@pagebox=\box51
+\AM@global@opts=\toks20
+\AM@pagecnt=\count285
+\AM@toc@title=\toks21
+\c@AM@survey=\count286
+\AM@templatesizebox=\box52
+)
 (/usr/share/texlive/texmf-dist/tex/latex/algorithms/algorithmic.sty
 Package: algorithmic 2009/08/24 v0.1 Document Style `algorithmic'
-\c@ALC@unique=\count281
-\c@ALC@line=\count282
-\c@ALC@rem=\count283
-\c@ALC@depth=\count284
-\ALC@tlm=\skip56
-\algorithmicindent=\skip57
+\c@ALC@unique=\count287
+\c@ALC@line=\count288
+\c@ALC@rem=\count289
+\c@ALC@depth=\count290
+\ALC@tlm=\skip59
+\algorithmicindent=\skip60
 )
 (/usr/share/texlive/texmf-dist/tex/latex/algorithms/algorithm.sty
 Package: algorithm 2009/08/24 v0.1 Document Style `algorithm' - floating enviro
@@ -371,30 +402,30 @@ nment
 
 (/usr/share/texlive/texmf-dist/tex/latex/float/float.sty
 Package: float 2001/11/08 v1.3d Float enhancements (AL)
-\c@float@type=\count285
-\float@exts=\toks20
-\float@box=\box51
-\@float@everytoks=\toks21
-\@floatcapt=\box52
+\c@float@type=\count291
+\float@exts=\toks22
+\float@box=\box53
+\@float@everytoks=\toks23
+\@floatcapt=\box54
 )
-\@float@every@algorithm=\toks22
-\c@algorithm=\count286
+\@float@every@algorithm=\toks24
+\c@algorithm=\count292
 )
-\@float@every@codigo=\toks23
-\c@codigo=\count287
+\@float@every@codigo=\toks25
+\c@codigo=\count293
 
 (/usr/share/texlive/texmf-dist/tex/latex/fancyhdr/fancyhdr.sty
 Package: fancyhdr 2021/01/28 v4.0.1 Extensive control of page headers and foote
 rs
-\f@nch@headwidth=\skip58
-\f@nch@O@elh=\skip59
-\f@nch@O@erh=\skip60
-\f@nch@O@olh=\skip61
-\f@nch@O@orh=\skip62
-\f@nch@O@elf=\skip63
-\f@nch@O@erf=\skip64
-\f@nch@O@olf=\skip65
-\f@nch@O@orf=\skip66
+\f@nch@headwidth=\skip61
+\f@nch@O@elh=\skip62
+\f@nch@O@erh=\skip63
+\f@nch@O@olh=\skip64
+\f@nch@O@orh=\skip65
+\f@nch@O@elf=\skip66
+\f@nch@O@erf=\skip67
+\f@nch@O@olf=\skip68
+\f@nch@O@orf=\skip69
 )
 (/usr/share/texlive/texmf-dist/tex/latex/tocbibind/tocbibind.sty
 Package: tocbibind 2010/10/13 v1.5k extra ToC listings
@@ -405,22 +436,22 @@ Package tocbibind Note: Using chapter style headings, unless overridden.
 
 ) (/usr/share/texlive/texmf-dist/tex/latex/titlesec/titletoc.sty
 Package: titletoc 2021/07/05 v2.14 TOC entries
-\ttl@leftsep=\dimen157
+\ttl@leftsep=\dimen162
 )
-\c@definition=\count288
+\c@definition=\count294
 
 (/usr/share/texlive/texmf-dist/tex/latex/enumitem/enumitem.sty
 Package: enumitem 2019/06/20 v3.9 Customized lists
-\labelindent=\skip67
-\enit@outerparindent=\dimen158
-\enit@toks=\toks24
-\enit@inbox=\box53
-\enit@count@id=\count289
-\enitdp@description=\count290
+\labelindent=\skip70
+\enit@outerparindent=\dimen163
+\enit@toks=\toks26
+\enit@inbox=\box55
+\enit@count@id=\count295
+\enitdp@description=\count296
 ))
 (/usr/share/texlive/texmf-dist/tex/latex/amsmath/amsmath.sty
 Package: amsmath 2021/10/15 v2.17l AMS math features
-\@mathmargin=\skip68
+\@mathmargin=\skip71
 
 For additional information on amsmath, use the `?' option.
 (/usr/share/texlive/texmf-dist/tex/latex/amsmath/amstext.sty
@@ -428,58 +459,58 @@ Package: amstext 2021/08/26 v2.01 AMS text
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsmath/amsgen.sty
 File: amsgen.sty 1999/11/30 v2.0 generic functions
-\@emptytoks=\toks25
-\ex@=\dimen159
+\@emptytoks=\toks27
+\ex@=\dimen164
 ))
 (/usr/share/texlive/texmf-dist/tex/latex/amsmath/amsbsy.sty
 Package: amsbsy 1999/11/29 v1.2d Bold Symbols
-\pmbraise@=\dimen160
+\pmbraise@=\dimen165
 )
 (/usr/share/texlive/texmf-dist/tex/latex/amsmath/amsopn.sty
 Package: amsopn 2021/08/26 v2.02 operator names
 )
-\inf@bad=\count291
+\inf@bad=\count297
 LaTeX Info: Redefining \frac on input line 234.
-\uproot@=\count292
-\leftroot@=\count293
+\uproot@=\count298
+\leftroot@=\count299
 LaTeX Info: Redefining \overline on input line 399.
-\classnum@=\count294
-\DOTSCASE@=\count295
+\classnum@=\count300
+\DOTSCASE@=\count301
 LaTeX Info: Redefining \ldots on input line 496.
 LaTeX Info: Redefining \dots on input line 499.
 LaTeX Info: Redefining \cdots on input line 620.
-\Mathstrutbox@=\box54
-\strutbox@=\box55
-\big@size=\dimen161
+\Mathstrutbox@=\box56
+\strutbox@=\box57
+\big@size=\dimen166
 LaTeX Font Info:    Redeclaring font encoding OML on input line 743.
 LaTeX Font Info:    Redeclaring font encoding OMS on input line 744.
-\macc@depth=\count296
-\c@MaxMatrixCols=\count297
+\macc@depth=\count302
+\c@MaxMatrixCols=\count303
 \dotsspace@=\muskip17
-\c@parentequation=\count298
-\dspbrk@lvl=\count299
-\tag@help=\toks26
-\row@=\count300
-\column@=\count301
-\maxfields@=\count302
-\andhelp@=\toks27
-\eqnshift@=\dimen162
-\alignsep@=\dimen163
-\tagshift@=\dimen164
-\tagwidth@=\dimen165
-\totwidth@=\dimen166
-\lineht@=\dimen167
-\@envbody=\toks28
-\multlinegap=\skip69
-\multlinetaggap=\skip70
-\mathdisplay@stack=\toks29
+\c@parentequation=\count304
+\dspbrk@lvl=\count305
+\tag@help=\toks28
+\row@=\count306
+\column@=\count307
+\maxfields@=\count308
+\andhelp@=\toks29
+\eqnshift@=\dimen167
+\alignsep@=\dimen168
+\tagshift@=\dimen169
+\tagwidth@=\dimen170
+\totwidth@=\dimen171
+\lineht@=\dimen172
+\@envbody=\toks30
+\multlinegap=\skip72
+\multlinetaggap=\skip73
+\mathdisplay@stack=\toks31
 LaTeX Info: Redefining \[ on input line 2938.
 LaTeX Info: Redefining \] on input line 2939.
 )
 (/usr/share/texlive/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
 File: l3backend-pdftex.def 2022-01-12 L3 backend support: PDF output (pdfTeX)
-\l__color_backend_stack_int=\count303
-\l__pdf_internal_box=\box56
+\l__color_backend_stack_int=\count309
+\l__pdf_internal_box=\box58
 )
 (./modelo-tese.aux)
 \openout1 = `modelo-tese.aux'.
@@ -509,17 +540,17 @@ LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 17.
 LaTeX Font Info:    ... okay on input line 17.
  (/usr/share/texlive/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count304
-\scratchdimen=\dimen168
-\scratchbox=\box57
-\nofMPsegments=\count305
-\nofMParguments=\count306
-\everyMPshowfont=\toks30
-\MPscratchCnt=\count307
-\MPscratchDim=\dimen169
-\MPnumerator=\count308
-\makeMPintoPDFobject=\count309
-\everyMPtoPDFconversion=\toks31
+\scratchcounter=\count310
+\scratchdimen=\dimen173
+\scratchbox=\box59
+\nofMPsegments=\count311
+\nofMParguments=\count312
+\everyMPshowfont=\toks32
+\MPscratchCnt=\count313
+\MPscratchDim=\dimen174
+\MPnumerator=\count314
+\makeMPintoPDFobject=\count315
+\everyMPtoPDFconversion=\toks33
 ) (/usr/share/texlive/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty
 Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
 
@@ -550,7 +581,7 @@ Package: refcount 2019/12/15 v3.6 Data extraction from label references (HO)
 (/usr/share/texlive/texmf-dist/tex/generic/gettitlestring/gettitlestring.sty
 Package: gettitlestring 2019/12/15 v1.6 Cleanup title references (HO)
 )
-\c@section@level=\count310
+\c@section@level=\count316
 )
 LaTeX Info: Redefining \ref on input line 17.
 LaTeX Info: Redefining \pageref on input line 17.
@@ -564,85 +595,253 @@ Package caption Info: Begin \AtBeginDocument code.
 Package caption Info: float package is loaded.
 Package caption Info: subfigure package is loaded.
 Package caption Info: End \AtBeginDocument code.
- [1
+
+(/usr/share/texlive/texmf-dist/tex/latex/pdflscape/pdflscape.sty
+Package: pdflscape 2019/12/05 v0.12 Display of landscape pages in PDF (HO)
+
+(/usr/share/texlive/texmf-dist/tex/latex/graphics/lscape.sty
+Package: lscape 2020/05/28 v3.02 Landscape Pages (DPC)
+)
+Package pdflscape Info: Auto-detected driver: pdftex on input line 81.
+) [1
 
 
 {/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}]
-LaTeX Font Info:    Trying to load font information for TS1+ptm on input line 5
-9.
- (/usr/share/texlive/texmf-dist/tex/latex/psnfss/ts1ptm.fd
-File: ts1ptm.fd 2001/06/04 font definitions for TS1/ptm.
-)
-LaTeX Font Info:    Trying to load font information for OT1+ptmcm on input line
- 59.
+<pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG__RI__TECA.pdf, id=127, 
+597.23125pt x 845.1575pt>
+File: pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG__RI__TECA.pdf Grap
+hic file (type pdf)
+<use pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG__RI__TECA.pdf>
+Package pdftex.def Info: pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG
+__RI__TECA.pdf  used on input line 59.
+(pdftex.def)             Requested size: 597.22978pt x 845.15544pt.
+File: pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG__RI__TECA.pdf Grap
+hic file (type pdf)
+<use pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG__RI__TECA.pdf>
+Package pdftex.def Info: pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG
+__RI__TECA.pdf  used on input line 59.
+(pdftex.def)             Requested size: 597.22978pt x 845.15544pt.
+<pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG__RI__TECA.pdf, id=130, 
+page=1, 597.23125pt x 845.1575pt>
+File: pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG__RI__TECA.pdf Grap
+hic file (type pdf)
+<use pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG__RI__TECA.pdf, page
+ 1>
+Package pdftex.def Info: pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG
+__RI__TECA.pdf , page1 used on input line 59.
+(pdftex.def)             Requested size: 426.79134pt x 603.97353pt.
+File: pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG__RI__TECA.pdf Grap
+hic file (type pdf)
+<use pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG__RI__TECA.pdf, page
+ 1>
+Package pdftex.def Info: pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG
+__RI__TECA.pdf , page1 used on input line 59.
+(pdftex.def)             Requested size: 836.95644pt x 1184.3989pt.
+File: pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG__RI__TECA.pdf Grap
+hic file (type pdf)
+<use pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG__RI__TECA.pdf, page
+ 1>
+Package pdftex.def Info: pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG
+__RI__TECA.pdf , page1 used on input line 59.
+(pdftex.def)             Requested size: 836.95644pt x 1184.3989pt.
+File: pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG__RI__TECA.pdf Grap
+hic file (type pdf)
+<use pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG__RI__TECA.pdf, page
+ 1>
+Package pdftex.def Info: pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG
+__RI__TECA.pdf , page1 used on input line 59.
+(pdftex.def)             Requested size: 836.95644pt x 1184.3989pt.
+File: pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG__RI__TECA.pdf Grap
+hic file (type pdf)
+<use pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG__RI__TECA.pdf, page
+ 1>
+Package pdftex.def Info: pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG
+__RI__TECA.pdf , page1 used on input line 59.
+(pdftex.def)             Requested size: 836.95644pt x 1184.3989pt.
+ [2
 
+
+ <./pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG__RI__TECA.pdf>]
+<pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG__RI__TECA.pdf, id=153, 
+page=2, 597.23125pt x 845.1575pt>
+File: pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG__RI__TECA.pdf Grap
+hic file (type pdf)
+<use pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG__RI__TECA.pdf, page
+ 2>
+Package pdftex.def Info: pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG
+__RI__TECA.pdf , page2 used on input line 59.
+(pdftex.def)             Requested size: 836.95644pt x 1184.3989pt.
+File: pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG__RI__TECA.pdf Grap
+hic file (type pdf)
+<use pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG__RI__TECA.pdf, page
+ 2>
+Package pdftex.def Info: pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG
+__RI__TECA.pdf , page2 used on input line 59.
+(pdftex.def)             Requested size: 836.95644pt x 1184.3989pt.
+File: pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG__RI__TECA.pdf Grap
+hic file (type pdf)
+<use pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG__RI__TECA.pdf, page
+ 2>
+Package pdftex.def Info: pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG
+__RI__TECA.pdf , page2 used on input line 59.
+(pdftex.def)             Requested size: 836.95644pt x 1184.3989pt.
+ [3 <./pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG__RI__TECA.pdf>]
+Underfull \hbox (badness 1052) in paragraph at lines 60--60
+[]\T1/ptm/m/n/12 Trabalho de Con-clusão ap-re-sen-tado à Co-or-de-nação do
+ []
+
+LaTeX Font Info:    Trying to load font information for OT1+ptmcm on input line
+ 60.
 (/usr/share/texlive/texmf-dist/tex/latex/psnfss/ot1ptmcm.fd
 File: ot1ptmcm.fd 2000/01/03 Fontinst v1.801 font definitions for OT1/ptmcm.
 )
 LaTeX Font Info:    Trying to load font information for OML+ptmcm on input line
- 59.
+ 60.
 
 (/usr/share/texlive/texmf-dist/tex/latex/psnfss/omlptmcm.fd
 File: omlptmcm.fd 2000/01/03 Fontinst v1.801 font definitions for OML/ptmcm.
 )
 LaTeX Font Info:    Trying to load font information for OMX+psycm on input line
- 59.
+ 60.
 
 (/usr/share/texlive/texmf-dist/tex/latex/psnfss/omxpsycm.fd
 File: omxpsycm.fd 2000/01/03 Fontinst v1.801 font definitions for OMX/psycm.
 )
-LaTeX Font Info:    Trying to load font information for U+msa on input line 59.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 60.
 
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 59.
+LaTeX Font Info:    Trying to load font information for U+msb on input line 60.
 
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
 LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <12> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 59.
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 60.
 LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <9> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 59.
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 60.
 LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <7> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 59.
-
-Underfull \hbox (badness 10000) in paragraph at lines 59--59
-[] $[]$
- []
-
-[2
-
-
-]
-Underfull \hbox (badness 1052) in paragraph at lines 60--60
-[]\T1/ptm/m/n/12 Trabalho de Con-clusão ap-re-sen-tado à Co-or-de-nação do
- []
-
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 60.
 
 Underfull \hbox (badness 10000) in paragraph at lines 60--60
 [] $[]$
  []
 
-[3
+[4
 
 
-] (./pre/pre_aprovacao.tex [4
+]
+<pre/ficha-catalografica.pdf, id=164, 597.51233pt x 845.0471pt>
+File: pre/ficha-catalografica.pdf Graphic file (type pdf)
+<use pre/ficha-catalografica.pdf>
+Package pdftex.def Info: pre/ficha-catalografica.pdf  used on input line 61.
+(pdftex.def)             Requested size: 597.51086pt x 845.04504pt.
+File: pre/ficha-catalografica.pdf Graphic file (type pdf)
+<use pre/ficha-catalografica.pdf>
+Package pdftex.def Info: pre/ficha-catalografica.pdf  used on input line 61.
+(pdftex.def)             Requested size: 597.51086pt x 845.04504pt.
+<pre/ficha-catalografica.pdf, id=167, page=1, 597.51233pt x 845.0471pt>
+File: pre/ficha-catalografica.pdf Graphic file (type pdf)
+<use pre/ficha-catalografica.pdf, page 1>
+Package pdftex.def Info: pre/ficha-catalografica.pdf , page1 used on input line
+ 61.
+(pdftex.def)             Requested size: 426.79134pt x 603.61096pt.
+File: pre/ficha-catalografica.pdf Graphic file (type pdf)
+<use pre/ficha-catalografica.pdf, page 1>
+Package pdftex.def Info: pre/ficha-catalografica.pdf , page1 used on input line
+ 61.
+(pdftex.def)             Requested size: 837.35034pt x 1184.24417pt.
+File: pre/ficha-catalografica.pdf Graphic file (type pdf)
+<use pre/ficha-catalografica.pdf, page 1>
+Package pdftex.def Info: pre/ficha-catalografica.pdf , page1 used on input line
+ 61.
+(pdftex.def)             Requested size: 837.35034pt x 1184.24417pt.
+File: pre/ficha-catalografica.pdf Graphic file (type pdf)
+<use pre/ficha-catalografica.pdf, page 1>
+Package pdftex.def Info: pre/ficha-catalografica.pdf , page1 used on input line
+ 61.
+(pdftex.def)             Requested size: 837.35034pt x 1184.24417pt.
+File: pre/ficha-catalografica.pdf Graphic file (type pdf)
+<use pre/ficha-catalografica.pdf, page 1>
+Package pdftex.def Info: pre/ficha-catalografica.pdf , page1 used on input line
+ 61.
+(pdftex.def)             Requested size: 837.35034pt x 1184.24417pt.
+ [5
 
 
-]) (./pre/pre_direitos.tex
+ <./pre/ficha-catalografica.pdf>]
+<pre/SEI_5468279_Banca_Examinadora.pdf, id=175, 597.23125pt x 845.1575pt>
+File: pre/SEI_5468279_Banca_Examinadora.pdf Graphic file (type pdf)
+<use pre/SEI_5468279_Banca_Examinadora.pdf>
+Package pdftex.def Info: pre/SEI_5468279_Banca_Examinadora.pdf  used on input l
+ine 62.
+(pdftex.def)             Requested size: 597.22978pt x 845.15544pt.
+File: pre/SEI_5468279_Banca_Examinadora.pdf Graphic file (type pdf)
+<use pre/SEI_5468279_Banca_Examinadora.pdf>
+Package pdftex.def Info: pre/SEI_5468279_Banca_Examinadora.pdf  used on input l
+ine 62.
+(pdftex.def)             Requested size: 597.22978pt x 845.15544pt.
+<pre/SEI_5468279_Banca_Examinadora.pdf, id=178, page=1, 597.23125pt x 845.1575p
+t>
+File: pre/SEI_5468279_Banca_Examinadora.pdf Graphic file (type pdf)
+<use pre/SEI_5468279_Banca_Examinadora.pdf, page 1>
+Package pdftex.def Info: pre/SEI_5468279_Banca_Examinadora.pdf , page1 used on 
+input line 62.
+(pdftex.def)             Requested size: 426.79134pt x 603.97353pt.
+File: pre/SEI_5468279_Banca_Examinadora.pdf Graphic file (type pdf)
+<use pre/SEI_5468279_Banca_Examinadora.pdf, page 1>
+Package pdftex.def Info: pre/SEI_5468279_Banca_Examinadora.pdf , page1 used on 
+input line 62.
+(pdftex.def)             Requested size: 836.95644pt x 1184.3989pt.
+File: pre/SEI_5468279_Banca_Examinadora.pdf Graphic file (type pdf)
+<use pre/SEI_5468279_Banca_Examinadora.pdf, page 1>
+Package pdftex.def Info: pre/SEI_5468279_Banca_Examinadora.pdf , page1 used on 
+input line 62.
+(pdftex.def)             Requested size: 836.95644pt x 1184.3989pt.
+File: pre/SEI_5468279_Banca_Examinadora.pdf Graphic file (type pdf)
+<use pre/SEI_5468279_Banca_Examinadora.pdf, page 1>
+Package pdftex.def Info: pre/SEI_5468279_Banca_Examinadora.pdf , page1 used on 
+input line 62.
+(pdftex.def)             Requested size: 836.95644pt x 1184.3989pt.
+File: pre/SEI_5468279_Banca_Examinadora.pdf Graphic file (type pdf)
+<use pre/SEI_5468279_Banca_Examinadora.pdf, page 1>
+Package pdftex.def Info: pre/SEI_5468279_Banca_Examinadora.pdf , page1 used on 
+input line 62.
+(pdftex.def)             Requested size: 836.95644pt x 1184.3989pt.
+ [6
+
+
+ <./pre/SEI_5468279_Banca_Examinadora.pdf>]
+<pre/SEI_5468279_Banca_Examinadora.pdf, id=208, page=2, 597.23125pt x 845.1575p
+t>
+File: pre/SEI_5468279_Banca_Examinadora.pdf Graphic file (type pdf)
+<use pre/SEI_5468279_Banca_Examinadora.pdf, page 2>
+Package pdftex.def Info: pre/SEI_5468279_Banca_Examinadora.pdf , page2 used on 
+input line 62.
+(pdftex.def)             Requested size: 836.95644pt x 1184.3989pt.
+File: pre/SEI_5468279_Banca_Examinadora.pdf Graphic file (type pdf)
+<use pre/SEI_5468279_Banca_Examinadora.pdf, page 2>
+Package pdftex.def Info: pre/SEI_5468279_Banca_Examinadora.pdf , page2 used on 
+input line 62.
+(pdftex.def)             Requested size: 836.95644pt x 1184.3989pt.
+File: pre/SEI_5468279_Banca_Examinadora.pdf Graphic file (type pdf)
+<use pre/SEI_5468279_Banca_Examinadora.pdf, page 2>
+Package pdftex.def Info: pre/SEI_5468279_Banca_Examinadora.pdf , page2 used on 
+input line 62.
+(pdftex.def)             Requested size: 836.95644pt x 1184.3989pt.
+ [7 <./pre/SEI_5468279_Banca_Examinadora.pdf>] (./pre/pre_direitos.tex
 LaTeX Font Info:    Font shape `T1/phv/m/n' will be
 (Font)              scaled to size 10.79993pt on input line 1.
 LaTeX Font Info:    Font shape `T1/phv/b/n' will be
 (Font)              scaled to size 10.79993pt on input line 1.
- [5
+
+[8
 
 
-])
-(./pre/pre_epigrafe.tex [6
+]) (./pre/pre_epigrafe.tex [9
 
 
 ]) (./pre/pre_resumo.tex
@@ -650,17 +849,17 @@ Underfull \hbox (badness 10000) in paragraph at lines 3--3
 []$[]$
  []
 
-[7
+[10
 
 
-]) (./pre/pre_abstract.tex [8
+]) (./pre/pre_abstract.tex [11
 
 
 ]) (./modelo-tese.toc)
 \tf@toc=\write5
 \openout5 = `modelo-tese.toc'.
 
- [9
+ [12
 
 
 
@@ -668,25 +867,31 @@ Underfull \hbox (badness 10000) in paragraph at lines 3--3
 \tf@lof=\write6
 \openout6 = `modelo-tese.lof'.
 
-
-[10
+ [13
 
 
 ] (./modelo-tese.lot)
 \tf@lot=\write7
 \openout7 = `modelo-tese.lot'.
 
- [11
+ [14
 
 
-] [12
+] [15
 
 
-] [13
+]
+LaTeX Font Info:    Trying to load font information for TS1+ptm on input line 6
+9.
+
+(/usr/share/texlive/texmf-dist/tex/latex/psnfss/ts1ptm.fd
+File: ts1ptm.fd 2001/06/04 font definitions for TS1/ptm.
+) [16
 
 
 
-] [14] (./tex/cap_I.tex
+] [17]
+(./tex/cap_I.tex
 Chapter 1.
 LaTeX Font Info:    Font shape `T1/phv/m/n' will be
 (Font)              scaled to size 15.55188pt on input line 1.
@@ -694,99 +899,141 @@ LaTeX Font Info:    Font shape `T1/phv/m/n' will be
 (Font)              scaled to size 22.39185pt on input line 1.
 LaTeX Font Info:    Font shape `T1/phv/m/n' will be
 (Font)              scaled to size 18.66588pt on input line 1.
-[15
+[18
 
 
 
 
-]) (./tex/cap_II.tex [16]
+]
+<./fig/fig10.jpeg, id=364, 1000.73875pt x 798.985pt>
+File: ./fig/fig10.jpeg Graphic file (type jpg)
+<use ./fig/fig10.jpeg>
+Package pdftex.def Info: ./fig/fig10.jpeg  used on input line 11.
+(pdftex.def)             Requested size: 298.75262pt x 238.51477pt.
+) (./tex/cap_II.tex [19 <./fig/fig10.jpeg>]
 Chapter 2.
-<./fig/fig1.png, id=267, 1749.53625pt x 2055.68pt>
+<./fig/fig1.png, id=373, 3302.3375pt x 3854.4pt>
 File: ./fig/fig1.png Graphic file (type png)
 <use ./fig/fig1.png>
-Package pdftex.def Info: ./fig/fig1.png  used on input line 10.
-(pdftex.def)             Requested size: 298.75262pt x 351.02933pt.
-[17
+Package pdftex.def Info: ./fig/fig1.png  used on input line 8.
+(pdftex.def)             Requested size: 298.75262pt x 348.64543pt.
+[20
 
-] [18 <./fig/fig1.png>]
-<./fig/fig2.png, id=278, 764.8575pt x 338.26375pt>
+] [21 <./fig/fig1.png>]
+<./fig/fig2.png, id=386, 764.8575pt x 338.26375pt>
 File: ./fig/fig2.png Graphic file (type png)
 <use ./fig/fig2.png>
-Package pdftex.def Info: ./fig/fig2.png  used on input line 44.
+Package pdftex.def Info: ./fig/fig2.png  used on input line 42.
 (pdftex.def)             Requested size: 298.75262pt x 132.12361pt.
- [19] [20 <./fig/fig2.png>]
-<./fig/fig3.png, id=297, 2509.375pt x 1699.34875pt>
+ [22] [23 <./fig/fig2.png>]
+<./fig/fig3.png, id=403, 2509.375pt x 1699.34875pt>
 File: ./fig/fig3.png Graphic file (type png)
 <use ./fig/fig3.png>
-Package pdftex.def Info: ./fig/fig3.png  used on input line 78.
+Package pdftex.def Info: ./fig/fig3.png  used on input line 81.
 (pdftex.def)             Requested size: 298.75262pt x 202.30539pt.
- [21 <./fig/fig3.png>]
-[22] [23] [24] [25]
-<./fig/fig4.png, id=346, 2055.68pt x 864.22874pt>
+<./fig/fig11.jpeg, id=407, 1000.73875pt x 538.01pt>
+File: ./fig/fig11.jpeg Graphic file (type jpg)
+<use ./fig/fig11.jpeg>
+Package pdftex.def Info: ./fig/fig11.jpeg  used on input line 93.
+(pdftex.def)             Requested size: 298.75262pt x 160.60793pt.
+ [24 <./fig/fig3.png> <./fig/fig11.jpeg>] [25]
+<./fig/trajetorias_ph_pf.jpeg, id=435, 675.52374pt x 687.56876pt>
+File: ./fig/trajetorias_ph_pf.jpeg Graphic file (type jpg)
+<use ./fig/trajetorias_ph_pf.jpeg>
+Package pdftex.def Info: ./fig/trajetorias_ph_pf.jpeg  used on input line 129.
+(pdftex.def)             Requested size: 298.75262pt x 304.08392pt.
+ [26 <./fig/trajetorias_ph_pf.jpeg>] [27]
+<./fig/compensacao_por_torque.jpeg, id=451, 727.71875pt x 689.57625pt>
+File: ./fig/compensacao_por_torque.jpeg Graphic file (type jpg)
+<use ./fig/compensacao_por_torque.jpeg>
+Package pdftex.def Info: ./fig/compensacao_por_torque.jpeg  used on input line 
+184.
+(pdftex.def)             Requested size: 298.75262pt x 283.09636pt.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <10.95> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 185.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <8> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 185.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <6> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 185.
+ [28] [29 <./fig/compensacao_por_torque.jpeg>]
+<./fig/fig4.png, id=471, 2055.68pt x 864.22874pt>
 File: ./fig/fig4.png Graphic file (type png)
 <use ./fig/fig4.png>
-Package pdftex.def Info: ./fig/fig4.png  used on input line 193.
+Package pdftex.def Info: ./fig/fig4.png  used on input line 236.
 (pdftex.def)             Requested size: 298.75262pt x 125.59348pt.
-LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <10.95> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 194.
-LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <8> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 194.
-LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <6> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 194.
-) (./tex/cap_III.tex [26 <./fig/fig4.png>]
+ [30]) (./tex/cap_III.tex [31 <./fig/fig4.png>]
 Chapter 3.
-[27
+[32
 
-] [28]
-<./fig/fig5.png, id=366, 1215.54124pt x 639.38875pt>
+] [33]
+<./fig/fig5.png, id=499, 1215.54124pt x 639.38875pt>
 File: ./fig/fig5.png Graphic file (type png)
 <use ./fig/fig5.png>
-Package pdftex.def Info: ./fig/fig5.png  used on input line 68.
+Package pdftex.def Info: ./fig/fig5.png  used on input line 66.
 (pdftex.def)             Requested size: 298.75262pt x 157.1443pt.
-<./fig/fig6a.png, id=370, 642.4pt x 481.8pt>
+<./fig/fig6a.png, id=503, 462.528pt x 346.896pt>
 File: ./fig/fig6a.png Graphic file (type png)
 <use ./fig/fig6a.png>
-Package pdftex.def Info: ./fig/fig6a.png  used on input line 82.
-(pdftex.def)             Requested size: 192.0548pt x 144.0412pt.
-<./fig/fig6b.png, id=371, 642.4pt x 481.8pt>
+Package pdftex.def Info: ./fig/fig6a.png  used on input line 75.
+(pdftex.def)             Requested size: 298.75262pt x 224.07703pt.
+ [34 <./fig/fig5.png>]
+<./fig/fig6b.png, id=511, 462.528pt x 346.896pt>
 File: ./fig/fig6b.png Graphic file (type png)
 <use ./fig/fig6b.png>
-Package pdftex.def Info: ./fig/fig6b.png  used on input line 87.
-(pdftex.def)             Requested size: 192.0548pt x 144.0412pt.
-
-Underfull \hbox (badness 3849) in paragraph at lines 87--87
-[]\T1/ptm/m/it/10 Variação dessas dis-tân-cias ao longo do
- []
-
-[29 <./fig/fig5.png>]
-<./fig/fig7a.png, id=379, 642.4pt x 481.8pt>
+Package pdftex.def Info: ./fig/fig6b.png  used on input line 82.
+(pdftex.def)             Requested size: 298.75262pt x 224.07703pt.
+<./fig/fig7a.png, id=512, 462.528pt x 346.896pt>
 File: ./fig/fig7a.png Graphic file (type png)
 <use ./fig/fig7a.png>
-Package pdftex.def Info: ./fig/fig7a.png  used on input line 99.
-(pdftex.def)             Requested size: 192.0548pt x 144.0412pt.
-<./fig/fig7b.png, id=380, 642.4pt x 481.8pt>
+Package pdftex.def Info: ./fig/fig7a.png  used on input line 92.
+(pdftex.def)             Requested size: 192.0548pt x 144.04384pt.
+
+Underfull \hbox (badness 1688) in paragraph at lines 92--92
+[]\T1/ptm/m/it/10 Média da vari-ação an-gu-lar ab-so-luta (em
+ []
+
+<./fig/fig7b.png, id=513, 462.528pt x 346.896pt>
 File: ./fig/fig7b.png Graphic file (type png)
 <use ./fig/fig7b.png>
-Package pdftex.def Info: ./fig/fig7b.png  used on input line 104.
-(pdftex.def)             Requested size: 192.0548pt x 144.0412pt.
-<./fig/fig8a.png, id=381, 462.528pt x 346.896pt>
+Package pdftex.def Info: ./fig/fig7b.png  used on input line 97.
+(pdftex.def)             Requested size: 192.0548pt x 144.04384pt.
+
+Underfull \hbox (badness 1540) in paragraph at lines 97--97
+[]\T1/ptm/m/it/10 Média da vari-ação an-gu-lar ab-so-luta (em
+ []
+
+[35 <./fig/fig6a.png> <./fig/fig6b.png>]
+<./fig/fig8a.png, id=520, 462.528pt x 346.896pt>
 File: ./fig/fig8a.png Graphic file (type png)
 <use ./fig/fig8a.png>
-Package pdftex.def Info: ./fig/fig8a.png  used on input line 116.
+Package pdftex.def Info: ./fig/fig8a.png  used on input line 107.
 (pdftex.def)             Requested size: 192.0548pt x 144.04384pt.
-<./fig/fig8b.png, id=382, 462.528pt x 346.896pt>
+<./fig/fig8b.png, id=521, 462.528pt x 346.896pt>
 File: ./fig/fig8b.png Graphic file (type png)
 <use ./fig/fig8b.png>
-Package pdftex.def Info: ./fig/fig8b.png  used on input line 121.
+Package pdftex.def Info: ./fig/fig8b.png  used on input line 112.
 (pdftex.def)             Requested size: 192.0548pt x 144.04384pt.
- [30 <./fig/fig6a.png> <./fig/fig6b.png> <./fig/fig7a.png> <./fig/fig7b.png>]
-<./fig/fig9.png, id=391, 642.4pt x 481.8pt>
+<./fig/distribuicao_ori_x_bruto.png, id=522, 462.528pt x 346.896pt>
+File: ./fig/distribuicao_ori_x_bruto.png Graphic file (type png)
+<use ./fig/distribuicao_ori_x_bruto.png>
+Package pdftex.def Info: ./fig/distribuicao_ori_x_bruto.png  used on input line
+ 122.
+(pdftex.def)             Requested size: 192.0548pt x 144.04384pt.
+<./fig/distribuicao_ori_y_bruto.png, id=523, 462.528pt x 346.896pt>
+File: ./fig/distribuicao_ori_y_bruto.png Graphic file (type png)
+<use ./fig/distribuicao_ori_y_bruto.png>
+Package pdftex.def Info: ./fig/distribuicao_ori_y_bruto.png  used on input line
+ 127.
+(pdftex.def)             Requested size: 192.0548pt x 144.04384pt.
+ [36 <./fig/fig7a.png> <./fig/fig7b.png> <./fig/fig8a.png> <./fig/fig8b.png>]
+<./fig/fig9.png, id=536, 462.528pt x 346.896pt>
 File: ./fig/fig9.png Graphic file (type png)
 <use ./fig/fig9.png>
-Package pdftex.def Info: ./fig/fig9.png  used on input line 130.
-(pdftex.def)             Requested size: 298.75262pt x 224.07144pt.
- [31 <./fig/fig8a.png> <./fig/fig8b.png> <./fig/fig9.png>])
-[32] (./modelo-tese.bbl
+Package pdftex.def Info: ./fig/fig9.png  used on input line 134.
+(pdftex.def)             Requested size: 298.75262pt x 224.07703pt.
+ [37 <./fig/distribuicao_ori_x_bruto.png> <./fig/distribuicao_ori_y_bruto.png> 
+<./fig/fig9.png>]) [38]
+(./modelo-tese.bbl
 LaTeX Font Info:    Font shape `T1/phv/m/sc' will be
 (Font)              scaled to size 10.79993pt on input line 4.
 LaTeX Font Info:    Font shape `T1/phv/m/it' in size <12> not available
@@ -795,21 +1042,21 @@ LaTeX Font Info:    Font shape `T1/phv/m/sl' will be
 (Font)              scaled to size 10.79993pt on input line 6.
 ) 
 AED: lastpage setting LastPage
-[33
+[39
 
 
 ] (./modelo-tese.aux)
 Package rerunfilecheck Info: File `modelo-tese.out' has not changed.
-(rerunfilecheck)             Checksum: C48FC97FF7E57E32BF6D114862831F49;4396.
+(rerunfilecheck)             Checksum: 5DB6B9E422AF8651BEB651971750ACD7;4460.
  ) 
 Here is how much of TeX's memory you used:
- 14720 strings out of 480171
- 236126 string characters out of 5894489
- 548555 words of memory out of 5000000
- 32215 multiletter control sequences out of 15000+600000
- 585366 words of font info for 158 fonts, out of 8000000 for 9000
+ 15540 strings out of 480171
+ 253012 string characters out of 5894489
+ 560214 words of memory out of 5000000
+ 32991 multiletter control sequences out of 15000+600000
+ 582269 words of font info for 159 fonts, out of 8000000 for 9000
  59 hyphenation exceptions out of 8191
- 75i,14n,77p,1363b,476s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 75i,17n,77p,1251b,491s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texlive/texmf-dist/fonts/enc/dvips/base/8r.enc}</usr/share/texliv
 e/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/share/texlive/texm
 f-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texlive/texmf-dist
@@ -821,10 +1068,10 @@ urw/helvetic/uhvb8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/helvetic
 live/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/share/texlive/texmf-dist
 /fonts/type1/urw/times/utmr8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/ur
 w/times/utmri8a.pfb>
-Output written on modelo-tese.pdf (33 pages, 1786500 bytes).
+Output written on modelo-tese.pdf (39 pages, 2226721 bytes).
 PDF statistics:
- 487 PDF objects out of 1000 (max. 8388607)
- 406 compressed objects within 5 object streams
- 123 named destinations out of 1000 (max. 500000)
- 285 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 639 PDF objects out of 1000 (max. 8388607)
+ 505 compressed objects within 6 object streams
+ 137 named destinations out of 1000 (max. 500000)
+ 393 words of extra memory for PDF output out of 10000 (max. 10000000)
 

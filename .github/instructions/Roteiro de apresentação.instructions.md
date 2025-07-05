@@ -91,7 +91,7 @@
 
 ---
 
-## Slide 14: Gerador de Trajetória do CoM
+## Slide 14: Gerador de pose
 - Geração dos pontos pH (quadril) e pF (tornozelo)
 - Funções heurísticas para trajetória
 

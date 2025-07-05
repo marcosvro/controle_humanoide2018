@@ -53,6 +53,9 @@ class SimulacaoManager:
         self.historico_distancias_por_tempo = []
         self.historico_ori_x_por_tempo = []
         self.historico_ori_y_por_tempo = []
+        # Armazena os valores brutos da última simulação para análise
+        self.ultima_simulacao_ori_x = []
+        self.ultima_simulacao_ori_y = []
 
     def run(self):
         control = Controlador(simulador_enable=True, gravity_compensation_enable=True)
@@ -122,6 +125,12 @@ class SimulacaoManager:
             media_variacoes_abs_ori_y = np.mean(variacoes_abs_ori_y)
             desvio_padrao_variacoes_abs_ori_x = np.std(variacoes_abs_ori_x)
             desvio_padrao_variacoes_abs_ori_y = np.std(variacoes_abs_ori_y)
+            
+            # Número de amostras coletadas
+            num_amostras = len(amostras_ori_x)
+            
+            # Estado final do robô
+            estado_final = 1 if control.chegou_no_alvo else (0 if control.state == "FALLEN" else 2)  # 1=sucesso, 0=queda, 2=timeout
             self.dp_ori_x.append(desvio_padrao_variacoes_abs_ori_x)
             self.dp_ori_y.append(desvio_padrao_variacoes_abs_ori_y)
             self.me_ori_x.append(media_variacoes_abs_ori_x)
@@ -131,21 +140,43 @@ class SimulacaoManager:
             self.historico_ori_y_por_tempo.append(amostras_ori_y)
             self.historico_distancias_por_tempo.append(distancias_durante_run)
 
-            self.stat_writer.add_scalar("Tempo de simulação/Episode", duracao, episode)
-            self.stat_writer.add_scalar("Desvio padrão da variação angular absoluta em X/Episode", desvio_padrao_variacoes_abs_ori_x, episode)
-            self.stat_writer.add_scalar("Desvio padrão da variação angular absoluta em Y/Episode", desvio_padrao_variacoes_abs_ori_y, episode)
-            self.stat_writer.add_scalar("Média da variação angular absoluta em X/Episode", media_variacoes_abs_ori_x, episode)
-            self.stat_writer.add_scalar("Média da variação angular absoluta em Y/Episode", media_variacoes_abs_ori_y, episode)
-            self.stat_writer.add_scalar("Distância do alvo/Episode", dist, episode)
+            # Armazena os valores brutos da última simulação
+            if episode == self.max_episodes:
+                self.ultima_simulacao_ori_x = amostras_ori_x
+                self.ultima_simulacao_ori_y = amostras_ori_y
+
+            self.stat_writer.add_scalar("Tempo_de_simulação/Episode", duracao, episode)
+            self.stat_writer.add_scalar("Desvio_padrão_da_variação_angular_absoluta_em_X/Episode", desvio_padrao_variacoes_abs_ori_x, episode)
+            self.stat_writer.add_scalar("Desvio_padrão_da_variação_angular_absoluta_em_Y/Episode", desvio_padrao_variacoes_abs_ori_y, episode)
+            self.stat_writer.add_scalar("Média_da_variação_angular_absoluta_em_X/Episode", media_variacoes_abs_ori_x, episode)
+            self.stat_writer.add_scalar("Média_da_variação_angular_absoluta_em_Y/Episode", media_variacoes_abs_ori_y, episode)
+            self.stat_writer.add_scalar("Distância_do_alvo/Episode", dist, episode)
+            
+            # Número de amostras e estado final
+            self.stat_writer.add_scalar("Número_amostras/Episode", num_amostras, episode)
+            self.stat_writer.add_scalar("Estado_final/Episode", estado_final, episode)
+            
+            # Salva os dados brutos de cada episódio para os gráficos temporais
+            # Nota: TensorBoard não suporta arrays diretamente, então salvamos estatísticas dos dados brutos
+            self.stat_writer.add_scalar("Média_distância_temporal/Episode", np.mean(distancias_durante_run), episode)
+            self.stat_writer.add_scalar("Média_orientação_X_temporal/Episode", np.mean(amostras_ori_x), episode)
+            self.stat_writer.add_scalar("Média_orientação_Y_temporal/Episode", np.mean(amostras_ori_y), episode)
+            
+            # Para a última simulação, salva estatísticas dos valores brutos para distribuição
+            if episode == self.max_episodes:
+                for idx, valor in enumerate(amostras_ori_x):
+                    self.stat_writer.add_scalar(f"Distribuição_ori_X_bruto/Last_Episode", valor, idx)
+                for idx, valor in enumerate(amostras_ori_y):
+                    self.stat_writer.add_scalar(f"Distribuição_ori_Y_bruto/Last_Episode", valor, idx)
 
 
         # Garante que a thread finalize
         if control_thread.is_alive():
             # Se saiu do loop por queda ou timeout, aguarda thread terminar
             control_thread.join(timeout=1)
-        self.finaliza()
+        self.finaliza(control.simTransRate)
 
-    def finaliza(self):
+    def finaliza(self, sim_trans_rate):
         time.sleep(3)
         print("Finalizando teste")
         print(len(self.duracoes))
@@ -161,19 +192,35 @@ class SimulacaoManager:
         self._plot_and_save(pd.Series(np.array(self.me_ori_x)), 'Média da variação angular absoluta (X)', 'Média da variação angular absoluta (X)', 'runs/mean_x.png')
         self._plot_and_save(pd.Series(np.array(self.me_ori_y)), 'Média da variação angular absoluta (Y)', 'Média da variação angular absoluta (Y)', 'runs/mean_y.png')
         self._plot_and_save(pd.Series(np.array(self.distancias)), 'Distância do alvo', 'Distância', 'runs/dist.png')
-
+        
         self._plot_value_vs_tempo(self.historico_distancias_por_tempo,
                                   'Distância do alvo ao longo do tempo por run',
                                   'Distância do alvo',
-                                  'runs/distancia_vs_tempo.png')
-        self._plot_value_vs_tempo(self.historico_ori_x_por_tempo,
-                                  'Oriêntação do eixo Roll ao longo do tempo por run',
-                                  'Oriêntação do eixo Roll',
-                                  'runs/orientacao_x_vs_tempo.png')
-        self._plot_value_vs_tempo(self.historico_ori_y_por_tempo,
-                                  'Oriêntação do eixo Pitch ao longo do tempo por run',
-                                  'Oriêntação do eixo Pitch',
-                                  'runs/orientacao_y_vs_tempo.png')
+                                  'runs/distancia_vs_tempo.png',
+                                  sim_trans_rate)
+        self._plot_value_vs_tempo([self.historico_ori_x_por_tempo[-1]],
+                                  'Oriêntação do eixo X ao longo do tempo (última run)',
+                                  'Oriêntação do eixo X',
+                                  'runs/orientacao_x_vs_tempo.png',
+                                  sim_trans_rate)
+        self._plot_value_vs_tempo([self.historico_ori_y_por_tempo[-1]],
+                                  'Oriêntação do eixo Y ao longo do tempo (última run)',
+                                  'Oriêntação do eixo Y',
+                                  'runs/orientacao_y_vs_tempo.png',
+                                  sim_trans_rate)
+
+        # Plota gráficos de distribuição dos valores brutos da última simulação
+        if len(self.ultima_simulacao_ori_x) > 0:
+            self._plot_and_save(pd.Series(np.array(self.ultima_simulacao_ori_x)), 
+                               'Distribuição dos valores da orientação do torso em Y (última run)', 
+                               'Variação angular em X (graus)', 
+                               'runs/distribuicao_ori_x_bruto.png')
+        
+        if len(self.ultima_simulacao_ori_y) > 0:
+            self._plot_and_save(pd.Series(np.array(self.ultima_simulacao_ori_y)), 
+                               'Distribuição dos valores da orientação do torso em Y (última run)', 
+                               'Variação angular em Y (graus)',
+                               'runs/distribuicao_ori_y_bruto.png')
 
         self.stat_writer.close()
         self._finaliza_processo()
@@ -190,15 +237,17 @@ class SimulacaoManager:
         dr, dw, de = select.select([sys.stdin], [], [], 0)
         return dr != []
     
-    def _plot_value_vs_tempo(self, amostras, titulo, yLabel, filename):
+    def _plot_value_vs_tempo(self, amostras, titulo, yLabel, filename, sim_trans_rate):
         """
         Plota um gráfico onde cada linha representa a evolução de um determinado valor ao longo do tempo em cada run.
         """
         plt.figure()
         for idx, valores_da_run in enumerate(amostras):
-            plt.plot(valores_da_run, linewidth=0.25)
+            # Converte frames para segundos
+            tempo_segundos = np.arange(len(valores_da_run)) * sim_trans_rate
+            plt.plot(tempo_segundos, valores_da_run, linewidth=0.25)
         plt.title(titulo)
-        plt.xlabel('Tempo (frame)')
+        plt.xlabel('Tempo (s)')
         plt.ylabel(yLabel)
         # plt.legend()
         plt.grid(True)
@@ -208,10 +257,11 @@ class SimulacaoManager:
     def _plot_and_save(self, series, title, ylabel, filename):
         if len(series) == 0:
             return
-        series.plot.hist(grid=True, bins=10, rwidth=0.9, color='#607c8e')
+        # Usa matplotlib diretamente para ter controle sobre os eixos
+        plt.hist(series, bins=10, rwidth=0.9, color='#607c8e', edgecolor='black')
         plt.title(title)
-        plt.xlabel('Frequência')
-        plt.ylabel(ylabel)
+        plt.xlabel(ylabel)  # O valor da métrica vai no eixo X
+        plt.ylabel('Frequência')  # Frequência vai no eixo Y
         plt.grid(axis='y', alpha=0.75)
         plt.savefig(filename)
         plt.clf()

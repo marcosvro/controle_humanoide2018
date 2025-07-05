@@ -1,14 +1,20 @@
 \babel@toc {english}{}\relax 
 \addvspace {10\p@ }
+\contentsline {figure}{\numberline {1.1}{\ignorespaces Arquitetura estrutural do robô ROBOTIS OP2 em relação ao sistema de coodenadas utilizado. Os nomes das juntas do lado direito seguem o mesmo padrão do lado esquerdo. Imagem retirada de ~\cite {Maximo2017}\relax }}{19}{figure.caption.18}%
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {2.1}{\ignorespaces Interação entre os controladores de alto e baixo nível, incluindo suas responsabilidades.\relax }}{18}{figure.caption.18}%
-\contentsline {figure}{\numberline {2.2}{\ignorespaces Representação dos links da perna.\relax }}{20}{figure.caption.21}%
-\contentsline {figure}{\numberline {2.3}{\ignorespaces Divisão do ciclo de caminhada segundo Perry e Burnfield~\cite {Perry2010}.\relax }}{21}{figure.caption.28}%
-\contentsline {figure}{\numberline {2.4}{\ignorespaces Máquina de estados implementada pelo controlador de alto nível. As transições são definidas com base na avaliação dos parâmetros $d_{target}$ e $\Delta \theta _{target}$.\relax }}{26}{figure.caption.52}%
+\contentsline {figure}{\numberline {2.1}{\ignorespaces Interação entre os controladores de alto e baixo nível, incluindo suas responsabilidades.\relax }}{21}{figure.caption.20}%
+\contentsline {figure}{\numberline {2.2}{\ignorespaces Representação dos links da perna.\relax }}{23}{figure.caption.23}%
+\contentsline {figure}{\numberline {2.3}{\ignorespaces Divisão do ciclo de caminhada segundo Perry e Burnfield~\cite {Perry2010}.\relax }}{24}{figure.caption.30}%
+\contentsline {figure}{\numberline {2.4}{\ignorespaces Forças e momentos atuando no pé de suporte durante a fase single supporte, onde apenas um pé está em contato com o chão. Imagem retirada de ~\cite {Maximo2017}\relax }}{24}{figure.caption.32}%
+\contentsline {figure}{\numberline {2.5}{\ignorespaces Trajetórias do quadril e pés durante o ciclo de caminhada. O quadril se desloca lateralmente e para frente, enquanto o pé de balanço se desloca para frente e para cima.\relax }}{26}{figure.caption.39}%
+\contentsline {figure}{\numberline {2.6}{\ignorespaces Compensação por torque em relação a junta $k$. Onde $B'_k$ é o conjunto das partes do corpo apoiadas pela junta $k$. Imagem retirada de ~\cite {Maximo2017}\relax }}{29}{figure.caption.50}%
+\contentsline {figure}{\numberline {2.7}{\ignorespaces Máquina de estados implementada pelo controlador de alto nível. As transições são definidas com base na avaliação dos parâmetros $d_{target}$ e $\Delta \theta _{target}$.\relax }}{31}{figure.caption.57}%
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {3.1}{\ignorespaces Imagem da configuração inicial da simulação.\relax }}{29}{figure.caption.60}%
-\contentsline {figure}{\numberline {3.2}{\ignorespaces (a) indica a frequência das distâncias (em metros) do ponto objetivo no final da simulação, e (b) a variação dessas distâncias ao longo do tempo para cada simulação.\relax }}{30}{figure.caption.61}%
-\contentsline {figure}{\numberline {3.3}{\ignorespaces Frequência dos intervalos definidos sobre os valores de variação angular média de cada simulação, medido em graus. (a) mostra a variação em X (roll) e (b) a variação em Y (pitch).\relax }}{30}{figure.caption.64}%
-\contentsline {figure}{\numberline {3.4}{\ignorespaces Frequência dos intervalos definidos sobre os valores de desvio padrão da variação angular de cada simulação, medido em graus. (a) mostra o desvio da variação em X (roll) e (b) o desvio da variação em Y (pitch).\relax }}{31}{figure.caption.67}%
-\contentsline {figure}{\numberline {3.5}{\ignorespaces Frequência da duração dos episódios em segundos.\relax }}{31}{figure.caption.70}%
+\contentsline {figure}{\numberline {3.1}{\ignorespaces Imagem da configuração inicial da simulação. O ponto objetivo está indicado pelo cone vermelho.\relax }}{34}{figure.caption.65}%
+\contentsline {figure}{\numberline {3.2}{\ignorespaces Frequência das distâncias finais (computada no fim do episódio) em metros.\relax }}{35}{figure.caption.66}%
+\contentsline {figure}{\numberline {3.3}{\ignorespaces Imagem da configuração inicial da simulação. O ponto objetivo está indicado pelo cone vermelho.\relax }}{35}{figure.caption.67}%
+\contentsline {figure}{\numberline {3.4}{\ignorespaces Gráfico de frequência (histograma) com as médias de cada episódio obtidas sobre os valores da variação angular absoluta (em graus) do torso. (a) mostra a variação em X (roll) e (b) a variação em Y (pitch).\relax }}{36}{figure.caption.68}%
+\contentsline {figure}{\numberline {3.5}{\ignorespaces Gráfico de frequência (histograma) com os valores de desvio padrão computados para cada episódio sobre os valores da variação angular absoluta (em graus) do torso. (a) mostra o desvio padrão da variação em X (roll) e (b) o desvio padrão da variação em Y (pitch).\relax }}{36}{figure.caption.71}%
+\contentsline {figure}{\numberline {3.6}{\ignorespaces Gráfico de frequência (histograma) com os valores brutos da variação angular (em graus) obtidos durante a última run.(a) mostra a distribuição da variação em X (roll) e (b) a distribuição da variação em Y (pitch).\relax }}{37}{figure.caption.74}%
+\contentsline {figure}{\numberline {3.7}{\ignorespaces Frequência da duração dos episódios em segundos.\relax }}{37}{figure.caption.77}%
 \contentsfinish 

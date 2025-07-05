@@ -218,6 +218,10 @@
 \RequirePackage[IT,hang,FIGBOTCAP,TABBOTCAP]{subfigure}
 \subfiglabelskip=3pt
 
+%% PDF inclusion
+%% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\RequirePackage{pdfpages}
+
 %% algorithms
 %% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 \RequirePackage{algorithmic}
@@ -462,59 +466,7 @@
  \ifpdf
   \pdfbookmark[1]{Publica\c{c}\~ao}{pretexto.3}
  \fi
-%  \begin{titlepage}%
-  \doublespacing%
-  \textoC{1}{\Large \scshape \@universidade \normalsize \upshape}%
-  \textoC{1}{\Large \scshape \@unidade \normalsize \upshape}%
-  \ifthenelse{\equal{\@departamento}{}}{}{%
-   \textoC{1}{\Large \scshape \@departamento\relax \normalsize \upshape} }%
-  \singlespacing%
-  \vspace*{30pt}%
-  \textoC{1.2}{\Large \scshape \bfseries Autoriza\c{c}\~ao para Publica\c{c}\~ao de\ %
-   \ifthenelse{\boolean{tese}}{Tese}{%
-    \ifthenelse{\boolean{diss}}{Disserta\c{c}\~{a}o}{%
-     \ifthenelse{\boolean{mngr}}{Monografia}{%
-      Trabalho de Conclus\~ao de Curso}}} em Formato Eletr\^onico}%
-  \vspace*{30pt}%
-  \par%
-  Na qualidade de titular dos direitos de autor, \textbf{AUTORIZO} a
-  \@unidade\ da \@universidade\ -- \@uni\ a reproduzir, inclusive em outro formato
-  ou m\'{i}dia e atrav\'es de armazenamento permanente ou tempor\'ario, bem como publicar
-  na rede mundial de computadores (\textit{Internet}) e na biblioteca virtual da \@uni,
-  entendendo-se os termos ``reproduzir'' e ``publicar'' conforme defini\c c\~oes dos
-  incisos I e VI, respectivamente, do artigo 5\textordmasculine\ da Lei
-  n\textordmasculine\ 9610/98 de 10/02/1998, a obra abaixo especificada, sem
-  que me seja devido pagamento a t\'{i}tulo de direitos autorais, desde que a reprodu\c c\~ao
-  e/ou publica\c c\~ao tenham a finalidade exclusiva de uso por quem a consulte, e a
-  t\'{i}tulo de divulga\c c\~ao da produ\c c\~ao acad\^emica gerada pela Universidade, a partir
-  desta data.
-  \vspace*{15pt}%
-  \par%
-  \noindent\textbf{T\'{i}tulo:} \@titulo\
-   \ifthenelse{\equal{\@subtitulo}{}}{}{%
-    {-- \@subtitulo} }%
-  \vspace*{15pt}%
-  \par%
-  \noindent\textbf{Autor(a):} \@autor%
-  \vspace*{40pt}%
-  \par%
-  \@cidade, \@dia\ de \@mesP\ de \@ano.
-  \vspace*{60pt}%
-  \par
-  \textoD{\rule{.75\textwidth}{0.5pt}\\ \small \@autor\ -- Autor}
-  \vspace*{30pt}%
-  \par
-  \ifthenelse{\equal{\@orientador}{}}
-   {\ifthenelse{\equal{\@orientadora}{}}
-    {}
-    {\textoD{\rule{.75\textwidth}{0.5pt}\\ \small \@orientadora\ -- Orientadora}
-    }%
-   }
-   {\textoD{\rule{.75\textwidth}{0.5pt}\\ \small \@orientador\ -- Orientador}
-   }%
-%  \end{titlepage}%
- \onehalfspacing%
- \normalfont%
+ \includepdf[pages=-,pagecommand={}, width=\textwidth]{pre/SEI_5468278_Termo_de_Ciencia_e_de_Autorizacao_TCCG__RI__TECA.pdf}%
  \clearpage%
 }%
 
@@ -573,60 +525,24 @@
  \clearpage%
 }
 
-%% Termo de aprovação
-%% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-\newcommand{\banca}[2]{\textoC{1}{\rule{.7\textwidth}{0.5pt}\\ \small \textbf{Prof. #1}\\#2} \vspace*{\stretch{0.5}}\par}
-\newcommand{\profa}[2]{\textoC{1}{\rule{.7\textwidth}{0.5pt}\\ \small \textbf{Profa. #1}\\#2} \vspace*{\stretch{0.5}}\par}
-
-\newenvironment{aprovacao}{
+%% Ficha catalográfica
+\newcommand{\fichacatalografica}{%
  \cleardoublepage\phantomsection%
  \ifpdf
-  \pdfbookmark[1]{Aprova\c{c}\~ao}{pretexto.7}
+  \pdfbookmark[1]{Ficha Catalogr\'afica}{pretexto.13}
  \fi
- \singlespacing
- \par
- \textoC{1}{\Large \scshape \@autor \normalsize \upshape}
- \vspace*{\stretch{2}}
- \par
- \textoC{1.7}{\huge \textbf{\@titulo\relax} \normalsize}
- \ifthenelse{\equal{\@subtitulo}{}}{}{
-  \textoC{1.2}{\Large \textbf{\@subtitulo\relax} \normalsize}}
- \vspace*{\stretch{1.0}}
- \par
- \textoF{
-  \ifthenelse{\boolean{tese}}%
-   {Tese defendida no Programa de P\'os--Gradua\c c\~ao %
-    do \@unidade\ da \@universidade\ como requisito parcial %
-    para obten\c c\~ao do t\'itulo de Doutor em \@programa, aprovada em %
-    \@dia\ de\@mesP\ de \@ano, pela Banca Examinadora constitu\'{i}da pelos professores:}{%
-  \ifthenelse{\boolean{diss}}%
-   {Disserta\c{c}\~{a}o defendida no Programa de P\'os--Gradua\c c\~ao %
-    da \@unidade\ da \@universidade\ como requisito parcial %
-    para obten\c c\~ao do t\'itulo de Mestre em \@programa, aprovada em %
-    \@dia\ de\@mesP\ de \@ano, pela Banca Examinadora constitu\'{i}da pelos professores:}{%
-  \ifthenelse{\boolean{mngr}}%
-   {Monografia apresentada no Programa de P\'os--Gradua\c c\~ao %
-    do \@unidade\ da \@universidade\ como requisito parcial %
-    para obten\c c\~ao do Certificado de Especializa\c{c}\~ao em \@programa, aprovada em %
-    \@dia\ de\@mesP\ de \@ano, pela Banca Examinadora constitu\'{i}da pelos professores:}%
-   {Trabalho de Conclus\~ao apresentado \`a Coordena\c c\~ao do Curso de \@programa\ do\ %
-    \@unidade\ da\ \@universidade\ como requisito parcial para obten\c c\~ao do\ %
-    t\'itulo de Bacharel em \@programa, aprovada em \@dia\ de\@mesP\ de \@ano, %
-    pela Banca Examinadora constitu\'{i}da pelos professores:}%
-    }}}
- \vspace*{\stretch{1.5}}
- \par
- \ifthenelse{\equal{\@orientador}{}}
-  {\profa{\@orientadora}{\@unidade\ -- \@uni\\Presidente da Banca}}
-  {\banca{\@orientador}{\@unidade\ -- \@uni\\Presidente da Banca}}
- \ifthenelse{\equal{\@coorientador}{}}
-  {\ifthenelse{\equal{\@coorientadora}{}}
-   {}
-   {\profa{\@coorientadora}{\@unidadeco\ -- \@unico}}
-  }
-  {\banca{\@coorientador}{\@unidadeco\ -- \@unico}}
-}
-{%
+ \includepdf[pages=-,pagecommand={}, width=\textwidth]{pre/ficha-catalografica.pdf}%
+ \clearpage%
+}%
+
+%% Termo de aprovação
+%% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\newcommand{\aprovacao}{
+ \cleardoublepage\phantomsection%
+ \ifpdf
+  \pdfbookmark[1]{Aprova\c{c}\~ao}{pretexto.5}
+ \fi
+ \includepdf[pages=-,pagecommand={}, width=\textwidth]{pre/SEI_5468279_Banca_Examinadora.pdf}%
  \clearpage%
 }
 
@@ -635,7 +551,7 @@
 \newcommand{\direitos}[1]{
  \cleardoublepage\phantomsection%
  \ifpdf
-  \pdfbookmark[1]{Direitos Autorais}{pretexto.8}
+  \pdfbookmark[1]{Direitos Autorais}{pretexto.6}
  \fi
 %   \thispagestyle{empty}\singlespacing\arial%
 %   \vspace*{\stretch{1}}\par%
@@ -657,7 +573,7 @@
 \newenvironment{dedicatoria}{
  \cleardoublepage\phantomsection%
  \ifpdf
-  \pdfbookmark[1]{Dedicat\'oria}{pretexto.9}
+  \pdfbookmark[1]{Dedicat\'oria}{pretexto.7}
  \fi
  \normalfont\vspace*{\stretch{1}}
 }{\clearpage}
@@ -667,7 +583,7 @@
 \newenvironment{agradecimentos}{
  \cleardoublepage\phantomsection%
  \ifpdf
-  \pdfbookmark[1]{Agradecimentos}{pretexto.10}
+  \pdfbookmark[1]{Agradecimentos}{pretexto.8}
  \fi
  \@makeschapterhead{Agradecimentos}
 }{\clearpage}
@@ -677,7 +593,7 @@
 \newenvironment{resumo}{%
  \cleardoublepage\phantomsection%
  \ifpdf
-  \pdfbookmark[1]{Resumo}{pretexto.12}
+  \pdfbookmark[1]{Resumo}{pretexto.9}
  \fi
 
  \@makeschapterhead{Resumo}
@@ -716,7 +632,7 @@
 \renewenvironment{abstract}[1]{%
  \cleardoublepage\phantomsection%
  \ifpdf
-  \pdfbookmark[1]{Abstract}{pretexto.13} % Sets a PDF bookmark for the abstract
+  \pdfbookmark[1]{Abstract}{pretexto.10} % Sets a PDF bookmark for the abstract
  \fi
   \@makeschapterhead{Abstract}
   \begin{minipage}{13.5cm}
@@ -867,7 +783,7 @@
   \item[$l_{hip}$] Deslocamento lateral (no eixo Y) m\'aximo do quadril
   \item[$h_{hip}$] Altura fixa do quadril (no eixo Z)
   \item[$u_{foot}$] Altura m\'axima que o p\'e de balan\c{c}o (no eixo Z) alcan\c{c}ar\'a durante o passo
-  \item[$\theta_{Maxyall}$] \^Angulo m\'aximo que $\theta_{yall}$ pode atingir
+  \item[$\theta_{Maxyaw}$] \^Angulo m\'aximo que $\theta_{yaw}$ pode atingir
   \item[$\sigma_{tanh}$] Par\^ametro da fun\c{c}\~ao tangente hiperb\'olica ajustado para suavisar ou retardar movimento
   \item[$\sigma_{sino}$] Par\^ametro da fun\c{c}\~ao ajustado para suavisar ou retardar movimento do p\'e de balan\c{c}o
   \item[$K_p$] Constante proporcional do controlador interno do servo motor
@@ -878,7 +794,7 @@
   \item[$F_H(t)$] Fun\c{c}\~ao de trajet\'oria para o quadril da perna de apoio
   \item[$F_F(t)$] Fun\c{c}\~ao de trajet\'oria para o tornozelo da perna de balan\c{c}o
   \item[$RT$] Vari\'avel de controle de rota\c{c}\~ao ($-1$ para esquerda, $1$ para direita)
-  \item[$\theta_{yall}$] \^Angulo de rota\c{c}\~ao no eixo yall do quadril
+  \item[$\theta_{yaw}$] \^Angulo de rota\c{c}\~ao no eixo yaw do quadril
   \item[$d_{target}$] Dist\^ancia at\'e o objetivo
   \item[$\Delta\theta_{target}$] Diferen\c{c}a angular necess\'aria para rotacionar na dire\c{c}\~ao do alvo
   \item[$g$] Acelera\c{c}\~ao da gravidade (9,80665 m/s²)
@@ -892,8 +808,8 @@
   \item[$\vec{M}_A$] Momento resultante do movimento conjunto das partes corpo atuando sobre a junta do tornozelo A
   \item[$\vec{M}_P$] Momento resultante computado com o contato do p\'e com o solo atuando sobre o ponto de press\~ao P
   \item[$\overrightarrow{OX}$] Vetor do ponto O para o ponto X
-  \item[$M_{xp}, M_{yp}, M_{zp}$] Componentes de $\vec{M}_P$ nos eixos x, y e z
-  \item[$F_{xa}, F_{ya}$] Componentes horizontais (eixos x e y) de $\vec{F}_A$
+  \item[$M_{p,x}, M_{p,y}, M_{p,z}$] Componentes de $\vec{M}_P$ nos eixos x, y e z
+  \item[$F_{a,x}, F_{a,y}$] Componentes horizontais (eixos x e y) de $\vec{F}_A$
   \item[$\hat{e}_j$] Vetor unit\'ario que aponta em dire\c{c}\~ao ao eixo da junta j
   \item[$\tau'_j$] Torque exercido pela a\c{c}\~ao da gravidade em rela\c{c}\~ao \`a junta j
   \item[$\tau_{j, g}$] Componente do torque na dire\c{c}\~ao do eixo da junta j

@@ -4,5 +4,6 @@ autograd
 construct==2.5.3
 tinyik==1.2.0
 tensorboardX
+tensorboard
 pandas
 matplotlib

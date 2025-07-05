@@ -366,7 +366,7 @@ class Controlador():
 		self.robo_yall_lock = -theta
 
 		self.distancia_ponto_alvo = math.sqrt((self.posicao_alvo[0] - self.posicao_robo[0])**2 + (self.posicao_alvo[1] - self.posicao_robo[1])**2)
-		if (self.distancia_ponto_alvo > 0.2):
+		if (self.distancia_ponto_alvo > 0.1):
 			self.chegou_no_alvo = False
 			self.robo_pitch_lock = 0
 		else:
